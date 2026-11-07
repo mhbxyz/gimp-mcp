@@ -25,6 +25,6 @@ Then ask the client to call `gimp_status`.
 ## Documentation
 
 - [Installation and troubleshooting](docs/install.md)
-- [Tool reference and error codes](docs/tools.md)
+- [Tool reference and error codes](docs/tools.md) · [coverage matrix](docs/coverage.md)
 - [Architecture](docs/architecture.md) · [bridge protocol](docs/bridge-protocol.md) · [security](docs/security.md)
 - [Testing](docs/testing.md) · [GIMP behaviour notes](docs/gimp-notes.md) · [decisions](docs/adr/)
