@@ -59,6 +59,45 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     return asyncio.run(run_doctor(endpoint, Path(args.gimp_dir) if args.gimp_dir else None))
 
 
+def cmd_inventory(args: argparse.Namespace) -> int:
+    import json
+
+    endpoint = BridgeEndpoint.for_socket(Path(args.socket)) if args.socket else BridgeEndpoint.default()
+
+    async def fetch() -> dict[str, object]:
+        client = BridgeClient(endpoint, request_timeout=args.timeout)
+        try:
+            return await client.call("pdb.inventory")
+        finally:
+            await client.close()
+
+    data = asyncio.run(fetch())
+    procedures = data["procedures"]
+    assert isinstance(procedures, list)
+    text = json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False) + "\n"
+    if args.output:
+        Path(args.output).write_text(text, encoding="utf-8")
+        incomplete = sum(1 for p in procedures if "error" in p)
+        print(
+            f"{len(procedures)} procedures ({incomplete} with incomplete metadata) written to {args.output}",
+            file=sys.stderr,
+        )
+    else:
+        sys.stdout.write(text)
+    return 0
+
+
+def cmd_coverage(args: argparse.Namespace) -> int:
+    from .coverage import render_matrix
+
+    text = render_matrix(Path(args.inventory))
+    if args.output:
+        Path(args.output).write_text(text, encoding="utf-8")
+    else:
+        sys.stdout.write(text)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="gimp-mcp", description="MCP server for GIMP 3")
     parser.add_argument("--version", action="version", version=f"gimp-mcp {__version__}")
@@ -82,6 +121,17 @@ def build_parser() -> argparse.ArgumentParser:
     doctor.add_argument("--socket")
     doctor.add_argument("--gimp-dir")
     doctor.set_defaults(func=cmd_doctor)
+
+    inventory = sub.add_parser("inventory", help="dump the procedure database of the running GIMP as JSON")
+    inventory.add_argument("--socket")
+    inventory.add_argument("--output", help="file to write (default: stdout)")
+    inventory.add_argument("--timeout", type=float, default=300.0)
+    inventory.set_defaults(func=cmd_inventory)
+
+    coverage = sub.add_parser("coverage", help="render the coverage matrix (Markdown) from an inventory")
+    coverage.add_argument("--inventory", required=True)
+    coverage.add_argument("--output")
+    coverage.set_defaults(func=cmd_coverage)
     return parser
 
 

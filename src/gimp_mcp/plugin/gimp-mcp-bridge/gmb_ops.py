@@ -765,8 +765,106 @@ def layer_flip(params):
     return layer_node(result)
 
 
+# -- procedure database (read-only introspection) ----------------------------------------
+
+
+def _jsonable(value):
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    nick = getattr(value, "value_nick", None)
+    if nick is not None:
+        return nick
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(v) for v in value]
+    return repr(value)
+
+
+def describe_argument(pspec):
+    data = {"name": pspec.name, "type": pspec.value_type.name, "description": pspec.get_blurb()}
+    try:
+        data["default"] = _jsonable(pspec.get_default_value())
+    except Exception:
+        data["default"] = None
+    for attr in ("minimum", "maximum"):
+        if hasattr(pspec, attr):
+            data[attr] = _jsonable(getattr(pspec, attr))
+    if type(pspec).__name__ == "ParamChoice":
+        try:
+            data["choices"] = list(Gimp.param_spec_choice_get_choice(pspec).list_nicks())
+        except Exception:
+            data["choices"] = None
+    enum_class = getattr(pspec, "enum_class", None)
+    if enum_class is not None:
+        try:
+            data["choices"] = [v.value_nick for v in enum_class.__enum_values__.values()]
+        except Exception:
+            pass
+    return data
+
+
+def describe_procedure(procedure):
+    return {
+        "name": procedure.get_name(),
+        "type": procedure.get_proc_type().value_nick,
+        "description": procedure.get_blurb(),
+        "help": procedure.get_help(),
+        "authors": procedure.get_authors(),
+        "date": procedure.get_date(),
+        "menu_label": procedure.get_menu_label(),
+        "menu_paths": list(procedure.get_menu_paths() or []),
+        "image_types": procedure.get_image_types(),
+        "arguments": [describe_argument(a) for a in procedure.get_arguments()],
+        "return_values": [describe_argument(r) for r in procedure.get_return_values()],
+    }
+
+
+def _all_names(pattern=".*"):
+    return sorted(Gimp.get_pdb().query_procedures(pattern, ".*", ".*", ".*", ".*", ".*", ".*", ".*"))
+
+
+def pdb_search(params):
+    import re
+
+    query = params.get("query") or ""
+    limit = int(params.get("limit", 50))
+    needle = re.escape(query)
+    names = _all_names(".*%s.*" % needle) if query else _all_names()
+    pdb = Gimp.get_pdb()
+    found = []
+    for name in names[:limit]:
+        procedure = pdb.lookup_procedure(name)
+        found.append({"name": name, "description": procedure.get_blurb() if procedure else None})
+    return {"procedures": found, "total": len(names)}
+
+
+def pdb_describe(params):
+    name = params["name"]
+    procedure = Gimp.get_pdb().lookup_procedure(name) if Gimp.get_pdb().procedure_exists(name) else None
+    if procedure is None:
+        raise BridgeError("NOT_FOUND", "no procedure named %r" % name, {"name": name})
+    return describe_procedure(procedure)
+
+
+def pdb_inventory(params):
+    pdb = Gimp.get_pdb()
+    procedures = []
+    for name in _all_names():
+        try:
+            procedures.append(describe_procedure(pdb.lookup_procedure(name)))
+        except Exception as exc:  # incomplete metadata must not break the inventory
+            procedures.append({"name": name, "error": "%s: %s" % (type(exc).__name__, exc)})
+    try:
+        gegl = sorted(Gimp.DrawableFilter.operation_get_available())
+    except Exception:
+        gegl = []
+    return {"gimp_version": Gimp.version(), "procedures": procedures, "gegl_operations": gegl}
+
+
 def build_operations():
     return {
+        "pdb.search": pdb_search,
+        "pdb.describe": pdb_describe,
+        "pdb.inventory": pdb_inventory,
         "image.scale": image_scale,
         "image.resize": image_resize,
         "image.crop": image_crop,
