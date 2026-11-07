@@ -49,6 +49,20 @@ This procedure is verified from a clean environment by
 installed by the packaged CLI, `doctor`, MCP calls, uninstall) in the CI's
 pinned GIMP container.
 
+## One-command setup
+
+```sh
+gimp-mcp setup          # interactive: shows each change and asks
+gimp-mcp setup --yes    # scripts: applies everything
+```
+
+It finds GIMP and the profile it uses (`GIMP3_DIRECTORY` respected), installs
+or updates the plug-in, registers the server in the MCP clients it finds
+(see [clients.md](clients.md)), prints snippets for the others, and ends with a
+live check and `gimp-mcp doctor`. Options: `--clients claude-code,claude-desktop,vscode,cursor|all|none`,
+`--gimp-dir`, `--socket`, `--no-doctor`. Running it again changes nothing that
+is already right. The manual steps below remain available.
+
 ## Configure an MCP client
 
 The server speaks MCP over stdio. With an installed package:

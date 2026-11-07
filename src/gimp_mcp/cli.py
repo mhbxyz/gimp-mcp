@@ -110,6 +110,47 @@ def cmd_coverage(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_setup(args: argparse.Namespace) -> int:
+    import os
+
+    from .setup import CLIENT_KEYS, SetupOptions, run_setup
+
+    endpoint = BridgeEndpoint.for_socket(Path(args.socket)) if args.socket else BridgeEndpoint.default()
+    clients: set[str]
+    if args.clients in (None, "all"):
+        clients = set(CLIENT_KEYS)
+    elif args.clients == "none":
+        clients = set()
+    else:
+        clients = {name.strip() for name in args.clients.split(",") if name.strip()}
+        unknown = clients - set(CLIENT_KEYS)
+        if unknown:
+            print(f"error: unknown client(s): {', '.join(sorted(unknown))}", file=sys.stderr)
+            return 2
+
+    def ask(question: str) -> bool:
+        try:
+            return input(question).strip().lower().startswith("y")
+        except EOFError:
+            return False
+
+    def say(text: str) -> None:
+        print(text, file=sys.stderr)
+
+    options = SetupOptions(
+        env=dict(os.environ),
+        endpoint=endpoint,
+        ask=ask,
+        say=say,
+        assume_yes=args.yes,
+        interactive=sys.stdin.isatty() and not args.yes,
+        run_doctor=not args.no_doctor,
+        gimp_dir=Path(args.gimp_dir) if args.gimp_dir else None,
+        clients=clients,
+    )
+    return asyncio.run(run_setup(options))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="gimp-mcp", description="MCP server for GIMP 3")
     parser.add_argument("--version", action="version", version=f"gimp-mcp {__version__}")
@@ -138,6 +179,26 @@ def build_parser() -> argparse.ArgumentParser:
     doctor.add_argument("--json", action="store_true", help="machine-readable result on stdout")
     doctor.add_argument("--troubleshooting", action="store_true", help="print the troubleshooting table (Markdown)")
     doctor.set_defaults(func=cmd_doctor)
+
+    setup = sub.add_parser(
+        "setup",
+        help="install the plug-in in GIMP's profile and register the server in your MCP clients",
+        description=(
+            "Detect GIMP, install or update the plug-in, register the MCP server in Claude Code, Claude Desktop, "
+            "VS Code and Cursor (each change is shown and needs your consent), then check the result. Safe to "
+            "run again."
+        ),
+    )
+    setup.add_argument("--yes", action="store_true", help="apply every change without asking (for scripts)")
+    setup.add_argument(
+        "--clients",
+        help="comma-separated clients to configure: claude-code, claude-desktop, vscode, cursor; or all / none "
+        "(default: all)",
+    )
+    setup.add_argument("--gimp-dir", help="GIMP profile (default: the one GIMP uses)")
+    setup.add_argument("--socket", help="bridge socket path (default: $GIMP_MCP_SOCKET or runtime dir)")
+    setup.add_argument("--no-doctor", action="store_true", help="skip the final doctor checks")
+    setup.set_defaults(func=cmd_setup)
 
     inventory = sub.add_parser("inventory", help="dump the procedure database of the running GIMP as JSON")
     inventory.add_argument("--socket")
