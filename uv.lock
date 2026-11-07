@@ -233,6 +233,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "jsonschema" },
     { name = "pillow" },
     { name = "pyright" },
     { name = "pytest" },
@@ -246,6 +247,7 @@ requires-dist = [{ name = "mcp", specifier = ">=2.3,<3" }]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "jsonschema", specifier = ">=4.26.0" },
     { name = "pillow", specifier = ">=13.0.0" },
     { name = "pyright", specifier = ">=1.1.414" },
     { name = "pytest", specifier = ">=9.2.0" },

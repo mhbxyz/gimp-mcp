@@ -28,7 +28,9 @@ Design and verified facts: [ADR 0002](adr/0002-release-pipeline.md).
    * waits for your approval of the `pypi` deployment, publishes the same files
      (skipped when PyPI already has exactly them), checks them and drives a real
      GIMP with `uv pip install gimp-mcp==X.Y.Z` and `uvx`;
-   * makes the GitHub release public.
+   * makes the GitHub release public;
+   * publishes `server.json` to the official MCP registry (approval of the
+     `pypi` environment, GitHub OIDC; see [ADR 0004](adr/0004-discovery-channels.md)).
 4. If a job fails, fix the cause and use *Re-run failed jobs*: every step is
    safe to repeat (draft updated, TestPyPI `skip-existing`, PyPI upload skipped
    when identical, a published GitHub release is never modified). Nothing
