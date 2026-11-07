@@ -279,9 +279,7 @@ class BridgeClient:
             response = json.loads(line)
         except ValueError as exc:
             await self.close()
-            raise GimpMcpError(
-                "PROTOCOL_ERROR", f"invalid response from bridge: {exc}", outcome=unknown
-            ) from exc
+            raise GimpMcpError("PROTOCOL_ERROR", f"invalid response from bridge: {exc}", outcome=unknown) from exc
         if response.get("id") != request_id:
             await self.close()
             raise GimpMcpError(
