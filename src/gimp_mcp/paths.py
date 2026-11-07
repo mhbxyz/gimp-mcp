@@ -10,10 +10,13 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Literal
 
 from .errors import GimpMcpError
 
-EXPORT_FORMATS = {".png": "png", ".jpg": "jpeg", ".jpeg": "jpeg"}
+ExportFormat = Literal["png", "jpeg"]
+
+EXPORT_FORMATS: dict[str, ExportFormat] = {".png": "png", ".jpg": "jpeg", ".jpeg": "jpeg"}
 XCF_SUFFIXES = (".xcf",)
 
 
@@ -67,7 +70,7 @@ def check_output_file(path: str, *, overwrite: bool) -> Path:
     return resolved
 
 
-def export_format(path: Path, requested: str | None) -> str:
+def export_format(path: Path, requested: str | None) -> ExportFormat:
     inferred = EXPORT_FORMATS.get(path.suffix.lower())
     if inferred is None:
         hint = "Use gimp_save_image for .xcf projects." if path.suffix.lower() in XCF_SUFFIXES else None
