@@ -53,6 +53,17 @@ def bump_pyproject(text: str, version: str) -> str:
     return re.sub(r'(?m)^version = "[^"]+"', f'version = "{version}"', text, count=1)
 
 
+def bump_server_json(text: str, version: str) -> str:
+    """MCP registry metadata: the server and its PyPI package carry the release version."""
+    import json
+
+    data = json.loads(text)
+    data["version"] = version
+    for package in data.get("packages", []):
+        package["version"] = version
+    return json.dumps(data, indent=2) + "\n"
+
+
 def roll_changelog(text: str, version: str, date: str) -> str:
     marker = "## [Unreleased]"
     start = text.find(marker)
@@ -106,11 +117,14 @@ def main(argv: list[str] | None = None) -> int:
                 raise ReleaseError("the working tree is not clean")
             run(["git", "switch", "-c", f"release/v{args.version}"], root)
         pyproject_path.write_text(bump_pyproject(pyproject, args.version), encoding="utf-8")
+        server_path = root / "server.json"
+        if server_path.exists():
+            server_path.write_text(bump_server_json(server_path.read_text(encoding="utf-8"), args.version), "utf-8")
         changelog_path.write_text(changelog, encoding="utf-8")
         if not args.no_lock:
             run(["uv", "lock", "--quiet"], root)
         if not args.no_git:
-            run(["git", "add", "pyproject.toml", "CHANGELOG.md", "uv.lock"], root)
+            run(["git", "add", "pyproject.toml", "CHANGELOG.md", "uv.lock", "server.json"], root)
             run(["git", "commit", "--quiet", "-m", title], root)
             run(["git", "push", "--quiet", "-u", "origin", f"release/v{args.version}"], root)
             url = run(

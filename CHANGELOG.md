@@ -23,6 +23,9 @@ what is covered by the compatibility promise.
   with trusted publishing (no stored token) and maintainer approval, and
   verifies each index serves exactly the built files and that the installed
   package (pip and uvx) drives a real GIMP (#36).
+- `server.json` for the official MCP registry (`io.github.mhbxyz/gimp-mcp`),
+  validated in tests and published by the release workflow after PyPI with
+  GitHub OIDC; MCPB bundles rejected (macOS/Windows only) (#43).
 - Installation verified in CI on Arch Linux, Ubuntu 26.04, Debian 14,
   Fedora 44, openSUSE Tumbleweed and Alpine 3.24 (clean containers, base images
   pinned by digest, the distribution's own GIMP) on releases and weekly; the

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.mhbxyz/gimp-mcp",
+  "title": "GIMP",
+  "description": "Inspect and edit images in a running GIMP 3.2+ (layers, text, filters, files) from any MCP client.",
+  "repository": {
+    "url": "https://github.com/mhbxyz/gimp-mcp",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/mhbxyz/gimp-mcp",
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "gimp-mcp",
+      "version": "0.1.0",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "GIMP_MCP_SOCKET",
+          "description": "Bridge socket of the GIMP to drive (default: found automatically). The GIMP plug-in must be installed once with `uvx gimp-mcp setup`.",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}
