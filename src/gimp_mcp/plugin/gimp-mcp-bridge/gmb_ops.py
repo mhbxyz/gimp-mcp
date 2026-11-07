@@ -12,6 +12,7 @@ import gi
 
 gi.require_version("Babl", "0.1")
 import gmb_policy  # noqa: E402
+import gmb_undo  # noqa: E402
 from gi.repository import Babl, Gegl, Gimp, Gio  # noqa: E402
 from gmb_server import BridgeError  # noqa: E402
 
@@ -223,7 +224,8 @@ def item_details(item):
 
 
 def session_images(params):
-    return {"images": [image_summary(image) for image in Gimp.get_images()]}
+    hidden = checkpoint_image_ids()
+    return {"images": [image_summary(image) for image in Gimp.get_images() if image.get_id() not in hidden]}
 
 
 def image_inspect(params):
@@ -418,6 +420,7 @@ def image_close(params):
             {"image": image.get_id()},
         )
     number = image.get_id()
+    drop_checkpoints_of(number)
     for display in _DISPLAYS.pop(number, []):
         if display.is_valid():
             display.delete()
@@ -1546,8 +1549,180 @@ def meta_type(pspec):
     return pspec.value_type.name
 
 
+# -- history: undo groups and checkpoints ------------------------------------------------
+
+_BRIDGE = {"server": None}
+
+
+def _undo_start(number):
+    Gimp.Image.get_by_id(number).undo_group_start()
+
+
+def _undo_end(number):
+    Gimp.Image.get_by_id(number).undo_group_end()
+
+
+UNDO_GROUPS = gmb_undo.UndoGroups(start=_undo_start, end=_undo_end, is_valid=Gimp.Image.id_is_valid)
+
+
+def attach(server):
+    """Give operations access to per-connection state and disconnection events."""
+    _BRIDGE["server"] = server
+    server.on_disconnect.append(UNDO_GROUPS.close_connection)
+
+
+def _connection():
+    server = _BRIDGE["server"]
+    return None if server is None else server.current_connection_id
+
+
+@mutation
+def undo_begin(params):
+    image = get_image(params)
+    return {"depth": UNDO_GROUPS.begin(_connection(), image.get_id())}
+
+
+@mutation
+def undo_end(params):
+    image = get_image(params)
+    try:
+        return {"depth": UNDO_GROUPS.end(_connection(), image.get_id())}
+    except gmb_undo.NoOpenGroup as exc:
+        raise BridgeError(
+            "NO_OPEN_GROUP",
+            str(exc),
+            {"image": image.get_id(), "hint": "groups are closed automatically when a client disconnects"},
+        ) from exc
+
+
+MAX_CHECKPOINTS = 20
+_CHECKPOINTS = {}  # number -> {"lineage", "copy", "label", "created"}
+_LINEAGE = {}  # image id -> lineage id (stable across restorations)
+_CHECKPOINT_COUNTER = [0]
+
+
+def lineage_of(image_id):
+    return _LINEAGE.setdefault(image_id, image_id)
+
+
+def checkpoint_image_ids():
+    return {c["copy"].get_id() for c in _CHECKPOINTS.values() if c["copy"].is_valid()}
+
+
+def _current_image_of(lineage):
+    for image_id, owner in _LINEAGE.items():
+        if owner == lineage and Gimp.Image.id_is_valid(image_id):
+            return image_id
+    return None
+
+
+def _checkpoint_info(number, entry):
+    copy = entry["copy"]
+    return {
+        "checkpoint": number,
+        "label": entry["label"],
+        "image": _current_image_of(entry["lineage"]),
+        "width": copy.get_width(),
+        "height": copy.get_height(),
+        "created": entry["created"],
+    }
+
+
+def drop_checkpoints_of(image_id):
+    lineage = lineage_of(image_id)
+    for number in [n for n, c in _CHECKPOINTS.items() if c["lineage"] == lineage]:
+        entry = _CHECKPOINTS.pop(number)
+        if entry["copy"].is_valid():
+            entry["copy"].delete()
+
+
+@mutation
+def checkpoint_create(params):
+    import time
+
+    image = get_image(params)
+    lineage = lineage_of(image.get_id())
+    if sum(1 for c in _CHECKPOINTS.values() if c["lineage"] == lineage) >= MAX_CHECKPOINTS:
+        raise BridgeError(
+            "CHECKPOINT_LIMIT",
+            "the image already has %d checkpoints: delete some first" % MAX_CHECKPOINTS,
+            {"limit": MAX_CHECKPOINTS},
+        )
+    copy = image.duplicate()
+    copy.undo_disable()
+    _CHECKPOINT_COUNTER[0] += 1
+    number = _CHECKPOINT_COUNTER[0]
+    _CHECKPOINTS[number] = {"lineage": lineage, "copy": copy, "label": params.get("label"), "created": time.time()}
+    return _checkpoint_info(number, _CHECKPOINTS[number])
+
+
+def checkpoint_list(params):
+    image = get_image(params)
+    if image.get_id() in checkpoint_image_ids():
+        raise BridgeError("NOT_FOUND", "image %d does not exist" % image.get_id())
+    lineage = lineage_of(image.get_id())
+    return {
+        "checkpoints": [
+            _checkpoint_info(number, entry)
+            for number, entry in sorted(_CHECKPOINTS.items())
+            if entry["lineage"] == lineage
+        ]
+    }
+
+
+def _get_checkpoint(params):
+    number = _int_param(params, "checkpoint")
+    entry = _CHECKPOINTS.get(number)
+    if entry is None or not entry["copy"].is_valid():
+        raise BridgeError("NOT_FOUND", "checkpoint %d does not exist" % number, {"checkpoint": number})
+    return number, entry
+
+
+@mutation
+def checkpoint_restore(params):
+    image = get_image(params)
+    number, entry = _get_checkpoint(params)
+    lineage = lineage_of(image.get_id())
+    if entry["lineage"] != lineage:
+        raise BridgeError(
+            "IMAGE_MISMATCH",
+            "checkpoint %d belongs to another image" % number,
+            {"checkpoint": number, "image": image.get_id()},
+        )
+    restored = entry["copy"].duplicate()
+    restored.undo_disable()
+    xcf = image.get_xcf_file()
+    if xcf is not None:
+        restored.set_file(xcf)
+    old_id = image.get_id()
+    reconnected = Gimp.displays_reconnect(image, restored)
+    _LINEAGE[restored.get_id()] = lineage
+    displays = _DISPLAYS.pop(old_id, [])
+    if reconnected and displays:
+        _DISPLAYS[restored.get_id()] = displays
+    image.delete()
+    _LINEAGE.pop(old_id, None)
+    restored.undo_enable()
+    shown = bool(reconnected)
+    return image_ref(restored, shown)
+
+
+@mutation
+def checkpoint_delete(params):
+    number, entry = _get_checkpoint(params)
+    _CHECKPOINTS.pop(number)
+    entry["copy"].delete()
+    return {"checkpoint": number}
+
+
 def build_operations():
     return {
+        "undo.begin": undo_begin,
+        "undo.end": undo_end,
+        "checkpoint.create": checkpoint_create,
+        "checkpoint.list": checkpoint_list,
+        "checkpoint.restore": checkpoint_restore,
+        "checkpoint.delete": checkpoint_delete,
         "pdb.callable": pdb_callable,
         "pdb.call": pdb_call,
         "text.create": text_create,

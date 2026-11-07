@@ -66,7 +66,25 @@ by `gimp_list_filters`, kept in the XCF, removable).
 The demo also adds an accent line (`gimp_draw_path`) and a blurred text shadow
 (a second text layer with an editable blur).
 
-## 5. Verify, save, export
+## 5. Group a change, undo it, redo it
+
+GIMP has no undo/redo for plug-ins: agents use checkpoints (see
+`docs/tools.md#history-undo-groups-and-checkpoints`).
+
+```json
+{"name": "gimp_create_checkpoint", "arguments": {"image": "<image>", "label": "before badge"}}
+{"name": "gimp_begin_undo_group", "arguments": {"image": "<image>", "label": "Add badge"}}
+… create the badge layer, draw the circle, add the text …
+{"name": "gimp_end_undo_group", "arguments": {"image": "<image>"}}
+{"name": "gimp_create_checkpoint", "arguments": {"image": "<image>", "label": "with badge"}}
+{"name": "gimp_restore_checkpoint", "arguments": {"image": "<image>", "checkpoint": "<before badge>"}}   ← undo
+{"name": "gimp_restore_checkpoint", "arguments": {"image": "<new image>", "checkpoint": "<with badge>"}} ← redo
+```
+
+Each restoration returns a **new image id**: re-read ids with
+`gimp_inspect_image` afterwards.
+
+## 6. Verify, save, export
 
 ```json
 {"name": "gimp_preview", "arguments": {"image": "<image>", "max_size": 640}}

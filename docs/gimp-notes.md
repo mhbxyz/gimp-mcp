@@ -93,5 +93,9 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   overlap 0…1) work as editable filters.
   `DrawableFilter.operation_get_pspecs()` returns a `ValueArray` that is not
   iterable from Python: read properties from `f.get_config()` instead.
+* `image.duplicate()` keeps text layers, editable filters, masks and the
+  selection; the copy is dirty, has no file. `image.set_file(gfile)` sets the
+  XCF file. `Gimp.displays_reconnect(old, new)` moves GUI windows to another
+  image (returns `False` when there is no display, e.g. in `gimp-console`).
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.

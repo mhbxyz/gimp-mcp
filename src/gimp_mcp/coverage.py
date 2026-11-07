@@ -170,9 +170,28 @@ CAPABILITIES: tuple[Capability, ...] = (
     ),
     Capability(
         "History",
-        "Undo / redo from a client",
-        "unsupported",
-        notes="GIMP 3.2 offers no undo/redo procedure to plug-ins (only undo groups); see #9.",
+        "Undo groups (one GIMP undo step, closed on disconnect); checkpoints for undo/redo by agents",
+        "tested",
+        tools=(
+            "gimp_begin_undo_group",
+            "gimp_end_undo_group",
+            "gimp_create_checkpoint",
+            "gimp_list_checkpoints",
+            "gimp_restore_checkpoint",
+            "gimp_delete_checkpoint",
+        ),
+        procedures=(
+            "gimp-image-undo-group-start",
+            "gimp-image-undo-group-end",
+            "gimp-image-duplicate",
+            "gimp-image-set-file",
+            "gimp-displays-reconnect",
+            "gimp-image-undo-disable",
+            "gimp-image-undo-enable",
+        ),
+        tests=("tests/e2e/test_history.py", "tests/unit/test_undo_groups.py"),
+        notes="GIMP 3.2 has no undo/redo procedure for plug-ins: restoring a checkpoint replaces the image "
+        "(new ids). The effect of undo groups on GIMP's own history cannot be read back by plug-ins.",
     ),
     Capability(
         "Painting",
