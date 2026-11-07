@@ -860,8 +860,140 @@ def pdb_inventory(params):
     return {"gimp_version": Gimp.version(), "procedures": procedures, "gegl_operations": gegl}
 
 
+# -- selections and masks ----------------------------------------------------------------
+
+CHANNEL_OPS = {
+    "replace": Gimp.ChannelOps.REPLACE,
+    "add": Gimp.ChannelOps.ADD,
+    "subtract": Gimp.ChannelOps.SUBTRACT,
+    "intersect": Gimp.ChannelOps.INTERSECT,
+}
+
+
+def selection_state(image, probe=None):
+    _ok, non_empty, x1, y1, x2, y2 = Gimp.Selection.bounds(image)
+    state = {
+        "empty": not non_empty,
+        "bounds": {"x": x1, "y": y1, "width": x2 - x1, "height": y2 - y1} if non_empty else None,
+        "contains": None,
+    }
+    if probe is not None:
+        x, y = probe
+        inside = 0 <= x < image.get_width() and 0 <= y < image.get_height()
+        state["contains"] = bool(inside and Gimp.Selection.value(image, x, y) > 127)
+    return state
+
+
+def _select(image, params, shape):
+    Gimp.context_push()
+    try:
+        feather = float(params.get("feather") or 0)
+        Gimp.context_set_feather(feather > 0)
+        Gimp.context_set_feather_radius(feather, feather)
+        Gimp.context_set_antialias(True)
+        operation = CHANNEL_OPS[params.get("operation", "replace")]
+        if shape == "rect":
+            image.select_rectangle(operation, params["x"], params["y"], params["width"], params["height"])
+        else:
+            image.select_ellipse(operation, params["x"], params["y"], params["width"], params["height"])
+    finally:
+        Gimp.context_pop()
+    return selection_state(image)
+
+
+@mutation
+def selection_rect(params):
+    return _select(get_image(params), params, "rect")
+
+
+@mutation
+def selection_ellipse(params):
+    return _select(get_image(params), params, "ellipse")
+
+
+@mutation
+def selection_modify(params):
+    image = get_image(params)
+    action = params["action"]
+    if action == "all":
+        Gimp.Selection.all(image)
+    elif action == "none":
+        Gimp.Selection.none(image)
+    elif action == "invert":
+        Gimp.Selection.invert(image)
+    else:
+        raise BridgeError("INVALID_ARGUMENT", "unknown selection action %r" % action)
+    return selection_state(image)
+
+
+def selection_get(params):
+    image = get_image(params)
+    return selection_state(image, params.get("probe"))
+
+
+MASK_TYPES = {
+    "white": Gimp.AddMaskType.WHITE,
+    "black": Gimp.AddMaskType.BLACK,
+    "alpha": Gimp.AddMaskType.ALPHA,
+    "selection": Gimp.AddMaskType.SELECTION,
+    "grayscale": Gimp.AddMaskType.COPY,
+}
+
+
+@mutation
+def mask_add(params):
+    layer = get_layer(params)
+    image = layer.get_image()
+    if layer.get_mask() is not None:
+        raise BridgeError("INVALID_ARGUMENT", "the layer already has a mask", {"item": layer.get_id()})
+    if params["fill"] == "selection" and Gimp.Selection.is_empty(image):
+        raise BridgeError("EMPTY_SELECTION", "nothing is selected", {"image": image.get_id()})
+    with undo_step(image):
+        mask = layer.create_mask(MASK_TYPES[params["fill"]])
+        if not layer.add_mask(mask):
+            raise BridgeError("GIMP_ERROR", "GIMP refused to add the mask")
+        if params.get("invert"):
+            mask.invert(False)
+    return layer_node(layer)
+
+
+def _require_mask(layer):
+    if layer.get_mask() is None:
+        raise BridgeError("INVALID_ARGUMENT", "the layer has no mask", {"item": layer.get_id()})
+
+
+@mutation
+def mask_set(params):
+    layer = get_layer(params)
+    _require_mask(layer)
+    with undo_step(layer.get_image()):
+        if params.get("apply") is not None:
+            layer.set_apply_mask(bool(params["apply"]))
+        if params.get("show") is not None:
+            layer.set_show_mask(bool(params["show"]))
+        if params.get("edit") is not None:
+            layer.set_edit_mask(bool(params["edit"]))
+    return layer_node(layer)
+
+
+@mutation
+def mask_remove(params):
+    layer = get_layer(params)
+    _require_mask(layer)
+    mode = Gimp.MaskApplyMode.APPLY if params["mode"] == "apply" else Gimp.MaskApplyMode.DISCARD
+    layer.remove_mask(mode)
+    return layer_node(layer)
+
+
 def build_operations():
     return {
+        "selection.rect": selection_rect,
+        "selection.ellipse": selection_ellipse,
+        "selection.modify": selection_modify,
+        "selection.get": selection_get,
+        "mask.add": mask_add,
+        "mask.set": mask_set,
+        "mask.remove": mask_remove,
         "pdb.search": pdb_search,
         "pdb.describe": pdb_describe,
         "pdb.inventory": pdb_inventory,

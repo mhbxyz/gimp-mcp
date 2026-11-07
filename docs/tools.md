@@ -202,6 +202,32 @@ Locks are set with `gimp_set_layer_properties(lock_content, lock_position,
 lock_visibility, lock_alpha)`. All layer tools return the updated layer node
 (new offsets and size); image tools return `width`, `height`, `dirty`.
 
+## Selections and masks
+
+The selection belongs to the image: it is undoable, **marks the image dirty**
+and is saved in XCF. Coordinates are image pixels; parts outside the canvas
+are ignored (a rectangle entirely outside gives an empty selection).
+
+* `gimp_select_rectangle(image, x, y, width, height, operation="replace", feather=0)`
+* `gimp_select_ellipse(image, x, y, width, height, operation="replace", feather=0)`
+  — ellipse inscribed in the rectangle, antialiased.
+* `operation`: `replace`, `add`, `subtract`, `intersect`; `feather`: radius in
+  pixels.
+* `gimp_modify_selection(image, action)` — `all`, `none`, `invert`.
+* `gimp_get_selection(image, probe_x?, probe_y?)` (read-only).
+
+All return `empty`, `bounds` (`x`, `y`, `width`, `height`, clipped to the
+canvas, null when empty) and `contains` (whether the probe point is selected,
+when asked).
+
+Layer masks:
+
+| Tool | Effect | Destructive |
+|---|---|---|
+| `gimp_add_layer_mask(item, fill="white", invert=false)` | `fill`: `white` (all visible), `black` (all hidden), `alpha`, `selection` (`EMPTY_SELECTION` when nothing is selected), `grayscale`; refused when a mask exists | no |
+| `gimp_set_layer_mask(item, apply?, show?, edit?)` | `apply=false` disables the mask without losing it | no |
+| `gimp_remove_layer_mask(item, mode)` | `apply`: bakes the mask into the layer's alpha (hidden pixels become transparent); `discard`: drops it, the layer is shown unmasked | `apply`: **yes** |
+
 ## Discovery
 
 Read-only introspection of the installation; **nothing is executed** and a
@@ -242,6 +268,7 @@ listed with an `error` field instead of failing the inventory.
 | `UNSUPPORTED_FORMAT` | Extension or file content not supported by this operation. |
 | `UNSAVED_CHANGES` | Closing a dirty image without `discard_changes`. |
 | `IMAGE_IN_USE` | Image shown in a GIMP window the bridge did not create. |
+| `EMPTY_SELECTION` | The operation needs a selection and nothing is selected. |
 | `IMAGE_MISMATCH` | Objects from different images combined in one operation. |
 | `LOCKED` | The targeted property or content is locked in GIMP. |
 | `GIMP_ERROR` | Unexpected failure inside GIMP; for a mutation the outcome is `unknown`. |
