@@ -23,6 +23,10 @@ what is covered by the compatibility promise.
   with trusted publishing (no stored token) and maintainer approval, and
   verifies each index serves exactly the built files and that the installed
   package (pip and uvx) drives a real GIMP (#36).
+- Installation verified in CI on Arch Linux, Ubuntu 26.04, Debian 14,
+  Fedora 44, openSUSE Tumbleweed and Alpine 3.24 (clean containers, base images
+  pinned by digest, the distribution's own GIMP) on releases and weekly; the
+  compatibility page is generated from that matrix (#38).
 - GIMP installed from Flathub (`org.gimp.GIMP`) is supported: the bridge
   serves its socket in the app runtime directory shared with the host, the
   server finds it, `setup` and `doctor` detect Flatpak GIMP; tested in CI with

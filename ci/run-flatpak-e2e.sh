@@ -8,7 +8,7 @@ IMAGE=${GIMP_MCP_FLATPAK_IMAGE:-gimp-mcp-flatpak-ci}
 if [ -z "${GIMP_MCP_CI_SKIP_BUILD:-}" ]; then
   docker build -q -f ci/Dockerfile.flatpak -t "$IMAGE" ci >/dev/null
 fi
-docker run --rm --privileged -v "$PWD":/src:ro "$IMAGE" bash -euo pipefail -c '
+docker run --rm --init --privileged -v "$PWD":/src:ro "$IMAGE" bash -euo pipefail -c '
   mkdir -p -m 700 "$XDG_RUNTIME_DIR"
   mkdir repo
   tar -C /src --exclude=.venv --exclude=ci-artifacts -cf - . | tar -C repo -xf -

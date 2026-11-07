@@ -16,7 +16,7 @@ extra_env=()
 if [ -n "${GIMP_MCP_CI_ENV:-}" ]; then  # e.g. GIMP_MCP_DIST_WHEEL=/src/wheels/x.whl
   extra_env=(-e "$GIMP_MCP_CI_ENV")
 fi
-docker run --rm "${extra_env[@]}" \
+docker run --rm --init "${extra_env[@]}" \
   -v "$PWD":/src:ro \
   -v "$PWD/ci-artifacts":/artifacts \
   -e GIMP_MCP_REQUIRE_GIMP=1 \
