@@ -16,8 +16,37 @@ artifacts (`tests/unit/test_distribution.py::test_builds_are_reproducible`).
    `Release (draft)` workflow re-runs the suite, rebuilds and creates a
    **draft** GitHub release with the artifacts. Review it and publish it by
    hand.
-5. PyPI (optional, manual, maintainer only): `uv publish dist/*.whl dist/*.tar.gz`
-   with a token that is never stored in the repository.
+5. PyPI: approve the `publish-testpypi` deployment, check the TestPyPI page,
+   then approve `publish-pypi`. Each upload is followed by an automatic check
+   that the index serves exactly the built files and that the installed package
+   (`uv pip install`, `uvx`) drives a real GIMP. See
+   [ADR 0002](adr/0002-release-pipeline.md).
+
+## One-time setup (maintainer)
+
+PyPI uses *trusted publishing*: there is no token to create or store. Do this
+once, before the first release:
+
+1. **TestPyPI**: log in at <https://test.pypi.org>, open *Your account →
+   Publishing → Add a new pending publisher → GitHub*, and enter exactly:
+
+   | Field | Value |
+   |---|---|
+   | PyPI Project Name | `gimp-mcp` |
+   | Owner | `mhbxyz` |
+   | Repository name | `gimp-mcp` |
+   | Workflow name | `release.yml` |
+   | Environment name | `testpypi` |
+
+2. **PyPI**: same at <https://pypi.org/manage/account/publishing/> with
+   environment name `pypi`.
+3. The GitHub environments `testpypi` and `pypi` already exist (*Settings →
+   Environments*): they require your approval and only accept `v*` tags.
+
+A pending publisher does not reserve the name: until the first upload,
+someone else could register `gimp-mcp`. If the first upload fails with
+`invalid-publisher`, compare owner, repository, workflow file and environment
+on both sides.
 
 Artifacts are checked for secrets and runtime files (tokens, sockets, caches,
 `.env`, demo outputs) by `tests/unit/test_distribution.py`.

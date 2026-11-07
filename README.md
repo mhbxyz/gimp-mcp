@@ -6,7 +6,7 @@ that serves a private local socket.
 
 > Version 0.1.0 — Linux, GIMP 3.2+. 52 MCP tools: inspection, previews, files, layers, geometry,
 > selections and masks, painting, filters, editable text, undo groups and checkpoints, and allowlisted
-> access to ~420 GIMP procedures ([coverage](docs/coverage.md)). MIT licensed.
+> access to ~420 GIMP procedures ([coverage](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/coverage.md)). MIT licensed.
 
 ## Quick start
 
@@ -34,11 +34,11 @@ uv run demo/thumbnail.py --socket PATH   # or drive your running GIMP
 Builds a 1280×720 thumbnail (blurred backdrop with editable corrections,
 masked photo, banner, editable title edited afterwards), saves the XCF,
 reopens it, exports PNG and JPEG and writes `demo/out/report.md` with every MCP
-call and verification. Walk-through: [docs/guide-thumbnail.md](docs/guide-thumbnail.md).
+call and verification. Walk-through: [docs/guide-thumbnail.md](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/guide-thumbnail.md).
 
 ## Documentation
 
-- [Installation](docs/install.md) · [troubleshooting](docs/troubleshooting.md) · [compatibility](docs/compatibility.md) · [releasing](docs/releasing.md) · [changelog](CHANGELOG.md)
-- [Tool reference and error codes](docs/tools.md) · [coverage matrix](docs/coverage.md)
-- [Architecture](docs/architecture.md) · [bridge protocol](docs/bridge-protocol.md) · [security](docs/security.md)
-- [Testing](docs/testing.md) · [GIMP behaviour notes](docs/gimp-notes.md) · [decisions](docs/adr/)
+- [Installation](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/install.md) · [troubleshooting](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/troubleshooting.md) · [compatibility](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/compatibility.md) · [releasing](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/releasing.md) · [changelog](https://github.com/mhbxyz/gimp-mcp/blob/main/CHANGELOG.md)
+- [Tool reference and error codes](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/tools.md) · [coverage matrix](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/coverage.md)
+- [Architecture](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/architecture.md) · [bridge protocol](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/bridge-protocol.md) · [security](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/security.md)
+- [Testing](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/testing.md) · [GIMP behaviour notes](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/gimp-notes.md) · [decisions](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/adr/)

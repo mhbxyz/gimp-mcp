@@ -14,6 +14,12 @@ what is covered by the compatibility promise.
   socket, permissions, GIMP running without the bridge, several instances) and
   prints a fix for each; `--json` output and documented exit codes;
   `docs/troubleshooting.md` is generated from its checks (#39).
+- Release workflow publishes the same artifacts to TestPyPI, then to PyPI,
+  with trusted publishing (no stored token) and maintainer approval, and
+  verifies each index serves exactly the built files and that the installed
+  package (pip and uvx) drives a real GIMP (#36).
+- The package page on PyPI has absolute links, Python version classifiers and
+  project URLs (#36).
 - The plug-in reports its version; the server refuses an incompatible plug-in
   with `PLUGIN_VERSION_MISMATCH` and warns on a different patch version.
   `gimp_status` and `gimp-mcp doctor` show both versions (#35).
