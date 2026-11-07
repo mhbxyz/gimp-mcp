@@ -1,0 +1,50 @@
+name: Distributions
+
+# Installs the package in a clean container of every supported distribution
+# (ci/distros/distros.json, base images pinned by digest) and runs a smoke test
+# with the distribution's own GIMP: on releases, weekly, and when the matrix changes.
+on:
+  push:
+    tags: ["v*"]
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+  pull_request:
+    paths: ["ci/distros/**", "ci/run-distro.sh", ".github/workflows/distros.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    runs-on: ubuntu-24.04
+    outputs:
+      ids: ${{ steps.ids.outputs.ids }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: ids
+        run: |
+          echo "ids=$(python3 -c "import json; print(json.dumps([d['id'] for d in json.load(open('ci/distros/distros.json'))['distributions'] if d['status'] == 'supported']))")" >> "$GITHUB_OUTPUT"
+
+  smoke:
+    name: ${{ matrix.distro }}
+    needs: matrix
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: ${{ fromJSON(needs.matrix.outputs.ids) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Build the wheel that gets installed
+        run: uv build --quiet --wheel --out-dir dist-distro
+      - name: Install it in ${{ matrix.distro }} and drive the distribution's GIMP
+        run: ci/run-distro.sh "${{ matrix.distro }}" dist-distro/*.whl
+      - name: Keep the report (distribution, GIMP version, doctor output on failure)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: distro-${{ matrix.distro }}
+          path: ci-artifacts/
+          if-no-files-found: ignore

@@ -202,7 +202,14 @@ class HeadlessGimp:
         try:  # plug-in processes share the group; make sure none survive
             os.killpg(process.pid, signal.SIGKILL)
         except (ProcessLookupError, PermissionError):
-            pass
+            return
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:  # SIGKILL is asynchronous: wait for the group to be gone
+            try:
+                os.killpg(process.pid, 0)
+            except (ProcessLookupError, PermissionError):
+                return
+            time.sleep(0.05)
 
     def restart(self) -> None:
         """Quit GIMP and start a new GIMP process on the same socket and profile."""
