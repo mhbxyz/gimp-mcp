@@ -146,6 +146,39 @@ Closes the image; refused with `UNSAVED_CHANGES` when it is dirty unless
 In a GUI session, images shown in windows the bridge did not open must be
 closed in GIMP (`IMAGE_IN_USE`).
 
+## Layers and groups
+
+Common rules:
+
+* Targets are explicit ids; `parent` is a **group id of the same image** or
+  `null` for the top level (`WRONG_KIND` when it is not a group,
+  `IMAGE_MISMATCH` when it belongs to another image).
+* `position` is the index within the parent, **0 = top-most** (in front);
+  values beyond the number of siblings are refused (`INVALID_ARGUMENT`).
+* Units: pixels in image coordinates; `x`/`y` are the offset of the layer's
+  top-left corner (may be negative or beyond the canvas). Opacity 0–100.
+* `mode` is a GIMP layer-mode nick (`normal`, `multiply`, `screen`,
+  `overlay`, `soft-light`, `hard-light`, `addition`, `subtract`,
+  `difference`, `darken-only`, `lighten-only`, `hue`, `saturation`, `color`,
+  `dodge`, `burn`, `pass-through` for groups…); unknown names are refused with
+  `details.allowed`.
+* GIMP keeps layer names unique in an image: the effective name is returned.
+* Blending is computed by GIMP in **linear light** (50% blue multiplied over
+  white is sRGB 188,188,255).
+* Each tool call is **one undo step** in GIMP's history and marks the image
+  dirty. All return the resulting layer node (same shape as in
+  `gimp_inspect_image`).
+
+| Tool | Effect | Destructive |
+|---|---|---|
+| `gimp_create_layer(image, name, parent?, position=0, width?, height?, x=0, y=0, fill="transparent", opacity=100, mode="normal", visible=true)` | New RGBA (or gray+alpha) layer, default size = image size | no |
+| `gimp_create_group(image, name, parent?, position=0)` | Empty group | no |
+| `gimp_import_layer(image, path, name?, parent?, position=0, x=0, y=0)` | Loads a file as **one** layer (multi-layer files are flattened); name defaults to the file name | no |
+| `gimp_duplicate_layer(item, parent?, position?)` | Copies a layer or a whole group (masks, children). Default: just above the original, same parent; giving `position` without `parent` targets the top level | no |
+| `gimp_set_layer_properties(item, name?, visible?, opacity?, mode?)` | Changes only the given properties (`LOCKED` if visibility is locked) | no |
+| `gimp_move_layer(item, parent, position)` | Moves in the layer stack / into another group; never into itself or a descendant | no |
+| `gimp_delete_layer(item)` | Removes the layer or the group **with its children**; their ids become invalid | **yes** |
+
 ## Error codes
 
 | Code | Meaning |
@@ -169,4 +202,6 @@ closed in GIMP (`IMAGE_IN_USE`).
 | `UNSUPPORTED_FORMAT` | Extension or file content not supported by this operation. |
 | `UNSAVED_CHANGES` | Closing a dirty image without `discard_changes`. |
 | `IMAGE_IN_USE` | Image shown in a GIMP window the bridge did not create. |
+| `IMAGE_MISMATCH` | Objects from different images combined in one operation. |
+| `LOCKED` | The targeted property or content is locked in GIMP. |
 | `GIMP_ERROR` | Unexpected failure inside GIMP; for a mutation the outcome is `unknown`. |
