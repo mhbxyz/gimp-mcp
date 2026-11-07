@@ -1,6 +1,6 @@
 [project]
 name = "gimp-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "A reliable Model Context Protocol server for inspecting and editing GIMP 3 projects."
 readme = "README.md"
 license = "MIT"
