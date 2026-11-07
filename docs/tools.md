@@ -202,6 +202,23 @@ Locks are set with `gimp_set_layer_properties(lock_content, lock_position,
 lock_visibility, lock_alpha)`. All layer tools return the updated layer node
 (new offsets and size); image tools return `width`, `height`, `dirty`.
 
+## Discovery
+
+Read-only introspection of the installation; **nothing is executed** and a
+listed procedure is not necessarily exposed as a tool (see
+[coverage.md](coverage.md)).
+
+* `gimp_search_procedures(query="", limit=50)` → `procedures[]` (`name`,
+  `description`) and `total`.
+* `gimp_describe_procedure(name)` → `type` (`internal`, `plugin`,
+  `persistent`, `temporary`), documentation, menu, `arguments[]` and
+  `return_values[]` (`name`, GType `type`, `description`, `default`,
+  `minimum`, `maximum`, `choices`). `NOT_FOUND` for unknown names.
+
+The full inventory is written by `gimp-mcp inventory --output FILE` (needs a
+running GIMP with the plug-in). Procedures whose metadata cannot be read are
+listed with an `error` field instead of failing the inventory.
+
 ## Error codes
 
 | Code | Meaning |
