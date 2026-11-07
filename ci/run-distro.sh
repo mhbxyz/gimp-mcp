@@ -15,7 +15,7 @@ if [ -z "$wheel" ]; then
 fi
 chmod -R a+rX "$(dirname "$wheel")" ci/distros  # the container user may have another uid
 mkdir -p ci-artifacts && chmod 777 ci-artifacts
-docker run --rm -v "$PWD/$(dirname "$wheel")":/dist:ro -v "$PWD/ci/distros":/smoke:ro -v "$PWD/ci-artifacts":/artifacts "$tag" sh -euc '
+docker run --rm --init -v "$PWD/$(dirname "$wheel")":/dist:ro -v "$PWD/ci/distros":/smoke:ro -v "$PWD/ci-artifacts":/artifacts "$tag" sh -euc '
   uv venv -q --python 3.12 /tmp/venv
   uv pip install -q --python /tmp/venv/bin/python /dist/*.whl
   /tmp/venv/bin/python /smoke/smoke.py | tee "/artifacts/distro-'"$id"'.json"
