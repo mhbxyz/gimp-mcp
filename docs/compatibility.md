@@ -39,9 +39,22 @@ minor versions may break compatibility; every change is listed in
 * **Public API**: MCP tool names, input schemas, output schemas and error
   `code`s, the CLI commands and their options.
 * **Internal**: the bridge protocol (versioned: `protocol: 1`) and the Python
-  modules. The plug-in and the server must come from the **same gimp-mcp
-  version**: after upgrading, run `gimp-mcp install-plugin` again and restart
-  GIMP.
+  modules.
+
+### Plug-in / server versions
+
+The version is defined once, in `pyproject.toml`; the package, `gimp-mcp
+--version`, the built artifacts and the installed plug-in (a `VERSION` file
+written by `gimp-mcp install-plugin`) all derive from it. The plug-in reports
+its version in the bridge handshake and the server applies this rule:
+
+| Plug-in vs server | Verdict | Effect |
+|---|---|---|
+| identical | match | — |
+| same MAJOR.MINOR, different PATCH | compatible | works; a warning is logged |
+| different MAJOR or MINOR, or unknown | incompatible | every tool fails with `PLUGIN_VERSION_MISMATCH` (hint: `gimp-mcp install-plugin`, then restart GIMP) |
+
+`gimp_status` and `gimp-mcp doctor` show both versions and the verdict.
 * **GIMP-dependent**: procedure availability and names (`gimp_call_procedure`,
   `gimp_search_procedures`), fonts and rendering details. The coverage matrix
   (`docs/coverage.md`) is regenerated for each supported GIMP version.

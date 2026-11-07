@@ -71,11 +71,12 @@ def test_metadata_declares_version_license_and_python(artifacts):
     assert license_files and b"MIT License" in contents[license_files[0]]
 
 
-def test_plugin_and_package_versions_match():
-    source = (ROOT / "src/gimp_mcp/plugin/gimp-mcp-bridge/gimp-mcp-bridge.py").read_text()
-    assert f'BRIDGE_VERSION = "{gimp_mcp.__version__}"' in source
+def test_artifacts_derive_their_version_from_pyproject(artifacts):
     pyproject = (ROOT / "pyproject.toml").read_text()
     assert f'version = "{gimp_mcp.__version__}"' in pyproject
+    assert f"gimp_mcp-{gimp_mcp.__version__}-" in artifacts["wheel"].name
+    plugin = wheel_files(artifacts["wheel"])["gimp_mcp/plugin/gimp-mcp-bridge/gimp-mcp-bridge.py"]
+    assert b"BRIDGE_VERSION = _installed_version()" in plugin  # read from VERSION at install time
 
 
 def test_changelog_has_an_entry_for_this_version():

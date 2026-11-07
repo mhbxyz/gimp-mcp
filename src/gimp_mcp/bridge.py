@@ -22,7 +22,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from . import __version__
 from .errors import INSTALL_HINT, GimpMcpError
+from .versions import Compatibility, check_plugin_version
 
 log = logging.getLogger(__name__)
 
@@ -216,6 +218,22 @@ class BridgeClient:
                 f"GIMP {session.gimp_version} is not supported (minimum {minimum})",
                 hint=f"Install GIMP {minimum} or newer.",
                 details={"gimp_version": session.gimp_version, "minimum": minimum},
+            )
+        verdict = check_plugin_version(__version__, session.bridge_version)
+        if verdict is Compatibility.INCOMPATIBLE:
+            await self.close()
+            raise GimpMcpError(
+                "PLUGIN_VERSION_MISMATCH",
+                f"the GIMP plug-in is version {session.bridge_version or 'unknown'} but this server is {__version__}",
+                hint="Run `gimp-mcp install-plugin`, then restart GIMP.",
+                details={"plugin_version": session.bridge_version or "unknown", "server_version": __version__},
+            )
+        if verdict is Compatibility.COMPATIBLE:
+            log.warning(
+                "GIMP plug-in %s differs from server %s (compatible patch versions); "
+                "run `gimp-mcp install-plugin` to align them",
+                session.bridge_version,
+                __version__,
             )
         if self.session is not None and self.session.session_id != session.session_id:
             log.info("GIMP session changed: %s -> %s", self.session.session_id, session.session_id)

@@ -20,6 +20,8 @@ from typing import Any
 
 import gmb_server  # type: ignore[import-not-found]
 
+import gimp_mcp
+
 Op = Callable[[dict[str, Any]], Any]
 
 
@@ -45,6 +47,7 @@ DEFAULT_SESSION = {
     "gimp_version": "3.2.6",
     "session_id": "a1b2c3d4",
     "pid": 4242,
+    "bridge_version": gimp_mcp.__version__,
 }
 
 

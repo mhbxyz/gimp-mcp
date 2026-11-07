@@ -4,6 +4,19 @@ All notable changes are documented here. The project follows
 [Semantic Versioning](https://semver.org/); see `docs/compatibility.md` for
 what is covered by the compatibility promise.
 
+## [Unreleased]
+
+### Added
+
+- The plug-in reports its version; the server refuses an incompatible plug-in
+  with `PLUGIN_VERSION_MISMATCH` and warns on a different patch version.
+  `gimp_status` and `gimp-mcp doctor` show both versions (#35).
+
+### Changed
+
+- The version is defined only in `pyproject.toml`; the installed plug-in gets
+  it from a `VERSION` file written by `gimp-mcp install-plugin` (#35).
+
 ## [0.1.0] - 2026-11-07
 
 First usable release. Linux only, GIMP 3.2+.
