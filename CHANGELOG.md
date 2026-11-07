@@ -23,6 +23,10 @@ what is covered by the compatibility promise.
   with trusted publishing (no stored token) and maintainer approval, and
   verifies each index serves exactly the built files and that the installed
   package (pip and uvx) drives a real GIMP (#36).
+- GIMP installed from Flathub (`org.gimp.GIMP`) is supported: the bridge
+  serves its socket in the app runtime directory shared with the host, the
+  server finds it, `setup` and `doctor` detect Flatpak GIMP; tested in CI with
+  a pinned Flathub build (#41).
 - `gimp-mcp uninstall` removes the plug-in from every profile and the client
   entries gimp-mcp created (consent, backups, foreign entries kept) and says how
   to remove the package; `setup` updates the plug-in in every profile where it

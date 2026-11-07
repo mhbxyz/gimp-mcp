@@ -32,6 +32,7 @@ PROTOCOL_VERSION = 1
 MIN_GIMP_VERSION = (3, 2)
 MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 SOCKET_ENV = "GIMP_MCP_SOCKET"
+FLATPAK_APP = "org.gimp.GIMP"
 _POLLRDHUP = getattr(select, "POLLRDHUP", 0)
 
 
@@ -57,7 +58,12 @@ def default_socket_path(environ: dict[str, str] | None = None) -> Path:
         return Path(explicit)
     runtime = env.get("XDG_RUNTIME_DIR")
     if runtime and os.path.isdir(runtime):
-        return Path(runtime) / "gimp-mcp" / "bridge.sock"
+        native = Path(runtime) / "gimp-mcp" / "bridge.sock"
+        # A Flatpak GIMP (org.gimp.GIMP) serves under the app directory shared with the host.
+        flatpak = Path(runtime) / "app" / FLATPAK_APP / "gimp-mcp" / "bridge.sock"
+        if not native.exists() and flatpak.exists():
+            return flatpak
+        return native
     return Path("/tmp") / f"gimp-mcp-{os.getuid()}" / "bridge.sock"
 
 

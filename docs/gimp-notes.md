@@ -97,5 +97,13 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   selection; the copy is dirty, has no file. `image.set_file(gfile)` sets the
   XCF file. `Gimp.displays_reconnect(old, new)` moves GUI windows to another
   image (returns `False` when there is no display, e.g. in `gimp-console`).
+* **Flatpak GIMP** (Flathub `org.gimp.GIMP` 3.2.8, runtime GNOME 51, checked
+  2026-11-08): reads the host `~/.config/GIMP/3.2` (permission
+  `xdg-config/GIMP:create`), also sees `/tmp` and the host filesystem; ships
+  `gimp-console-3.2`, Python 3.14 and PyGObject; inside the sandbox
+  `XDG_RUNTIME_DIR=/run/user/<uid>` is private except `app/org.gimp.GIMP`,
+  shared with the host's `$XDG_RUNTIME_DIR/app/org.gimp.GIMP`. `FLATPAK_ID` and
+  `/.flatpak-info` exist. Installing the app needs no privilege, running it in
+  Docker needs `--privileged` (bubblewrap).
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.
