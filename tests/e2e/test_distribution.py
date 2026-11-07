@@ -38,6 +38,10 @@ async def test_installed_wheel_installs_the_plugin_and_serves_mcp(tmp_path: Path
     exe = venv / "bin" / "gimp-mcp"
     env = {k: v for k, v in os.environ.items() if k not in ("VIRTUAL_ENV", "PYTHONPATH")}
     env["PATH"] = system_path(env.get("PATH", ""))
+    home = tmp_path / "home"  # never read the real user's profiles
+    home.mkdir()
+    env["HOME"] = str(home)
+    env.pop("XDG_CONFIG_HOME", None)
 
     version = run(str(exe), "--version", cwd=work, env=env)
     assert version.stdout.strip() == f"gimp-mcp {gimp_mcp.__version__}"
@@ -55,7 +59,7 @@ async def test_installed_wheel_installs_the_plugin_and_serves_mcp(tmp_path: Path
             str(exe), "doctor", "--socket", str(gimp.socket_path), "--gimp-dir", str(gimp.config_dir), cwd=work, env=env
         )
         assert doctor.returncode == 0, doctor.stderr
-        assert "connected to GIMP" in doctor.stderr
+        assert "0 failure(s)" in doctor.stderr and "answers" in doctor.stderr
 
         out = work / "smoke.png"
         params = StdioServerParameters(

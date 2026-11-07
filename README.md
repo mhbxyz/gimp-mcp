@@ -38,7 +38,7 @@ call and verification. Walk-through: [docs/guide-thumbnail.md](docs/guide-thumbn
 
 ## Documentation
 
-- [Installation and troubleshooting](docs/install.md) · [compatibility](docs/compatibility.md) · [releasing](docs/releasing.md) · [changelog](CHANGELOG.md)
+- [Installation](docs/install.md) · [troubleshooting](docs/troubleshooting.md) · [compatibility](docs/compatibility.md) · [releasing](docs/releasing.md) · [changelog](CHANGELOG.md)
 - [Tool reference and error codes](docs/tools.md) · [coverage matrix](docs/coverage.md)
 - [Architecture](docs/architecture.md) · [bridge protocol](docs/bridge-protocol.md) · [security](docs/security.md)
 - [Testing](docs/testing.md) · [GIMP behaviour notes](docs/gimp-notes.md) · [decisions](docs/adr/)

@@ -8,6 +8,12 @@ what is covered by the compatibility promise.
 
 ### Added
 
+- `gimp-mcp doctor` detects the known installation problems (GIMP missing or
+  too old, GIMP's Python without PyGObject, virtualenv first on PATH, plug-in
+  missing/not executable/other version/not registered, wrong profile, stale
+  socket, permissions, GIMP running without the bridge, several instances) and
+  prints a fix for each; `--json` output and documented exit codes;
+  `docs/troubleshooting.md` is generated from its checks (#39).
 - The plug-in reports its version; the server refuses an incompatible plug-in
   with `PLUGIN_VERSION_MISMATCH` and warns on a different patch version.
   `gimp_status` and `gimp-mcp doctor` show both versions (#35).
