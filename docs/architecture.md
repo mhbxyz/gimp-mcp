@@ -32,7 +32,7 @@ Why this shape: see [ADR 0001](adr/0001-bridge-persistent-plugin-unix-socket.md)
 
 * **No network exposure**: Unix socket only, `0600`, in a `0700` directory,
   peer-uid check, token handshake. See [security.md](security.md).
-* **Bounded waits**: connect 3 s, handshake 3 s, requests 60 s by default
+* **Bounded waits** (details and tests in [security.md](security.md#reliability-guarantees)): connect 3 s, handshake 3 s, requests 60 s by default
   (`gimp-mcp serve --timeout`). A timed-out or interrupted mutation is reported
   with `outcome: "unknown"`; the server never claims it was cancelled.
 * **Ordering**: one request in flight per server, and GIMP executes requests

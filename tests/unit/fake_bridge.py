@@ -56,9 +56,27 @@ def running_fake_bridge(
     allowed_uid: int | None = None,
 ) -> Iterator[FakeBridge]:
     directory = short_tmpdir()
-    socket_path = directory / "bridge.sock"
+    try:
+        with running_fake_bridge_at(
+            directory / "bridge.sock", ops, session=session, allowed_uid=allowed_uid
+        ) as bridge:
+            yield bridge
+    finally:
+        for p in directory.iterdir():
+            p.unlink()
+        directory.rmdir()
+
+
+@contextmanager
+def running_fake_bridge_at(
+    socket_path: Path,
+    ops: dict[str, Op] | None = None,
+    *,
+    session: dict[str, Any] | None = None,
+    session_id: str | None = None,
+    allowed_uid: int | None = None,
+) -> Iterator[FakeBridge]:
     token = secrets.token_hex(16)
-    ops = dict(ops or {})
     calls: list[tuple[str, dict[str, Any]]] = []
 
     def recording(name: str, fn: Op) -> Op:
@@ -68,20 +86,22 @@ def running_fake_bridge(
 
         return wrapper
 
-    dispatch = {name: recording(name, fn) for name, fn in ops.items()}
+    dispatch = {name: recording(name, fn) for name, fn in (ops or {}).items()}
+    info = dict(session or DEFAULT_SESSION)
+    if session_id is not None:
+        info["session_id"] = session_id
     server = gmb_server.BridgeServer(
         socket_path,
         token=token,
         operations=dispatch,
-        session_info=dict(session or DEFAULT_SESSION),
+        session_info=info,
         allowed_uid=os.getuid() if allowed_uid is None else allowed_uid,
     )
     server.start()
     stop = threading.Event()
 
     def loop() -> None:
-        sel = selectors.DefaultSelector()
-        gmb_server.run_with_selector(server, sel, stop)
+        gmb_server.run_with_selector(server, selectors.DefaultSelector(), stop)
 
     thread = threading.Thread(target=loop, daemon=True)
     thread.start()
@@ -91,6 +111,3 @@ def running_fake_bridge(
         stop.set()
         thread.join(timeout=5)
         server.close()
-        for p in directory.iterdir():
-            p.unlink()
-        directory.rmdir()
