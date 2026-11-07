@@ -151,6 +151,33 @@ def cmd_setup(args: argparse.Namespace) -> int:
     return asyncio.run(run_setup(options))
 
 
+def cmd_uninstall_all(args: argparse.Namespace) -> int:
+    import os
+
+    from .setup import SetupOptions, run_uninstall
+
+    def ask(question: str) -> bool:
+        try:
+            return input(question).strip().lower().startswith("y")
+        except EOFError:
+            return False
+
+    def say(text: str) -> None:
+        print(text, file=sys.stderr)
+
+    options = SetupOptions(
+        env=dict(os.environ),
+        endpoint=BridgeEndpoint.default(),
+        ask=ask,
+        say=say,
+        assume_yes=args.yes,
+        interactive=sys.stdin.isatty() and not args.yes,
+        run_doctor=False,
+        gimp_dir=Path(args.gimp_dir) if args.gimp_dir else None,
+    )
+    return asyncio.run(run_uninstall(options))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="gimp-mcp", description="MCP server for GIMP 3")
     parser.add_argument("--version", action="version", version=f"gimp-mcp {__version__}")
@@ -199,6 +226,19 @@ def build_parser() -> argparse.ArgumentParser:
     setup.add_argument("--socket", help="bridge socket path (default: $GIMP_MCP_SOCKET or runtime dir)")
     setup.add_argument("--no-doctor", action="store_true", help="skip the final doctor checks")
     setup.set_defaults(func=cmd_setup)
+
+    uninstall = sub.add_parser(
+        "uninstall",
+        help="remove the plug-in from every GIMP profile and the MCP client entries gimp-mcp created",
+        description=(
+            "Remove what gimp-mcp added: the plug-in in every GIMP profile where it is installed and the 'gimp' "
+            "entries it created in MCP clients (entries pointing elsewhere are left). Each removal is shown and "
+            "needs your consent (or --yes). The package itself is removed with your installer (printed at the end)."
+        ),
+    )
+    uninstall.add_argument("--yes", action="store_true", help="remove without asking")
+    uninstall.add_argument("--gimp-dir", help="also consider this GIMP profile")
+    uninstall.set_defaults(func=cmd_uninstall_all)
 
     inventory = sub.add_parser("inventory", help="dump the procedure database of the running GIMP as JSON")
     inventory.add_argument("--socket")
