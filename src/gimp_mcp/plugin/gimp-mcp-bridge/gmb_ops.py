@@ -11,8 +11,12 @@ import os
 import gi
 
 gi.require_version("Babl", "0.1")
+import gmb_policy  # noqa: E402
 from gi.repository import Babl, Gegl, Gimp, Gio  # noqa: E402
 from gmb_server import BridgeError  # noqa: E402
+
+# Session id of this GIMP process (set by the plug-in entry point).
+SESSION = {"id": ""}
 
 # Displays created by the bridge, per image id (GUI sessions only).
 _DISPLAYS = {}
@@ -1405,8 +1409,147 @@ def fonts_list(params):
     return {"fonts": fonts[: int(params.get("limit", 100))], "total": len(fonts)}
 
 
+# -- generic PDB access ------------------------------------------------------------------
+
+
+def _lookup(name):
+    pdb = Gimp.get_pdb()
+    if not isinstance(name, str) or not pdb.procedure_exists(name):
+        raise BridgeError("NOT_FOUND", "no procedure named %r" % name, {"name": name})
+    return pdb.lookup_procedure(name)
+
+
+def pdb_callable(params):
+    query = params.get("query") or ""
+    limit = int(params.get("limit", 50))
+    pdb = Gimp.get_pdb()
+    found = []
+    for name in _all_names():
+        if query and query not in name:
+            continue
+        meta = describe_procedure(pdb.lookup_procedure(name))
+        if gmb_policy.evaluate(meta)[0]:
+            found.append(meta)
+    return {
+        "procedures": [
+            {
+                "name": m["name"],
+                "description": m["description"],
+                "arguments": m["arguments"],
+                "return_values": m["return_values"],
+            }
+            for m in found[:limit]
+        ],
+        "total": len(found),
+    }
+
+
+def _enum_value(pspec, nick):
+    for value in pspec.enum_class.__enum_values__.values():
+        if value.value_nick == nick:
+            return value
+    raise BridgeError("INVALID_ARGUMENT", "argument %r: unknown value %r" % (pspec.name, nick))
+
+
+def _resolve_object(kind, number, name):
+    if kind == "image":
+        if not Gimp.Image.id_is_valid(number):
+            raise BridgeError("NOT_FOUND", "argument %r: image %d does not exist" % (name, number), {"argument": name})
+        return Gimp.Image.get_by_id(number)
+    if not Gimp.Item.id_is_valid(number):
+        raise BridgeError("NOT_FOUND", "argument %r: item %d does not exist" % (name, number), {"argument": name})
+    return Gimp.Item.get_by_id(number)
+
+
+def _serialize(value):
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    if isinstance(value, Gimp.Image):
+        return "image:%d@%s" % (value.get_id(), SESSION["id"])
+    if isinstance(value, Gimp.Item):
+        return "item:%d@%s" % (value.get_id(), SESSION["id"])
+    if isinstance(value, Gegl.Color):
+        r, g, b, a = value.get_rgba_with_space(Babl.space("sRGB"))
+        return "#%02x%02x%02x%02x" % tuple(max(0, min(255, round(v * 255))) for v in (r, g, b, a))
+    nick = getattr(value, "value_nick", None)
+    if nick is not None:
+        return nick
+    if isinstance(value, (list, tuple)):
+        return [_serialize(v) for v in value]
+    return repr(value)
+
+
+@mutation
+def pdb_call(params):
+    procedure = _lookup(params.get("name"))
+    meta = describe_procedure(procedure)
+    try:
+        plan = gmb_policy.plan_call(meta, params.get("arguments") or {}, SESSION["id"])
+    except gmb_policy.PolicyError as exc:
+        raise BridgeError(exc.code, exc.message, exc.details) from exc
+    pspecs = {p.name: p for p in procedure.get_arguments()}
+    config = procedure.create_config()
+    image = None
+    for name, kind, value in plan:
+        pspec = pspecs[name]
+        if kind == "run-mode":
+            converted = Gimp.RunMode.NONINTERACTIVE
+        elif kind in ("image", "item"):
+            converted = _resolve_object(kind, value, name)
+            owner = converted if kind == "image" else converted.get_image()
+            image = image or owner
+        elif kind == "items":
+            converted = [_resolve_object("item", number, name) for number in value]
+            if converted:
+                image = image or converted[0].get_image()
+        elif kind == "color":
+            converted = Gegl.Color.new(value)
+        elif kind == "enum":
+            converted = _enum_value(pspec, value)
+        else:
+            converted = value
+        try:
+            if kind == "items":
+                config.set_core_object_array(name, converted)
+            else:
+                config.set_property(name, converted)
+        except (TypeError, ValueError) as exc:
+            raise BridgeError(
+                "INVALID_ARGUMENT", "argument %r: %s" % (name, exc), {"argument": name, "expected": meta_type(pspec)}
+            ) from exc
+    if image is not None:
+        image.undo_group_start()
+    try:
+        result = procedure.run(config)
+    finally:
+        if image is not None:
+            image.undo_group_end()
+    status = result.index(0)
+    if status != Gimp.PDBStatusType.SUCCESS:
+        message = ""
+        try:
+            message = str(result.index(1) or "")
+        except Exception:
+            pass
+        raise BridgeError(
+            "GIMP_ERROR",
+            "%s failed (%s) %s" % (meta["name"], getattr(status, "value_nick", status), message),
+            {"status": getattr(status, "value_nick", str(status))},
+        )
+    results = {}
+    for index, ret in enumerate(procedure.get_return_values()):
+        results[ret.name] = _serialize(result.index(index + 1))
+    return {"results": results}
+
+
+def meta_type(pspec):
+    return pspec.value_type.name
+
+
 def build_operations():
     return {
+        "pdb.callable": pdb_callable,
+        "pdb.call": pdb_call,
         "text.create": text_create,
         "text.set": text_set,
         "text.get": text_get,
