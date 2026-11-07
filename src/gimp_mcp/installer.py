@@ -8,6 +8,8 @@ import stat
 from importlib import resources
 from pathlib import Path
 
+from . import __version__
+
 PLUGIN_NAME = "gimp-mcp-bridge"
 DEFAULT_GIMP_SERIES = "3.2"
 
@@ -35,6 +37,8 @@ def install_plugin(gimp_config_dir: Path) -> Path:
         shutil.rmtree(target)
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(plugin_source_dir(), target, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    # The plug-in reports this version in its handshake (single source: pyproject.toml).
+    (target / "VERSION").write_text(__version__ + "\n", encoding="utf-8")
     entry = target / f"{PLUGIN_NAME}.py"
     entry.chmod(entry.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
     return target

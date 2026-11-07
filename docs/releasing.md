@@ -3,9 +3,9 @@
 Releases are reproducible: the same commit always gives byte-identical
 artifacts (`tests/unit/test_distribution.py::test_builds_are_reproducible`).
 
-1. Update the version in `pyproject.toml`, `src/gimp_mcp/__init__.py` and
-   `BRIDGE_VERSION` in `src/gimp_mcp/plugin/gimp-mcp-bridge/gimp-mcp-bridge.py`
-   (a unit test checks they match), and add a `## [X.Y.Z] - date` section to
+1. Update the version in `pyproject.toml` — the only place it is written
+   (`tests/unit/test_versions.py` fails if a version string appears elsewhere) —
+   and turn `## [Unreleased]` into a `## [X.Y.Z] - date` section of
    `CHANGELOG.md`.
 2. Run the whole suite against the pinned GIMP: `ci/run-e2e.sh` (it includes
    `tests/e2e/test_distribution.py`, which installs the built wheel in a fresh
