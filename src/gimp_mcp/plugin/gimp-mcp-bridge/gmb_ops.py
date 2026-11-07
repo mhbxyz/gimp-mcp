@@ -1167,8 +1167,129 @@ def paint_shape(params):
     return {"changed": True, "affected": affected}
 
 
+# -- filters -----------------------------------------------------------------------------
+
+HUE_RANGES = {
+    "all": "ALL",
+    "red": "RED",
+    "yellow": "YELLOW",
+    "green": "GREEN",
+    "cyan": "CYAN",
+    "blue": "BLUE",
+    "magenta": "MAGENTA",
+}
+
+NDE_OPERATIONS = {
+    "brightness-contrast": "gimp:brightness-contrast",
+    "hue-saturation": "gimp:hue-saturation",
+    "gaussian-blur": "gegl:gaussian-blur",
+}
+
+
+def _nde_settings(operation, settings):
+    if operation == "brightness-contrast":
+        return {"brightness": settings["brightness"], "contrast": settings["contrast"]}
+    if operation == "hue-saturation":
+        return {
+            "range": getattr(Gimp.HueRange, HUE_RANGES[settings["range"]]),
+            "hue": settings["hue"] / 180.0,
+            "saturation": settings["saturation"] / 100.0,
+            "lightness": settings["lightness"] / 100.0,
+            "overlap": settings["overlap"] / 100.0,
+        }
+    return {"std-dev-x": settings["std_dev_x"], "std-dev-y": settings["std_dev_y"]}
+
+
+def _new_filter(drawable, operation, settings):
+    gegl_name = NDE_OPERATIONS[operation]
+    drawable_filter = Gimp.DrawableFilter.new(drawable, gegl_name, operation)
+    config = drawable_filter.get_config()
+    for key, value in _nde_settings(operation, settings).items():
+        config.set_property(key, value)
+    drawable_filter.update()
+    return drawable_filter
+
+
+def filter_info(drawable_filter):
+    return {
+        "id": drawable_filter.get_id(),
+        "name": drawable_filter.get_name(),
+        "operation": drawable_filter.get_operation_name(),
+        "visible": bool(drawable_filter.get_visible()),
+        "opacity": float(drawable_filter.get_opacity()) * 100.0,
+    }
+
+
+@mutation
+def filter_apply(params):
+    drawable = get_layer(params)
+    image = drawable.get_image()
+    operation = params["operation"]
+    if operation not in NDE_OPERATIONS:
+        raise BridgeError("INVALID_ARGUMENT", "unknown filter %r" % operation)
+    settings = params["settings"]
+    destructive = bool(params["destructive"])
+    kind = item_kind(drawable)
+    if destructive and kind != "layer":
+        raise BridgeError(
+            "WRONG_KIND",
+            "a destructive filter needs a plain layer (%s given): use destructive=false on groups and text" % kind,
+            {"item": drawable.get_id(), "kind": kind},
+        )
+    if destructive and drawable.get_lock_content():
+        raise BridgeError("LOCKED", "the pixels of %r are locked" % drawable.get_name(), {"item": drawable.get_id()})
+    restricted = not Gimp.Selection.is_empty(image)
+    with undo_step(image):
+        if destructive:
+            if operation == "brightness-contrast":
+                drawable.brightness_contrast(settings["brightness"], settings["contrast"])
+            elif operation == "hue-saturation":
+                drawable.hue_saturation(
+                    getattr(Gimp.HueRange, HUE_RANGES[settings["range"]]),
+                    settings["hue"],
+                    settings["lightness"],
+                    settings["saturation"],
+                    settings["overlap"],
+                )
+            else:
+                drawable.merge_filter(_new_filter(drawable, operation, settings))
+            filter_id = None
+        else:
+            drawable_filter = _new_filter(drawable, operation, settings)
+            drawable.append_filter(drawable_filter)
+            filter_id = drawable_filter.get_id()
+            if filter_id not in [f.get_id() for f in drawable.get_filters()]:
+                raise BridgeError("GIMP_ERROR", "GIMP did not keep the editable filter on %r" % drawable.get_name())
+    return {
+        "operation": NDE_OPERATIONS[operation],
+        "destructive": destructive,
+        "filter": filter_id,
+        "restricted_to_selection": restricted,
+    }
+
+
+def filter_list(params):
+    drawable = get_layer(params)
+    return {"filters": [filter_info(f) for f in drawable.get_filters()]}
+
+
+@mutation
+def filter_remove(params):
+    drawable = get_layer(params)
+    wanted = params["filter"]
+    for drawable_filter in drawable.get_filters():
+        if drawable_filter.get_id() == wanted:
+            with undo_step(drawable.get_image()):
+                drawable_filter.delete()
+            return {"filters": [filter_info(f) for f in drawable.get_filters()]}
+    raise BridgeError("NOT_FOUND", "filter %d is not on item %d" % (wanted, drawable.get_id()), {"filter": wanted})
+
+
 def build_operations():
     return {
+        "filter.apply": filter_apply,
+        "filter.list": filter_list,
+        "filter.remove": filter_remove,
         "paint.fill": paint_fill,
         "paint.path": paint_path,
         "paint.shape": paint_shape,

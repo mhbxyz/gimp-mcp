@@ -84,5 +84,14 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
 * Masks: `layer.create_mask(Gimp.AddMaskType.X)` + `layer.add_mask(mask)`;
   `remove_mask(Gimp.MaskApplyMode.APPLY|DISCARD)`; masks survive an XCF round
   trip.
+* Filters in 3.2: `plug-in-gauss` no longer exists; use GEGL ops through
+  `Gimp.DrawableFilter`. `drawable.append_filter(f)` keeps an editable filter
+  (listed by `get_filters()`, saved in XCF, removed by `f.delete()`);
+  `merge_filter(f)` bakes it. Both respect the selection active when called.
+  GIMP's own ops `gimp:brightness-contrast` (brightness/contrast −1…1) and
+  `gimp:hue-saturation` (range, hue −1…1 = ±180°, saturation/lightness −1…1,
+  overlap 0…1) work as editable filters.
+  `DrawableFilter.operation_get_pspecs()` returns a `ValueArray` that is not
+  iterable from Python: read properties from `f.get_config()` instead.
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.
