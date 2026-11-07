@@ -38,3 +38,38 @@ tail in the error details.
 Everything runs without a display (`gimp-console`). GUI-only behaviour
 (display shells, dialogs) is not covered by automated tests; the bridge was
 verified manually against the GUI build (see ADR 0001).
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs two jobs on every push and pull request:
+
+| Job | Environment | What |
+|---|---|---|
+| `fast` | Ubuntu 24.04, Python 3.12, **no GIMP** | ruff, pyright, `tests/unit` |
+| `e2e` | Docker image `ci/Dockerfile`: Arch Linux pinned to the Arch Linux Archive snapshot **2026/10/15** → **GIMP 3.2.6-2**, PyGObject 3.58.1, Python 3.14, GEGL 0.4.72 | the whole suite with `GIMP_MCP_REQUIRE_GIMP=1` |
+
+The snapshot pins *every* package, so the GIMP version only changes when the
+`ARCH_SNAPSHOT` build argument is bumped (do it deliberately, in its own PR).
+
+Reproduce the CI locally (needs Docker):
+
+```sh
+ci/run-e2e.sh                 # build the image, run everything
+ci/run-e2e.sh tests/e2e -x    # extra pytest arguments
+```
+
+### Diagnosing a failure
+
+* A failing end-to-end test report contains a `GIMP log (...)` section with
+  the tail of every live GIMP's console output.
+* `GIMP_MCP_LOG_DIR=<dir>` keeps each GIMP's full console log after the test
+  (the CI uploads `ci-artifacts/` — logs and `junit.xml` — when a job fails).
+* `GIMP_MCP_GIMP_CONSOLE=<executable>` selects a specific `gimp-console`.
+
+### GIMP missing
+
+Without `gimp-console`, end-to-end tests are **skipped** with the reason
+`GIMP 3 (gimp-console) not found on PATH` (visible in the `-ra` summary). With
+`GIMP_MCP_REQUIRE_GIMP=1` (always set in CI) they **fail** instead, so a broken
+GIMP installation can never look like a green build
+(`tests/unit/test_gimp_requirement.py`).

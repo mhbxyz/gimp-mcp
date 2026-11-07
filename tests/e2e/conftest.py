@@ -21,6 +21,17 @@ from mcp import Client, StdioServerParameters
 from gimp_mcp.headless import HeadlessGimp, find_gimp_console
 
 REQUIRE_GIMP = os.environ.get("GIMP_MCP_REQUIRE_GIMP") == "1"
+_LIVE: list[HeadlessGimp] = []
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo[None]):
+    """On failure, attach the console output of every live GIMP to the report."""
+    report = yield
+    if report.failed:
+        for instance in _LIVE:
+            report.sections.append((f"GIMP log ({instance.root.name})", instance.log_tail(60)))
+    return report
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
@@ -45,9 +56,11 @@ def gimp() -> Iterator[HeadlessGimp]:
     console = _gimp_or_skip()
     instance = HeadlessGimp(console=console)
     instance.start()
+    _LIVE.append(instance)
     try:
         yield instance
     finally:
+        _LIVE.remove(instance)
         instance.stop()
 
 
@@ -61,12 +74,15 @@ def gimp_factory() -> Iterator[Callable[..., HeadlessGimp]]:
         instance = HeadlessGimp(console=console, open_files=open_files or [])
         started.append(instance)
         instance.start()
+        _LIVE.append(instance)
         return instance
 
     try:
         yield start
     finally:
         for instance in started:
+            if instance in _LIVE:
+                _LIVE.remove(instance)
             instance.stop()
 
 
