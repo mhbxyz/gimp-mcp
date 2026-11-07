@@ -1,5 +1,7 @@
 # gimp-mcp
 
+<!-- mcp-name: io.github.mhbxyz/gimp-mcp -->
+
 A reliable [Model Context Protocol](https://modelcontextprotocol.io) server for inspecting and editing
 GIMP projects. It drives a **running GIMP 3.2+ session** (GUI or headless) through a small plug-in
 that serves a private local socket.
@@ -20,6 +22,9 @@ VS Code and Cursor when they are installed (asking before each change), and chec
 `gimp-mcp doctor` diagnoses any remaining problem.
 
 Then ask the client to call `gimp_status`.
+
+Also listed in the [official MCP registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.mhbxyz/gimp-mcp)
+as `io.github.mhbxyz/gimp-mcp` (from the first PyPI release on).
 
 ## Demo
 

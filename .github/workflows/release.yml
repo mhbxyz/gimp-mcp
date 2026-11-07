@@ -255,3 +255,28 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: gh release edit "$RELEASE_REF" --draft=false --latest
+
+  publish-mcp-registry:
+    name: Publish to the MCP registry
+    needs: [build, verify-pypi]
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-24.04
+    environment:
+      name: pypi
+      url: https://registry.modelcontextprotocol.io/v0/servers?search=io.github.mhbxyz/gimp-mcp
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_REF }}
+      - name: Install mcp-publisher (pinned)
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/v1.8.3/mcp-publisher_linux_amd64.tar.gz" \
+            | tar -xz mcp-publisher
+      - name: Validate, authenticate with GitHub OIDC and publish server.json
+        run: |
+          test "$(python3 -c "import json; print(json.load(open('server.json'))['version'])")" = "${{ needs.build.outputs.version }}"
+          ./mcp-publisher validate
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish
