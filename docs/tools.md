@@ -179,6 +179,29 @@ Common rules:
 | `gimp_move_layer(item, parent, position)` | Moves in the layer stack / into another group; never into itself or a descendant | no |
 | `gimp_delete_layer(item)` | Removes the layer or the group **with its children**; their ids become invalid | **yes** |
 
+## Geometry and transforms
+
+Coordinates are image pixels, origin at the top-left corner, y downwards.
+`interpolation`: `none` (nearest neighbour: exact pixels, hard edges),
+`linear`, `cubic` (default), `nohalo`, `lohalo`. Each call is one undo step and
+only touches the targeted image.
+
+| Tool | Effect | Lossy / destructive |
+|---|---|---|
+| `gimp_resize_image(image, width, height, interpolation)` | Scales the image and all layers (sizes and offsets scale proportionally, GIMP rounds offsets) | resampled |
+| `gimp_resize_canvas(image, width, height, offset_x=0, offset_y=0)` | Changes the canvas only; layers keep their pixels and move by the offset | no |
+| `gimp_crop_image(image, x, y, width, height)` | Crops to a rectangle that must lie inside the canvas (`INVALID_ARGUMENT` otherwise) | **pixels outside are discarded** |
+| `gimp_set_layer_offsets(item, x, y)` | Moves a layer/group's top-left corner | no |
+| `gimp_scale_layer(item, width, height, anchor="center"\|"top-left", interpolation)` | Resamples a layer/group | resampled |
+| `gimp_rotate_layer(item, angle, clip="adjust"\|"clip", interpolation)` | Rotates **clockwise** (degrees) around the center; `adjust` grows the bounds, `clip` keeps them; 0/360 is a no-op | resampled unless a multiple of 90 with `none` |
+| `gimp_flip_layer(item, direction)` | Mirrors around the center | no |
+
+Layer transforms are refused with `LOCKED` when the layer (or, for a group,
+any descendant) has a locked position, or locked pixels for scale/rotate/flip.
+Locks are set with `gimp_set_layer_properties(lock_content, lock_position,
+lock_visibility, lock_alpha)`. All layer tools return the updated layer node
+(new offsets and size); image tools return `width`, `height`, `dirty`.
+
 ## Error codes
 
 | Code | Meaning |

@@ -70,5 +70,13 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   names the duplicate `"<name> copy"`. `image.reorder_item(item, parent, pos)`
   moves across groups; `Gimp.file_load_layer()` flattens a file into one layer
   named after the file.
+* Transforms: `layer.scale(w, h, local_origin=True)` keeps the layer center;
+  `transform_rotate(radians, auto_center=True, 0, 0)` rotates clockwise for
+  positive angles; `transform_flip_simple(orientation, True, 0)`. Interpolation
+  and clipping come from the context (`context_set_interpolation`,
+  `context_set_transform_resize`).
+* On a position-locked layer GIMP refuses silently: `set_offsets()` returns
+  `False`, `transform_flip_simple()` returns `None`. Check locks first.
+* `image.scale()` rounds scaled offsets (2.5 → 3).
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.
