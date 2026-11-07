@@ -199,6 +199,10 @@ class HeadlessGimp:
                 os.killpg(process.pid, signal.SIGKILL)
             except (ProcessLookupError, PermissionError):
                 pass
+        keep = os.environ.get("GIMP_MCP_LOG_DIR")
+        if keep and self.log_path.exists():
+            Path(keep).mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(self.log_path, Path(keep) / f"{self.root.name}.log")
         shutil.rmtree(self.root, ignore_errors=True)
 
     def __enter__(self) -> HeadlessGimp:
