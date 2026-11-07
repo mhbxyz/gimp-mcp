@@ -68,9 +68,7 @@ def test_second_bridge_on_the_same_socket_refuses_to_start():
     import gmb_server  # type: ignore[import-not-found]
 
     with running_fake_bridge({}) as bridge:
-        other = gmb_server.BridgeServer(
-            bridge.socket_path, token="t", operations={}, session_info={"session_id": "x"}
-        )
+        other = gmb_server.BridgeServer(bridge.socket_path, token="t", operations={}, session_info={"session_id": "x"})
         with pytest.raises(gmb_server.BridgeError) as excinfo:
             other.start()
         assert excinfo.value.code == "BRIDGE_ALREADY_RUNNING"
@@ -174,9 +172,7 @@ async def test_concurrent_mutations_run_in_issue_order_and_answers_are_not_mixed
     with running_fake_bridge({"record": record}) as bridge:
         client = client_for(bridge)
         try:
-            results = await asyncio.gather(
-                *(client.call("record", {"n": n}, mutating=True) for n in range(30))
-            )
+            results = await asyncio.gather(*(client.call("record", {"n": n}, mutating=True) for n in range(30)))
         finally:
             await client.close()
     assert [r["n"] for r in results] == list(range(30))

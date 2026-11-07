@@ -38,10 +38,7 @@ class IdCodec:
             raise GimpMcpError(
                 "INVALID_ID",
                 f"{value!r} is not a valid {kind} id",
-                hint=(
-                    f"Use the {kind} ids returned by gimp_status or gimp_inspect_image, "
-                    f"e.g. '{kind}:1@<session>'."
-                ),
+                hint=(f"Use the {kind} ids returned by gimp_status or gimp_inspect_image, e.g. '{kind}:1@<session>'."),
             )
         if match.group(3) != self.session_id:
             raise GimpMcpError(

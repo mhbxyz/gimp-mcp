@@ -143,9 +143,7 @@ class BridgeServer:
         os.makedirs(directory, mode=0o700, exist_ok=True)
         info = os.stat(directory)
         if info.st_uid != os.getuid():
-            raise BridgeError(
-                "UNSAFE_SOCKET_DIR", "socket directory %s is not owned by this user" % directory
-            )
+            raise BridgeError("UNSAFE_SOCKET_DIR", "socket directory %s is not owned by this user" % directory)
         if stat.S_IMODE(info.st_mode) & 0o077:
             os.chmod(directory, 0o700)
         self._refuse_if_live_bridge()
@@ -245,9 +243,7 @@ class BridgeServer:
                 self.drop(conn)
                 return False
         if len(conn.buffer) > self.max_request_bytes:
-            self._send(
-                conn, {"id": None, "error": {"code": "REQUEST_TOO_LARGE", "message": "request too large"}}
-            )
+            self._send(conn, {"id": None, "error": {"code": "REQUEST_TOO_LARGE", "message": "request too large"}})
             self.drop(conn)
             return False
         return True

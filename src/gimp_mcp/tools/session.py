@@ -19,9 +19,7 @@ class ImageSummary(BaseModel):
 class StatusOutput(BaseModel):
     connected: bool
     gimp_version: str
-    session_id: str = Field(
-        description="Changes whenever GIMP restarts; ids from older sessions are rejected."
-    )
+    session_id: str = Field(description="Changes whenever GIMP restarts; ids from older sessions are rejected.")
     bridge_protocol: int
     socket: str
     images: list[ImageSummary]

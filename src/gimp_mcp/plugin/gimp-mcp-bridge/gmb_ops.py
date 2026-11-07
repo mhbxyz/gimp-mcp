@@ -22,18 +22,14 @@ def _int_param(params, key):
 def get_image(params, key="image"):
     number = _int_param(params, key)
     if not Gimp.Image.id_is_valid(number):
-        raise BridgeError(
-            "NOT_FOUND", "image %d does not exist (closed?)" % number, {"kind": "image", "id": number}
-        )
+        raise BridgeError("NOT_FOUND", "image %d does not exist (closed?)" % number, {"kind": "image", "id": number})
     return Gimp.Image.get_by_id(number)
 
 
 def get_item(params, key="item"):
     number = _int_param(params, key)
     if not Gimp.Item.id_is_valid(number):
-        raise BridgeError(
-            "NOT_FOUND", "item %d does not exist (deleted?)" % number, {"kind": "item", "id": number}
-        )
+        raise BridgeError("NOT_FOUND", "item %d does not exist (deleted?)" % number, {"kind": "item", "id": number})
     return Gimp.Item.get_by_id(number)
 
 
@@ -188,8 +184,50 @@ def item_inspect(params):
     return item_details(get_item(params))
 
 
+def _fit(width, height, max_size):
+    """Largest size fitting in max_size x max_size with the same proportions, never upscaled."""
+    scale = min(1.0, float(max_size) / max(width, height))
+    return max(1, round(width * scale)), max(1, round(height * scale))
+
+
+def image_preview(params):
+    """Composite rendered by GIMP's projection; never modifies the image or its undo stack."""
+    import base64
+
+    image = get_image(params)
+    max_size = int(params.get("max_size", 512))
+    max_bytes = int(params.get("max_bytes", 2000000))
+    if not 1 <= max_size <= 1024:
+        raise BridgeError("INVALID_ARGUMENT", "max_size must be between 1 and 1024")
+    width, height = image.get_width(), image.get_height()
+    downscaled = False
+    size = max_size
+    while True:
+        pw, ph = _fit(width, height, size)
+        pixbuf = image.get_thumbnail(pw, ph, Gimp.PixbufTransparency.KEEP_ALPHA)
+        if pixbuf is None:
+            raise BridgeError("GIMP_ERROR", "GIMP could not render a %dx%d preview" % (pw, ph))
+        ok, data = pixbuf.save_to_bufferv("png", [], [])
+        if not ok:
+            raise BridgeError("GIMP_ERROR", "PNG encoding of the preview failed")
+        if len(data) <= max_bytes or size <= 16:
+            break
+        size = size // 2
+        downscaled = True
+    return {
+        "image": image.get_id(),
+        "png_base64": base64.b64encode(bytes(data)).decode("ascii"),
+        "width": pixbuf.get_width(),
+        "height": pixbuf.get_height(),
+        "source_width": width,
+        "source_height": height,
+        "downscaled_for_size": downscaled,
+    }
+
+
 def build_operations():
     return {
+        "image.preview": image_preview,
         "session.images": session_images,
         "image.inspect": image_inspect,
         "item.inspect": item_inspect,

@@ -57,9 +57,7 @@ def running_fake_bridge(
 ) -> Iterator[FakeBridge]:
     directory = short_tmpdir()
     try:
-        with running_fake_bridge_at(
-            directory / "bridge.sock", ops, session=session, allowed_uid=allowed_uid
-        ) as bridge:
+        with running_fake_bridge_at(directory / "bridge.sock", ops, session=session, allowed_uid=allowed_uid) as bridge:
             yield bridge
     finally:
         for p in directory.iterdir():

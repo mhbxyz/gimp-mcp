@@ -30,8 +30,7 @@ async def run_doctor(endpoint: BridgeEndpoint, gimp_dir: Path | None) -> int:
         session = await client.connect()
         _say(
             True,
-            f"connected to GIMP {session.gimp_version} (session {session.session_id}) "
-            f"via {endpoint.socket_path}",
+            f"connected to GIMP {session.gimp_version} (session {session.session_id}) via {endpoint.socket_path}",
         )
     except GimpMcpError as error:
         failures += 1

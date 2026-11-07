@@ -75,9 +75,7 @@ def build_parser() -> argparse.ArgumentParser:
         ("uninstall-plugin", cmd_uninstall, "remove the bridge plug-in"),
     ):
         cmd = sub.add_parser(name, help=text)
-        cmd.add_argument(
-            "--gimp-dir", help="GIMP config dir (default: $GIMP3_DIRECTORY or ~/.config/GIMP/3.2)"
-        )
+        cmd.add_argument("--gimp-dir", help="GIMP config dir (default: $GIMP3_DIRECTORY or ~/.config/GIMP/3.2)")
         cmd.set_defaults(func=func)
 
     doctor = sub.add_parser("doctor", help="check the installation and the connection to GIMP")
