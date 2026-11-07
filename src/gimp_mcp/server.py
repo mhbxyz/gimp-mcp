@@ -7,7 +7,7 @@ from mcp.server.mcpserver import MCPServer
 from . import __version__
 from .bridge import BridgeClient
 from .toolkit import Toolkit
-from .tools import session
+from .tools import inspect, session
 
 INSTRUCTIONS = """\
 Tools to inspect and edit images in a running GIMP 3 session.
@@ -21,4 +21,5 @@ def build_server(bridge: BridgeClient | None = None) -> MCPServer:
     mcp = MCPServer(name="gimp-mcp", version=__version__, instructions=INSTRUCTIONS, log_level="WARNING")
     kit = Toolkit(mcp, bridge or BridgeClient())
     session.register(kit)
+    inspect.register(kit)
     return mcp
