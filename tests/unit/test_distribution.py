@@ -92,3 +92,22 @@ def test_builds_are_reproducible(artifacts, tmp_path):
         return hashlib.sha256(path.read_bytes()).hexdigest()
 
     assert digest(again) == digest(artifacts["wheel"])
+
+
+def test_readme_renders_on_pypi_with_absolute_links():
+    """PyPI shows the README out of the repository: relative links would be broken there."""
+    readme = (ROOT / "README.md").read_text()
+    links = re.findall(r"\]\(([^)]+)\)", readme)
+    assert links
+    relative = [link for link in links if not link.startswith(("https://", "http://", "#"))]
+    assert relative == []
+
+
+def test_package_page_metadata(artifacts):
+    contents = wheel_files(artifacts["wheel"])
+    metadata = next(data for name, data in contents.items() if name.endswith("METADATA")).decode()
+    assert "Description-Content-Type: text/markdown" in metadata
+    for minor in (11, 12, 13, 14):
+        assert f"Programming Language :: Python :: 3.{minor}" in metadata
+    for label in ("Homepage", "Documentation", "Issues", "Changelog"):
+        assert f"Project-URL: {label}, https://github.com/mhbxyz/gimp-mcp" in metadata

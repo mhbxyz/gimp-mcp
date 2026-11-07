@@ -3,6 +3,7 @@
 # pinned CI image, exactly like GitHub Actions does.
 #   ci/run-e2e.sh                # all tests
 #   ci/run-e2e.sh tests/e2e -x   # extra pytest arguments
+#   GIMP_MCP_CI_ENV=NAME=value    # one extra environment variable for the tests
 set -euo pipefail
 cd "$(dirname "$0")/.."
 IMAGE=${GIMP_MCP_CI_IMAGE:-gimp-mcp-ci}
@@ -11,7 +12,11 @@ if [ -z "${GIMP_MCP_CI_SKIP_BUILD:-}" ]; then
 fi
 mkdir -p ci-artifacts
 chmod 777 ci-artifacts  # the container user may have another uid than the host user
-docker run --rm \
+extra_env=()
+if [ -n "${GIMP_MCP_CI_ENV:-}" ]; then  # e.g. GIMP_MCP_DIST_WHEEL=/src/wheels/x.whl
+  extra_env=(-e "$GIMP_MCP_CI_ENV")
+fi
+docker run --rm "${extra_env[@]}" \
   -v "$PWD":/src:ro \
   -v "$PWD/ci-artifacts":/artifacts \
   -e GIMP_MCP_REQUIRE_GIMP=1 \
