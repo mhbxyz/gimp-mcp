@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from .. import __version__
 from ..toolkit import READ_ONLY, Toolkit
 
 
@@ -21,6 +22,8 @@ class StatusOutput(BaseModel):
     gimp_version: str
     session_id: str = Field(description="Changes whenever GIMP restarts; ids from older sessions are rejected.")
     bridge_protocol: int
+    server_version: str = Field(description="Version of this MCP server.")
+    plugin_version: str = Field(description="Version of the GIMP plug-in (must share MAJOR.MINOR).")
     socket: str
     images: list[ImageSummary]
 
@@ -45,6 +48,8 @@ def register(kit: Toolkit) -> None:
             gimp_version=session.gimp_version,
             session_id=session.session_id,
             bridge_protocol=session.protocol,
+            server_version=__version__,
+            plugin_version=session.bridge_version or "unknown",
             socket=str(kit.bridge.endpoint.socket_path),
             images=[ImageSummary(**{**image, "id": codec.image(image["id"])}) for image in result["images"]],
         )

@@ -31,7 +31,7 @@ Opaque strings bound to the GIMP session: `image:<n>@<session>` and
 ### `gimp_status`
 
 Read-only. Returns `connected`, `gimp_version`, `session_id`,
-`bridge_protocol`, `socket` and `images[]` (`id`, `name` — GIMP's localized
+`bridge_protocol`, `server_version`, `plugin_version`, `socket` and `images[]` (`id`, `name` — GIMP's localized
 display name —, `file`, `width`, `height`, `dirty`).
 
 ## Inspection
@@ -419,6 +419,7 @@ another image), `NOT_FOUND`.
 | `GIMP_NOT_RUNNING` | No bridge socket, or stale socket (GIMP exited). |
 | `BRIDGE_UNAVAILABLE` | Socket present but no answer in time (GIMP busy/frozen) or token unreadable. |
 | `VERSION_INCOMPATIBLE` | GIMP < 3.2 or plug-in protocol mismatch. |
+| `PLUGIN_VERSION_MISMATCH` | Plug-in and server versions differ in MAJOR.MINOR (see `docs/compatibility.md`); reinstall the plug-in and restart GIMP. |
 | `UNAUTHORIZED` | Bad token (stale token file, wrong socket). |
 | `TIMEOUT` | No answer within the request timeout; mutation outcome `unknown`. |
 | `DISCONNECTED` | Connection lost during a request; mutation outcome `unknown`. |

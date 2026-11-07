@@ -29,7 +29,18 @@ except (ImportError, ValueError, AttributeError):
     fd_add_full = GLib.unix_fd_add_full
 
 PROCEDURE = "extension-gimp-mcp-bridge"
-BRIDGE_VERSION = "0.1.0"
+
+
+def _installed_version():
+    """Written by `gimp-mcp install-plugin` from the package version."""
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "VERSION")) as handle:
+            return handle.read().strip() or "unknown"
+    except OSError:
+        return "unknown"
+
+
+BRIDGE_VERSION = _installed_version()
 
 
 def run_bridge(procedure, config, data):
