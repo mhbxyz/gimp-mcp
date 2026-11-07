@@ -71,3 +71,12 @@ jobs:
         env:
           GIMP_MCP_CI_SKIP_BUILD: "1"
         run: ci/run-flatpak-e2e.sh
+
+  docs:
+    name: Documented commands in a clean Ubuntu 26.04
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Run the README quickstart and the client pages' commands
+        run: ci/run-doctests.sh

@@ -21,3 +21,10 @@ def test_gimp_log_is_kept_for_diagnosis_when_requested(tmp_path, monkeypatch):
     assert len(kept) == 1
     assert kept[0].read_text() == "GIMP-Message: boom\n"
     assert not gimp.root.exists()
+
+
+def test_every_virtualenv_is_removed_from_gimp_path(tmp_path):
+    venv = tmp_path / "some-venv"
+    (venv / "bin").mkdir(parents=True)
+    (venv / "pyvenv.cfg").write_text("home = /usr/bin\n")
+    assert system_path(f"{venv / 'bin'}:/usr/bin") == "/usr/bin"
