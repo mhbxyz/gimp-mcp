@@ -1,0 +1,105 @@
+{
+  "survey": {
+    "date": "2026-11-08",
+    "source": "https://repology.org/project/gimp/versions and https://repology.org/project/python:pygobject/versions, then confirmed in the containers below",
+    "requirement": "GIMP >= 3.2 with Python 3 plug-ins (PyGObject + the Gimp-3.0 typelib)"
+  },
+  "distributions": [
+    {
+      "id": "arch",
+      "name": "Arch Linux",
+      "image": "archlinux:base@sha256:b1c2fe6e717bfd5673af8fc217e1e1c3ce0dcbb1d53c3414c8425e7ce79fc6d9",
+      "install": "pacman -Syu --noconfirm --needed gimp python python-gobject ca-certificates && pacman -Scc --noconfirm",
+      "packages": "gimp python-gobject",
+      "gimp": "3.2.6",
+      "status": "supported"
+    },
+    {
+      "id": "ubuntu-26.04",
+      "name": "Ubuntu 26.04 LTS",
+      "image": "ubuntu:26.04@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c",
+      "install": "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gimp python3-gi gir1.2-gimp-3.0 ca-certificates && rm -rf /var/lib/apt/lists/*",
+      "packages": "gimp python3-gi gir1.2-gimp-3.0",
+      "gimp": "3.2.2",
+      "status": "supported"
+    },
+    {
+      "id": "debian-14",
+      "name": "Debian 14 \"forky\" (testing)",
+      "image": "debian:forky@sha256:15f483ba923e165dde04ac535be6f479a62008ae5fefb42fed21896288ce447a",
+      "install": "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gimp python3-gi gir1.2-gimp-3.0 ca-certificates && rm -rf /var/lib/apt/lists/*",
+      "packages": "gimp python3-gi gir1.2-gimp-3.0",
+      "gimp": "3.2.6",
+      "status": "supported"
+    },
+    {
+      "id": "fedora-44",
+      "name": "Fedora 44",
+      "image": "fedora:44@sha256:15da97ed9aa94dd3d92c3925eb89520f6c80e07ea7ee24cba848d1f8b6912b3e",
+      "install": "dnf install -y --setopt=install_weak_deps=False gimp python3-gobject shadow-utils && dnf clean all",
+      "packages": "gimp python3-gobject",
+      "gimp": "3.2.6",
+      "status": "supported"
+    },
+    {
+      "id": "opensuse-tumbleweed",
+      "name": "openSUSE Tumbleweed",
+      "image": "opensuse/tumbleweed@sha256:a408f50f376d8591cfe376b82fcb9ab1af2e905a8b9cab9b27e5003b7a6c9dee",
+      "install": "zypper --non-interactive install --no-recommends gimp python313 python313-gobject shadow && zypper clean -a",
+      "packages": "gimp python313-gobject",
+      "gimp": "3.2.6",
+      "status": "supported"
+    },
+    {
+      "id": "alpine-3.24",
+      "name": "Alpine Linux 3.24",
+      "image": "alpine:3.24@sha256:3f4d6b32e26703c6082839234f43769d5046b3ac7c910033911d1e71d8cd630a",
+      "install": "apk add --no-cache gimp py3-gobject3 python3 ca-certificates",
+      "packages": "gimp py3-gobject3",
+      "gimp": "3.2.4",
+      "status": "supported"
+    },
+    {
+      "id": "debian-13",
+      "name": "Debian 13 \"trixie\"",
+      "gimp": "3.0.4",
+      "status": "unsupported",
+      "reason": "ships GIMP 3.0"
+    },
+    {
+      "id": "ubuntu-25.10",
+      "name": "Ubuntu 25.10",
+      "gimp": "3.0.4",
+      "status": "unsupported",
+      "reason": "ships GIMP 3.0"
+    },
+    {
+      "id": "ubuntu-24.04",
+      "name": "Ubuntu 24.04 LTS",
+      "gimp": "2.10.36",
+      "status": "unsupported",
+      "reason": "ships GIMP 2.10"
+    },
+    {
+      "id": "rhel-9",
+      "name": "RHEL / AlmaLinux / Rocky 9, CentOS Stream 9",
+      "gimp": "3.0.4",
+      "status": "unsupported",
+      "reason": "ships GIMP 3.0"
+    },
+    {
+      "id": "opensuse-leap-15",
+      "name": "openSUSE Leap 15.6",
+      "gimp": "2.10.30",
+      "status": "unsupported",
+      "reason": "ships GIMP 2.10"
+    },
+    {
+      "id": "nixos-26.05",
+      "name": "NixOS 26.05",
+      "gimp": "3.0.8",
+      "status": "unsupported",
+      "reason": "ships GIMP 3.0 (nixos-unstable has 3.2.6, untested)"
+    }
+  ]
+}

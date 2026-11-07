@@ -58,6 +58,17 @@ ci/run-e2e.sh                 # build the image, run everything
 ci/run-e2e.sh tests/e2e -x    # extra pytest arguments
 ```
 
+### Linux distributions
+
+`ci/run-distro.sh <id>` builds a clean image of one distribution from
+`ci/distros/distros.json` (base image pinned by digest, the distribution's own
+GIMP packages), installs the wheel in it and runs `ci/distros/smoke.py`
+(doctor, headless GIMP, MCP calls) with the installed package only. The JSON
+report goes to `ci-artifacts/distro-<id>.json`; on failure it includes the
+doctor output and GIMP's log. `.github/workflows/distros.yml` runs every
+supported distribution on releases, weekly and when the matrix changes.
+`scripts/render_distros.py` regenerates the table of `docs/compatibility.md`.
+
 ### Flatpak GIMP
 
 `ci/run-flatpak-e2e.sh` builds `ci/Dockerfile.flatpak` (Arch + Flatpak GIMP
