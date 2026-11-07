@@ -13,7 +13,7 @@ WORKFLOW = ROOT / ".github" / "workflows" / "release.yml"
 PUBLISH_ACTION = "pypa/gh-action-pypi-publish@release/v1"
 
 
-def workflow() -> dict[str, Any]:
+def workflow() -> dict[Any, Any]:
     return yaml.safe_load(WORKFLOW.read_text())
 
 
@@ -55,3 +55,43 @@ def test_no_long_lived_secret_is_used():
     text = WORKFLOW.read_text()
     assert set(re.findall(r"secrets\.(\w+)", text)) <= {"GITHUB_TOKEN"}
     assert workflow()["permissions"] == {"contents": "read"}  # least privilege by default
+
+
+def test_artifacts_get_build_provenance_attestations():
+    jobs = workflow()["jobs"]
+    attest = next(name for name, job in jobs.items() if steps_using(job, "actions/attest@v4"))
+    job = jobs[attest]
+    assert job["permissions"] == {"id-token": "write", "attestations": "write", "artifact-metadata": "write"}
+    step = steps_using(job, "actions/attest@v4")[0]
+    assert "dist/*.whl" in step["with"]["subject-path"] and "dist/*.tar.gz" in step["with"]["subject-path"]
+
+
+def test_dry_run_publishes_nothing():
+    jobs = workflow()["jobs"]
+    dispatch = workflow()[True]["workflow_dispatch"]  # YAML 1.1 reads the `on` key as True
+    assert dispatch["inputs"]["dry_run"]["type"] == "boolean"
+    for name in ("attest", "github-draft", "publish-testpypi", "publish-pypi", "finalize"):
+        assert "!inputs.dry_run" in jobs[name]["if"].replace(" ", ""), name
+
+
+def test_github_release_becomes_public_only_after_pypi_is_verified():
+    jobs = workflow()["jobs"]
+    assert set(jobs["finalize"]["needs"]) >= {"verify-pypi", "github-draft"}
+    assert "--draft=false" in str(jobs["finalize"]["steps"])
+
+
+def test_reruns_are_safe():
+    jobs = workflow()["jobs"]
+    pypi_steps = str(jobs["publish-pypi"]["steps"])
+    assert "--once" in pypi_steps  # upload skipped when the index already has these exact files
+    assert "--clobber" in str(jobs["github-draft"]["steps"])  # the draft is updated, not duplicated
+
+
+def test_merging_a_release_pr_tags_it_and_starts_the_release():
+    tag = yaml.safe_load((ROOT / ".github" / "workflows" / "tag-release.yml").read_text())
+    assert tag[True]["push"]["branches"] == ["main"]
+    job = next(iter(tag["jobs"].values()))
+    assert "Release v" in job["if"]  # only the merge of a "Release vX.Y.Z" PR
+    text = str(job["steps"])
+    assert "git tag" in text and "gh workflow run release.yml" in text
+    assert job["permissions"] == {"contents": "write", "actions": "write"}

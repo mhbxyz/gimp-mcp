@@ -44,6 +44,20 @@ Facts checked in the official documentation (2026-11-08):
   anyone can upload a package named like a dependency (dependency confusion).
   PyPI verification installs from the index with `uv pip` and `uvx`.
 
+Additions for #37 (checked 2026-11-08):
+
+* `actions/attest@v4` creates a SLSA build provenance attestation by default
+  (permissions `id-token`, `attestations`, `artifact-metadata`), signed with the
+  public-good Sigstore instance for public repositories
+  (<https://github.com/actions/attest>); users verify with
+  `gh attestation verify <file> --repo mhbxyz/gimp-mcp`.
+* Tags pushed with `GITHUB_TOKEN` do not start other workflows, so
+  `tag-release.yml` starts `release.yml` explicitly with `gh workflow run`.
+  It only acts on a push whose commit title is `Release vX.Y.Z` matching the
+  package version and a CHANGELOG section: ordinary merges never tag.
+* The GitHub release stays a draft until PyPI is verified (`finalize`).
+* A `dry_run` input builds and tests without attesting or publishing.
+
 ## Consequences
 
 * The maintainer must configure the two pending publishers once

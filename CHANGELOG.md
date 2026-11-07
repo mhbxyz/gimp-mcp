@@ -23,6 +23,10 @@ what is covered by the compatibility promise.
   with trusted publishing (no stored token) and maintainer approval, and
   verifies each index serves exactly the built files and that the installed
   package (pip and uvx) drives a real GIMP (#36).
+- Release pipeline: `scripts/prepare_release.py X.Y.Z` opens the release PR;
+  merging it tags the commit and starts the release; artifacts get build
+  provenance attestations; the GitHub release becomes public only after PyPI
+  is verified; every job is safe to re-run; `dry_run` mode (#37).
 - The package page on PyPI has absolute links, Python version classifiers and
   project URLs (#36).
 - The plug-in reports its version; the server refuses an incompatible plug-in
