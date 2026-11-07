@@ -426,8 +426,218 @@ def image_close(params):
     return {"image": number}
 
 
+# -- layers ------------------------------------------------------------------------------
+
+LAYER_MODES = {}
+for _value in Gimp.LayerMode.__enum_values__.values():
+    LAYER_MODES.setdefault(_value.value_nick, _value)
+
+
+def layer_mode(nick):
+    mode = LAYER_MODES.get(nick)
+    if mode is None:
+        allowed = sorted(n for n in LAYER_MODES if not n.endswith("-legacy") and n != "replace")
+        raise BridgeError("INVALID_ARGUMENT", "unknown layer mode %r" % nick, {"allowed": allowed})
+    return mode
+
+
+class undo_step:
+    """Group several GIMP calls into one undo step."""
+
+    def __init__(self, image):
+        self.image = image
+
+    def __enter__(self):
+        self.image.undo_group_start()
+        return self
+
+    def __exit__(self, *exc):
+        self.image.undo_group_end()
+        return False
+
+
+def same_image(image, item, role):
+    if item.get_image().get_id() != image.get_id():
+        raise BridgeError(
+            "IMAGE_MISMATCH",
+            "%s %d belongs to image %d, not image %d"
+            % (role, item.get_id(), item.get_image().get_id(), image.get_id()),
+            {"item": item.get_id(), "image": image.get_id()},
+        )
+
+
+def resolve_parent(image, params, key="parent"):
+    if params.get(key) is None:
+        return None
+    parent = get_item(params, key)
+    if item_kind(parent) != "group":
+        raise BridgeError(
+            "WRONG_KIND",
+            "parent %d is a %s, not a group" % (parent.get_id(), item_kind(parent)),
+            {"id": parent.get_id(), "kind": item_kind(parent)},
+        )
+    same_image(image, parent, "parent")
+    return parent
+
+
+def siblings(image, parent):
+    return list(image.get_layers() if parent is None else parent.get_children())
+
+
+def check_position(image, parent, position, moving=None):
+    count = len([s for s in siblings(image, parent) if moving is None or s.get_id() != moving.get_id()])
+    if position > count:
+        raise BridgeError(
+            "INVALID_ARGUMENT",
+            "position %d is out of range: the parent has %d other item(s) (0..%d)" % (position, count, count),
+            {"position": position, "max": count},
+        )
+
+
+def apply_layer_properties(layer, params):
+    if params.get("mode") is not None:
+        layer.set_mode(layer_mode(params["mode"]))
+    if params.get("name") is not None:
+        layer.set_name(params["name"])
+    if params.get("visible") is not None:
+        layer.set_visible(params["visible"])
+    if params.get("opacity") is not None:
+        layer.set_opacity(float(params["opacity"]))
+
+
+@mutation
+def layer_create(params):
+    image = get_image(params)
+    parent = resolve_parent(image, params)
+    check_position(image, parent, params["position"])
+    mode = layer_mode(params.get("mode") or "normal")
+    width = params.get("width") or image.get_width()
+    height = params.get("height") or image.get_height()
+    kind = Gimp.ImageType.RGBA_IMAGE if image.get_base_type() == Gimp.ImageBaseType.RGB else Gimp.ImageType.GRAYA_IMAGE
+    with undo_step(image):
+        layer = Gimp.Layer.new(image, params["name"], width, height, kind, float(params.get("opacity", 100.0)), mode)
+        image.insert_layer(layer, parent, params["position"])
+        layer.set_offsets(params.get("x", 0), params.get("y", 0))
+        fill = params.get("fill")
+        if fill and fill[3] > 0:
+            Gimp.context_push()
+            try:
+                Gimp.context_set_foreground(color(fill))
+                layer.fill(Gimp.FillType.FOREGROUND)
+            finally:
+                Gimp.context_pop()
+        else:
+            layer.fill(Gimp.FillType.TRANSPARENT)
+        layer.set_visible(bool(params.get("visible", True)))
+        if params.get("name") and layer.get_name() != params["name"]:
+            pass  # GIMP de-duplicated the name; the returned node shows the effective one
+    return layer_node(layer)
+
+
+@mutation
+def group_create(params):
+    image = get_image(params)
+    parent = resolve_parent(image, params)
+    check_position(image, parent, params["position"])
+    with undo_step(image):
+        group = Gimp.GroupLayer.new(image, params["name"])
+        image.insert_layer(group, parent, params["position"])
+    return layer_node(group)
+
+
+@mutation
+def layer_import(params):
+    image = get_image(params)
+    parent = resolve_parent(image, params)
+    check_position(image, parent, params["position"])
+    path = params["path"]
+    with undo_step(image):
+        layer = Gimp.file_load_layer(Gimp.RunMode.NONINTERACTIVE, image, Gio.File.new_for_path(path))
+        if layer is None:
+            raise BridgeError(
+                "UNSUPPORTED_FORMAT",
+                "GIMP could not load %s (unsupported format or corrupt file)" % os.path.basename(path),
+                {"path": path},
+            )
+        image.insert_layer(layer, parent, params["position"])
+        layer.set_offsets(params.get("x", 0), params.get("y", 0))
+        if params.get("name"):
+            layer.set_name(params["name"])
+    return layer_node(layer)
+
+
+@mutation
+def layer_duplicate(params):
+    original = get_layer(params)
+    image = original.get_image()
+    if params.get("keep_parent"):
+        parent = original.get_parent()
+        position = image.get_item_position(original)
+    else:
+        parent = resolve_parent(image, params)
+        position = params.get("position") or 0
+        check_position(image, parent, position)
+    with undo_step(image):
+        copy = original.copy()
+        image.insert_layer(copy, parent, position)
+    return layer_node(copy)
+
+
+@mutation
+def layer_set(params):
+    layer = get_layer(params)
+    if params.get("mode") is not None:
+        layer_mode(params["mode"])  # validate before changing anything
+    if params.get("visible") is not None and layer.get_lock_visibility():
+        raise BridgeError("LOCKED", "the layer's visibility is locked", {"item": layer.get_id()})
+    with undo_step(layer.get_image()):
+        apply_layer_properties(layer, params)
+    return layer_node(layer)
+
+
+def _is_ancestor(candidate, item):
+    parent = item if candidate is None else candidate
+    while parent is not None:
+        if parent.get_id() == item.get_id():
+            return True
+        parent = parent.get_parent()
+    return False
+
+
+@mutation
+def layer_move(params):
+    layer = get_layer(params)
+    image = layer.get_image()
+    parent = resolve_parent(image, params)
+    if parent is not None and _is_ancestor(parent, layer):
+        raise BridgeError(
+            "INVALID_ARGUMENT",
+            "a group cannot be moved into itself or one of its descendants",
+            {"item": layer.get_id()},
+        )
+    check_position(image, parent, params["position"], moving=layer)
+    with undo_step(image):
+        if not image.reorder_item(layer, parent, params["position"]):
+            raise BridgeError("GIMP_ERROR", "GIMP refused to move item %d" % layer.get_id())
+    return layer_node(layer)
+
+
+@mutation
+def layer_delete(params):
+    layer = get_layer(params)
+    layer.get_image().remove_layer(layer)
+    return {"item": params["item"]}
+
+
 def build_operations():
     return {
+        "layer.create": layer_create,
+        "group.create": group_create,
+        "layer.import": layer_import,
+        "layer.duplicate": layer_duplicate,
+        "layer.set": layer_set,
+        "layer.move": layer_move,
+        "layer.delete": layer_delete,
         "image.create": image_create,
         "image.open": image_open,
         "image.save": image_save,
