@@ -6,56 +6,65 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-08
+
+Installing and releasing made easy. Linux only, GIMP 3.2+.
+
+### Upgrade note
+
+The plug-in and the server must now share the same MAJOR.MINOR version: a
+0.1.0 plug-in is refused by 0.2.0 with `PLUGIN_VERSION_MISMATCH`. Run
+`gimp-mcp setup` (or `gimp-mcp install-plugin`) once after upgrading, then
+restart GIMP.
+
 ### Added
 
+- `gimp-mcp setup`: one guided command that finds GIMP and the profile it
+  uses, installs or updates the plug-in (in every profile where it is
+  installed), registers the server in Claude Code, Claude Desktop, VS Code and
+  Cursor (each change shown, consent or `--yes`, backups, other servers
+  untouched, snippets for other clients) and checks the result; safe to run
+  again (#40, #42).
 - `gimp-mcp doctor` detects the known installation problems (GIMP missing or
-  too old, GIMP's Python without PyGObject, virtualenv first on PATH, plug-in
+  too old, GIMP's Python without PyGObject, virtualenv on PATH, plug-in
   missing/not executable/other version/not registered, wrong profile, stale
   socket, permissions, GIMP running without the bridge, several instances) and
-  prints a fix for each; `--json` output and documented exit codes;
-  `docs/troubleshooting.md` is generated from its checks (#39).
-- `gimp-mcp setup`: detects GIMP and its profile, installs or updates the
-  plug-in, registers the server in Claude Code, Claude Desktop, VS Code and
-  Cursor (change shown, consent or `--yes`, backups, other entries untouched,
-  snippets for undetected clients), then runs a live check and the doctor;
-  idempotent (#40).
-- Release workflow publishes the same artifacts to TestPyPI, then to PyPI,
-  with trusted publishing (no stored token) and maintainer approval, and
-  verifies each index serves exactly the built files and that the installed
-  package (pip and uvx) drives a real GIMP (#36).
-- Installation documentation rewritten: a three-command quickstart at the top
-  of the README and one page per client (Claude Code, Claude Desktop, VS Code
-  and Cursor, any stdio client); their commands run in CI in a clean Ubuntu
-  26.04 and their configuration snippets are checked against `setup` (#44).
-- `server.json` for the official MCP registry (`io.github.mhbxyz/gimp-mcp`),
-  validated in tests and published by the release workflow after PyPI with
-  GitHub OIDC; MCPB bundles rejected (macOS/Windows only) (#43).
-- Installation verified in CI on Arch Linux, Ubuntu 26.04, Debian 14,
-  Fedora 44, openSUSE Tumbleweed and Alpine 3.24 (clean containers, base images
-  pinned by digest, the distribution's own GIMP) on releases and weekly; the
-  compatibility page is generated from that matrix (#38).
-- GIMP installed from Flathub (`org.gimp.GIMP`) is supported: the bridge
-  serves its socket in the app runtime directory shared with the host, the
-  server finds it, `setup` and `doctor` detect Flatpak GIMP; tested in CI with
-  a pinned Flathub build (#41).
+  prints a fix for each; `--json` and documented exit codes;
+  `docs/troubleshooting.md` is generated from it (#39).
 - `gimp-mcp uninstall` removes the plug-in from every profile and the client
-  entries gimp-mcp created (consent, backups, foreign entries kept) and says how
-  to remove the package; `setup` updates the plug-in in every profile where it
-  is installed (#42).
-- Release pipeline: `scripts/prepare_release.py X.Y.Z` opens the release PR;
-  merging it tags the commit and starts the release; artifacts get build
-  provenance attestations; the GitHub release becomes public only after PyPI
-  is verified; every job is safe to re-run; `dry_run` mode (#37).
-- The package page on PyPI has absolute links, Python version classifiers and
-  project URLs (#36).
+  entries gimp-mcp created (consent, backups, other entries kept) and says how
+  to remove the package (#42).
+- GIMP from Flathub (`org.gimp.GIMP`) is supported (#41).
+- Installation verified in CI on Arch Linux, Ubuntu 26.04, Debian 14,
+  Fedora 44, openSUSE Tumbleweed and Alpine 3.24 with each distribution's own
+  GIMP, on releases and weekly; the compatibility page is generated from that
+  matrix (#38).
 - The plug-in reports its version; the server refuses an incompatible plug-in
-  with `PLUGIN_VERSION_MISMATCH` and warns on a different patch version.
-  `gimp_status` and `gimp-mcp doctor` show both versions (#35).
+  with `PLUGIN_VERSION_MISMATCH` and warns on a patch difference;
+  `gimp_status` and `doctor` show both versions (#35).
+- Documentation: a three-command quickstart and one page per MCP client; their
+  commands run in CI in a clean Ubuntu 26.04 and their snippets are checked
+  against `setup` (#44).
+- Distribution: PyPI and TestPyPI publication with trusted publishing (no
+  stored token) and maintainer approval, verification of the published files
+  and of the installed package (pip and `uvx`) on a real GIMP (#36); build
+  provenance attestations, a release PR prepared by
+  `scripts/prepare_release.py`, tagging on merge, safe re-runs, dry runs (#37);
+  listing in the official MCP registry as `io.github.mhbxyz/gimp-mcp` (#43).
 
 ### Changed
 
 - The version is defined only in `pyproject.toml`; the installed plug-in gets
-  it from a `VERSION` file written by `gimp-mcp install-plugin` (#35).
+  it from a `VERSION` file written at installation (#35).
+- The PyPI page has absolute links, Python version classifiers and project
+  URLs (#36).
+
+### Fixed
+
+- Every virtualenv (including `uv run`/`uvx` environments) is removed from the
+  PATH GIMP gets in headless mode, and the doctor no longer reports the
+  environment `uvx` runs it from (#44).
+- Stopping a headless GIMP waits until all its plug-in processes are gone (#38).
 
 ## [0.1.0] - 2026-11-07
 
@@ -83,4 +92,5 @@ First usable release. Linux only, GIMP 3.2+.
 - Demo (`demo/thumbnail.py`) building a 1280×720 thumbnail through MCP only.
 - CI with a real GIMP 3.2.6 pinned through an Arch Linux Archive snapshot.
 
+[0.2.0]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v0.2.0
 [0.1.0]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v0.1.0
