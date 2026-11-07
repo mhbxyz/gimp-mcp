@@ -326,6 +326,52 @@ The full inventory is written by `gimp-mcp inventory --output FILE` (needs a
 running GIMP with the plug-in). Procedures whose metadata cannot be read are
 listed with an `error` field instead of failing the inventory.
 
+## Generic procedure access
+
+For operations without a dedicated tool, two tools give **controlled** access
+to GIMP's procedure database:
+
+* `gimp_list_callable_procedures(query="", limit=50)` — callable procedures
+  with their signatures (same argument shape as `gimp_describe_procedure`).
+* `gimp_call_procedure(name, arguments={})` — runs one of them. Arguments by
+  name; values: numbers, booleans, strings (choices checked), enum **nicks**
+  (`"foreground"`), colors `#rrggbb[aa]` (sRGB), image/item **ids**, lists of
+  item ids (e.g. `drawables`), lists of numbers/strings. Omitted arguments keep
+  GIMP's defaults, except images and items which are required. Results:
+  `results` by return-value name, converted the same way (ids, nicks, colors).
+
+**Authorization policy** (`src/gimp_mcp/plugin/gimp-mcp-bridge/gmb_policy.py`,
+enforced inside GIMP, before anything runs):
+
+1. Denied names: code evaluation (`*-eval`, Script-Fu, Python-Fu), consoles
+   and servers, `gimp-quit`, `gimp-image-delete` (use `gimp_close_image`, which
+   protects unsaved changes), changes to the shared GIMP context, displays/UI,
+   help, PDB and plug-in management, parasites, refresh procedures, the bridge
+   itself, and plug-ins acting outside the image (screenshot, e-mail, print,
+   web browser, UI-only browsers and editors).
+2. Allowed families only: `gimp-image-*`, `gimp-item-*`, `gimp-layer-*`,
+   `gimp-group-layer-*`, `gimp-text-layer-*`, `gimp-drawable-*`,
+   `gimp-selection-*`, `gimp-channel-*`, `gimp-path-*`, `gimp-context-get-*`,
+   `gimp-get-*`, `plug-in-*`. Files, exports and resources are therefore
+   unreachable (file tools enforce their own path rules).
+3. Internal or plug-in procedures only.
+4. Every argument and return value must be JSON-representable: `GFile`,
+   `GBytes`, parasites, units, resources (brushes, fonts...), displays, export
+   options and filters make a procedure non-callable.
+5. The run mode is always `noninteractive` (`INVALID_ARGUMENT` if another one is
+   requested): no dialog is opened.
+
+Errors (all before running): `PROCEDURE_NOT_ALLOWED` (with `details.reason`),
+`NOT_FOUND` (unknown procedure or object), `INVALID_ID`, `SESSION_CHANGED`,
+`INVALID_ARGUMENT` (unknown name, wrong type, out of range, unknown choice).
+A failure reported by GIMP while running is `GIMP_ERROR` (outcome unknown).
+
+**Side effects** are those of the procedure: the tool is annotated as
+destructive. When an image is involved the call is one undo step and marks the
+image dirty. Procedure names, arguments and availability depend on the GIMP
+version; check with `gimp_list_callable_procedures` (the committed matrix lists
+422 callable procedures on GIMP 3.2.6).
+
 ## Error codes
 
 | Code | Meaning |
@@ -349,6 +395,7 @@ listed with an `error` field instead of failing the inventory.
 | `UNSUPPORTED_FORMAT` | Extension or file content not supported by this operation. |
 | `UNSAVED_CHANGES` | Closing a dirty image without `discard_changes`. |
 | `IMAGE_IN_USE` | Image shown in a GIMP window the bridge did not create. |
+| `PROCEDURE_NOT_ALLOWED` | The procedure is outside the generic-access allowlist (`details.reason`). |
 | `FONT_NOT_FOUND` | Unknown font name; `details.suggestions` lists close names. |
 | `EMPTY_SELECTION` | The operation needs a selection and nothing is selected. |
 | `IMAGE_MISMATCH` | Objects from different images combined in one operation. |

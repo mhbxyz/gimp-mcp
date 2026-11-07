@@ -7,7 +7,7 @@
 | Remote access over the network | The bridge only listens on a Unix domain socket; nothing binds TCP/UDP. |
 | Another local user connecting | Socket `0600` in a `0700` directory owned by the user; the bridge checks the peer uid with `SO_PEERCRED` and closes foreign connections before reading. |
 | A process of the same user without the token (e.g. sandboxed app with access to the runtime dir but not the token) | Mandatory `hello` with a 256-bit token from a `0600` file regenerated at each GIMP start; no operation runs before it. |
-| Arbitrary code execution through the bridge | The bridge dispatches a fixed table of operations; there is no eval, no Script-Fu passthrough. |
+| Arbitrary code execution through the bridge | The bridge dispatches a fixed table of operations; there is no eval, no Script-Fu passthrough. Generic PDB access goes through an allowlist that denies evaluation, consoles, servers, files, UI and external-effect plug-ins (`gmb_policy.py`, see `docs/tools.md#generic-procedure-access`). |
 | Confused responses / replay | Request ids are checked; a mismatch drops the connection. Requests pinned to a session id are refused after a GIMP restart. |
 | Resource exhaustion by a client | Requests > 8 MiB are refused; responses are sent with a 10 s send timeout. |
 | Secrets/data in logs | Logs never include the token or image data. |
