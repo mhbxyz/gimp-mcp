@@ -97,3 +97,20 @@ async def test_preview_respects_the_response_size_limit(gimp_factory: Callable[.
     assert info["downscaled_for_size"] is True
     assert info["bytes"] <= 100000
     assert info["width"] < 600 and info["width"] / info["height"] == pytest.approx(1.5, rel=0.02)
+
+
+async def test_preview_reflects_a_modification(gimp: HeadlessGimp):
+    from .helpers import call, preview, rgba
+
+    async with mcp_client(gimp) as client:
+        image = (await call(client, "gimp_create_image", width=40, height=20, fill="white"))["id"]
+        before = await preview(client, image)
+        layer = await call(client, "gimp_create_layer", image=image, name="Mark", width=20, height=20, fill="#00ff00")
+        during = await preview(client, image)
+        await call(client, "gimp_set_layer_properties", item=layer["id"], visible=False)
+        after = await preview(client, image)
+        await call(client, "gimp_close_image", image=image, discard_changes=True)
+    assert rgba(before, 10, 10) == (255, 255, 255, 255)
+    assert rgba(during, 10, 10) == (0, 255, 0, 255)
+    assert rgba(during, 30, 10) == (255, 255, 255, 255)
+    assert rgba(after, 10, 10) == (255, 255, 255, 255)

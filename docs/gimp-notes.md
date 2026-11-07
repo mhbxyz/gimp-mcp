@@ -64,5 +64,11 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   `gimp-console`.
 * PDB status values: `EXECUTION_ERROR=0`, `CALLING_ERROR=1`, `PASS_THROUGH=2`,
   `SUCCESS=3` (`result.index(0)`).
+* Layer blending happens in **linear light** by default: 50% opacity of blue
+  multiplied over white gives sRGB (188, 188, 255), not (128, 128, 255).
+* Inserting a layer makes GIMP de-duplicate its name in the image; `copy()`
+  names the duplicate `"<name> copy"`. `image.reorder_item(item, parent, pos)`
+  moves across groups; `Gimp.file_load_layer()` flattens a file into one layer
+  named after the file.
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.
