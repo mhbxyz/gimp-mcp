@@ -171,8 +171,9 @@ def register(kit: Toolkit) -> None:
         name="gimp_set_layer_properties",
         title="Set layer properties",
         description=(
-            "Rename a layer or group and/or change its visibility, opacity (0-100) or blend mode. Only the "
-            "given properties change. Not destructive: pixels are untouched. One undo step."
+            "Rename a layer or group and/or change its visibility, opacity (0-100), blend mode or locks "
+            "(content, position, visibility, alpha). Only the given properties change. Not destructive: pixels "
+            "are untouched. One undo step."
         ),
         annotations=MUTATING,
     )
@@ -182,11 +183,25 @@ def register(kit: Toolkit) -> None:
         visible: bool | None = None,
         opacity: Annotated[float | None, Field(ge=0, le=100)] = None,
         mode: Annotated[str | None, Field(description=MODE_DESCRIPTION)] = None,
+        lock_content: bool | None = None,
+        lock_position: bool | None = None,
+        lock_visibility: bool | None = None,
+        lock_alpha: bool | None = None,
     ) -> LayerNode:
         codec = await kit.codec()
         data = await kit.call(
             "layer.set",
-            {"item": codec.parse_item(item), "name": name, "visible": visible, "opacity": opacity, "mode": mode},
+            {
+                "item": codec.parse_item(item),
+                "name": name,
+                "visible": visible,
+                "opacity": opacity,
+                "mode": mode,
+                "lock_content": lock_content,
+                "lock_position": lock_position,
+                "lock_visibility": lock_visibility,
+                "lock_alpha": lock_alpha,
+            },
             codec=codec,
             mutating=True,
         )

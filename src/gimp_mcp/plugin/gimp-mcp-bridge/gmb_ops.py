@@ -494,7 +494,18 @@ def check_position(image, parent, position, moving=None):
         )
 
 
+LOCK_SETTERS = {
+    "lock_content": "set_lock_content",
+    "lock_position": "set_lock_position",
+    "lock_visibility": "set_lock_visibility",
+    "lock_alpha": "set_lock_alpha",
+}
+
+
 def apply_layer_properties(layer, params):
+    for key, setter in LOCK_SETTERS.items():
+        if params.get(key) is not None:
+            getattr(layer, setter)(bool(params[key]))
     if params.get("mode") is not None:
         layer.set_mode(layer_mode(params["mode"]))
     if params.get("name") is not None:
@@ -629,8 +640,140 @@ def layer_delete(params):
     return {"item": params["item"]}
 
 
+# -- transforms --------------------------------------------------------------------------
+
+INTERPOLATIONS = {v.value_nick: v for v in Gimp.InterpolationType.__enum_values__.values()}
+
+
+def descendants(layer):
+    yield layer
+    if item_kind(layer) == "group":
+        for child in layer.get_children():
+            yield from descendants(child)
+
+
+def require_unlocked(layer, position=False, content=False):
+    for item in descendants(layer):
+        if position and item.get_lock_position():
+            raise BridgeError(
+                "LOCKED", "the position of %r is locked" % item.get_name(), {"item": item.get_id(), "lock": "position"}
+            )
+        if content and item_kind(item) != "group" and item.get_lock_content():
+            raise BridgeError(
+                "LOCKED", "the pixels of %r are locked" % item.get_name(), {"item": item.get_id(), "lock": "content"}
+            )
+
+
+class transform_context:
+    def __init__(self, interpolation="cubic", clip="adjust"):
+        self.interpolation = INTERPOLATIONS[interpolation]
+        self.clip = Gimp.TransformResize.CLIP if clip == "clip" else Gimp.TransformResize.ADJUST
+
+    def __enter__(self):
+        Gimp.context_push()
+        Gimp.context_set_interpolation(self.interpolation)
+        Gimp.context_set_transform_resize(self.clip)
+        return self
+
+    def __exit__(self, *exc):
+        Gimp.context_pop()
+        return False
+
+
+def geometry(image):
+    return {"width": image.get_width(), "height": image.get_height(), "dirty": bool(image.is_dirty())}
+
+
+@mutation
+def image_scale(params):
+    image = get_image(params)
+    with transform_context(params.get("interpolation", "cubic")):
+        image.scale(params["width"], params["height"])
+    return geometry(image)
+
+
+@mutation
+def image_resize(params):
+    image = get_image(params)
+    image.resize(params["width"], params["height"], params.get("offset_x", 0), params.get("offset_y", 0))
+    return geometry(image)
+
+
+@mutation
+def image_crop(params):
+    image = get_image(params)
+    x, y, width, height = params["x"], params["y"], params["width"], params["height"]
+    if x < 0 or y < 0 or x + width > image.get_width() or y + height > image.get_height():
+        raise BridgeError(
+            "INVALID_ARGUMENT",
+            "crop rectangle (%d, %d, %dx%d) is not inside the %dx%d canvas"
+            % (x, y, width, height, image.get_width(), image.get_height()),
+            {"canvas": [image.get_width(), image.get_height()]},
+        )
+    image.crop(width, height, x, y)
+    return geometry(image)
+
+
+@mutation
+def layer_offsets(params):
+    layer = get_layer(params)
+    require_unlocked(layer, position=True)
+    with undo_step(layer.get_image()):
+        layer.set_offsets(params["x"], params["y"])
+    return layer_node(layer)
+
+
+@mutation
+def layer_scale(params):
+    layer = get_layer(params)
+    require_unlocked(layer, position=True, content=True)
+    _ok, x, y = layer.get_offsets()
+    with undo_step(layer.get_image()), transform_context(params.get("interpolation", "cubic")):
+        layer.scale(params["width"], params["height"], True)
+        if params.get("anchor") == "top-left":
+            layer.set_offsets(x, y)
+    return layer_node(layer)
+
+
+@mutation
+def layer_rotate(params):
+    import math
+
+    layer = get_layer(params)
+    require_unlocked(layer, position=True, content=True)
+    angle = float(params["angle"]) % 360.0
+    if angle == 0.0:
+        return layer_node(layer)
+    with undo_step(layer.get_image()), transform_context(params.get("interpolation", "cubic"), params.get("clip")):
+        result = layer.transform_rotate(math.radians(angle), True, 0, 0)
+    if result is None:
+        raise BridgeError("GIMP_ERROR", "GIMP refused to rotate item %d" % layer.get_id())
+    return layer_node(result)
+
+
+@mutation
+def layer_flip(params):
+    layer = get_layer(params)
+    require_unlocked(layer, position=True, content=True)
+    orientation = (
+        Gimp.OrientationType.HORIZONTAL if params["direction"] == "horizontal" else Gimp.OrientationType.VERTICAL
+    )
+    with undo_step(layer.get_image()):
+        result = layer.transform_flip_simple(orientation, True, 0)
+    if result is None:
+        raise BridgeError("GIMP_ERROR", "GIMP refused to flip item %d" % layer.get_id())
+    return layer_node(result)
+
+
 def build_operations():
     return {
+        "image.scale": image_scale,
+        "image.resize": image_resize,
+        "image.crop": image_crop,
+        "layer.offsets": layer_offsets,
+        "layer.scale": layer_scale,
+        "layer.rotate": layer_rotate,
+        "layer.flip": layer_flip,
         "layer.create": layer_create,
         "group.create": group_create,
         "layer.import": layer_import,
