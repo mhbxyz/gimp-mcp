@@ -22,6 +22,18 @@ claude mcp add gimp -- uv --directory /path/to/gimp-mcp run gimp-mcp serve
 
 Then ask the client to call `gimp_status`.
 
+## Demo
+
+```sh
+uv run demo/thumbnail.py                 # isolated headless GIMP, outputs in demo/out/
+uv run demo/thumbnail.py --socket PATH   # or drive your running GIMP
+```
+
+Builds a 1280×720 thumbnail (blurred backdrop with editable corrections,
+masked photo, banner, editable title edited afterwards), saves the XCF,
+reopens it, exports PNG and JPEG and writes `demo/out/report.md` with every MCP
+call and verification. Walk-through: [docs/guide-thumbnail.md](docs/guide-thumbnail.md).
+
 ## Documentation
 
 - [Installation and troubleshooting](docs/install.md)

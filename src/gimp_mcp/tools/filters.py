@@ -38,7 +38,9 @@ class FilterInfo(BaseModel):
 
 class FilterList(BaseModel):
     item: str
-    filters: list[FilterInfo] = Field(description="Editable filters on the layer, in application order.")
+    filters: list[FilterInfo] = Field(
+        description="Editable filters on the layer, top of the filter stack first (most recently added first)."
+    )
 
 
 def register(kit: Toolkit) -> None:
