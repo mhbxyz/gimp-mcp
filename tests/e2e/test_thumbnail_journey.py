@@ -41,8 +41,10 @@ async def test_thumbnail_journey_produces_verified_outputs(gimp: HeadlessGimp, t
         assert jpg.format == "JPEG" and jpg.size == (1280, 720)
     assert (tmp_path / "thumbnail.xcf").read_bytes().startswith(b"gimp xcf")
     assert sorted(p.name for p in (tmp_path / "previews").iterdir()) == [
-        "01-backdrop.png", "02-subject.png", "03-title.png", "04-final.png",
+        "01-backdrop.png", "02-subject.png", "03-title.png", "04-retitled.png", "05-badge.png",
+        "06-undo.png", "07-redo.png", "08-final.png",
     ]  # fmt: skip
+    assert "`gimp_restore_checkpoint`" in (tmp_path / "report.md").read_text()
     report_text = (tmp_path / "report.md").read_text()
     assert "Result: **PASS**" in report_text
     assert "`gimp_set_text`" in report_text and "`gimp_export_image`" in report_text

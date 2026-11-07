@@ -4,7 +4,7 @@
 
 Inventory: GIMP **3.2.6**, 1030 PDB procedures (722 internal, 3 persistent, 244 plugin, 61 temporary), 200 GEGL operations available to filters.
 
-MCP tools: **46**. PDB procedures relied upon by tools: **112** (10.9% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
+MCP tools: **52**. PDB procedures relied upon by tools: **117** (11.4% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
 
 ## Capabilities
 
@@ -17,7 +17,7 @@ MCP tools: **46**. PDB procedures relied upon by tools: **112** (10.9% of the in
 | Layers | Create, group, import, duplicate, rename, reorder, delete layers; visibility, opacity, mode, locks | tested | `gimp_create_layer`, `gimp_create_group`, `gimp_import_layer`, `gimp_duplicate_layer`, `gimp_set_layer_properties`, `gimp_move_layer`, `gimp_delete_layer` | `tests/e2e/test_layers.py` | 3.2 |  |
 | Geometry | Scale/resize canvas/crop images; move, scale, rotate, flip layers | tested | `gimp_resize_image`, `gimp_resize_canvas`, `gimp_crop_image`, `gimp_set_layer_offsets`, `gimp_scale_layer`, `gimp_rotate_layer`, `gimp_flip_layer` | `tests/e2e/test_transform.py` | 3.2 | Perspective, shear and arbitrary matrices are not exposed. |
 | Discovery | Search and describe PDB procedures (read-only) | tested | `gimp_search_procedures`, `gimp_describe_procedure` | `tests/e2e/test_procedures.py` | 3.2 | Introspection only; nothing is executed. |
-| History | Undo / redo from a client | unsupported | — | — | 3.2 | GIMP 3.2 offers no undo/redo procedure to plug-ins (only undo groups); see #9. |
+| History | Undo groups (one GIMP undo step, closed on disconnect); checkpoints for undo/redo by agents | tested | `gimp_begin_undo_group`, `gimp_end_undo_group`, `gimp_create_checkpoint`, `gimp_list_checkpoints`, `gimp_restore_checkpoint`, `gimp_delete_checkpoint` | `tests/e2e/test_history.py`, `tests/unit/test_undo_groups.py` | 3.2 | GIMP 3.2 has no undo/redo procedure for plug-ins: restoring a checkpoint replaces the image (new ids). The effect of undo groups on GIMP's own history cannot be read back by plug-ins. |
 | Painting | Fill (selection or whole layer), polylines, rectangles and ellipses with explicit color/width/opacity | tested | `gimp_fill`, `gimp_draw_path`, `gimp_draw_shape` | `tests/e2e/test_paint.py` | 3.2 | Brush-based painting (paintbrush, airbrush, clone...) and gradients are not exposed. |
 | Selections | Rectangle/ellipse selections (replace/add/subtract/intersect), all/none/invert, bounds; layer masks | tested | `gimp_select_rectangle`, `gimp_select_ellipse`, `gimp_modify_selection`, `gimp_get_selection`, `gimp_add_layer_mask`, `gimp_set_layer_mask`, `gimp_remove_layer_mask` | `tests/e2e/test_selections.py` | 3.2 | Free/fuzzy/by-color selections, paths and channels are not exposed. |
 | Filters | Brightness/contrast, hue/saturation, Gaussian blur; destructive or editable (non-destructive) filters | tested | `gimp_brightness_contrast`, `gimp_hue_saturation`, `gimp_gaussian_blur`, `gimp_list_filters`, `gimp_remove_filter` | `tests/e2e/test_filters.py` | 3.2 | Other GEGL operations are available in GIMP but not exposed (see gegl_operations in the inventory). |
@@ -29,7 +29,7 @@ MCP tools: **46**. PDB procedures relied upon by tools: **112** (10.9% of the in
 
 | Family | Procedures in GIMP | Used by MCP tools |
 |---|---|---|
-| `gimp-image-*` | 137 | 26 |
+| `gimp-image-*` | 137 | 30 |
 | `gimp-context-*` | 121 | 15 |
 | `plug-in-*` | 68 | 0 |
 | `gimp-drawable-*` | 56 | 14 |
@@ -120,7 +120,7 @@ MCP tools: **46**. PDB procedures relied upon by tools: **112** (10.9% of the in
 | `gimp-clone-*` | 2 | 0 |
 | `gimp-convolve-*` | 2 | 0 |
 | `gimp-debug-*` | 2 | 0 |
-| `gimp-displays-*` | 2 | 0 |
+| `gimp-displays-*` | 2 | 1 |
 | `gimp-dodgeburn-*` | 2 | 0 |
 | `gimp-dynamics-*` | 2 | 0 |
 | `gimp-eraser-*` | 2 | 0 |

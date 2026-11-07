@@ -104,11 +104,13 @@ def _peer_uid(sock: socket.socket) -> int | None:
 
 
 class Connection:
-    def __init__(self, sock: socket.socket, peer_uid: int | None):
+    def __init__(self, sock: socket.socket, peer_uid: int | None, connection_id: int = 0):
+        self.id = connection_id
         self.sock = sock
         self.peer_uid = peer_uid
         self.buffer = b""
         self.authenticated = False
+        self.dropped = False
 
     def fileno(self) -> int:
         return self.sock.fileno()
@@ -135,6 +137,13 @@ class BridgeServer:
         self.listener: socket.socket | None = None
         self.connections: dict[int, Connection] = {}
         self.on_quit: Callable[[], None] | None = None
+        # Called with the connection id when a client goes away.
+        self.on_disconnect: list = []
+        # Id of the connection whose request is being executed (for operations
+        # that keep per-client state, e.g. undo groups).
+        self.current_connection_id = None
+        self.last_connection_id = None
+        self._next_connection_id = 0
 
     # -- lifecycle -----------------------------------------------------------------
 
@@ -213,16 +222,25 @@ class BridgeServer:
             sock.close()
             return None
         sock.setblocking(False)
-        conn = Connection(sock, uid)
+        self._next_connection_id += 1
+        conn = Connection(sock, uid, self._next_connection_id)
         self.connections[conn.fileno()] = conn
         return conn
 
     def drop(self, conn: Connection) -> None:
+        if getattr(conn, "dropped", False):
+            return
+        conn.dropped = True
         self.connections.pop(conn.fileno(), None)
         try:
             conn.sock.close()
         except OSError:
             pass
+        for callback in list(self.on_disconnect):
+            try:
+                callback(conn.id)
+            except Exception:
+                log("disconnect hook failed:\n%s" % traceback.format_exc())
 
     def handle_readable(self, conn: Connection) -> bool:
         """Process available bytes. Returns False when the connection was closed."""
@@ -294,6 +312,8 @@ class BridgeServer:
         elif operation is None:
             response = self._error(request_id, BridgeError("UNKNOWN_METHOD", "unknown method %r" % method))
         else:
+            self.current_connection_id = conn.id
+            self.last_connection_id = conn.id
             try:
                 response = {"id": request_id, "result": operation(params)}
             except BridgeError as exc:
@@ -304,6 +324,7 @@ class BridgeServer:
                     request_id,
                     BridgeError("GIMP_ERROR", "%s: %s" % (type(exc).__name__, exc), {"method": method}),
                 )
+        self.current_connection_id = None
         sent = self._send(conn, response)
         if method == "session.quit" and self.on_quit is not None and "result" in response:
             self.on_quit()
