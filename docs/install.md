@@ -10,10 +10,11 @@
 | Python for the MCP server | 3.11+ | `python3 --version` |
 | [uv](https://docs.astral.sh/uv/) (recommended) | 0.9+ | `uv --version` |
 
-On Arch: `pacman -S gimp python-gobject`. On Debian/Ubuntu make sure the
+On Arch: `pacman -S gimp python-gobject`. GIMP from Flathub
+(`flatpak install flathub org.gimp.GIMP`) works too, with nothing more to
+install: it brings its own Python, and `setup`/`doctor` detect it. On Debian/Ubuntu make sure the
 distribution ships GIMP ≥ 3.2 (older 3.0 builds are refused with
-`VERSION_INCOMPATIBLE`). Flatpak GIMP is not supported yet (sandboxed runtime
-directory).
+`VERSION_INCOMPATIBLE`). 
 
 ## Install
 

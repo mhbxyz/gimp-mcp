@@ -58,6 +58,14 @@ ci/run-e2e.sh                 # build the image, run everything
 ci/run-e2e.sh tests/e2e -x    # extra pytest arguments
 ```
 
+### Flatpak GIMP
+
+`ci/run-flatpak-e2e.sh` builds `ci/Dockerfile.flatpak` (Arch + Flatpak GIMP
+from Flathub at a pinned commit) and runs `tests/e2e/test_flatpak.py` in a
+privileged, disposable container. The test is skipped elsewhere
+(`GIMP_MCP_FLATPAK_E2E=1` only in that image) because Flatpak GIMP always uses
+the user's real `~/.config/GIMP`.
+
 ### Diagnosing a failure
 
 * A failing end-to-end test report contains a `GIMP log (...)` section with

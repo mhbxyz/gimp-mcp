@@ -40,6 +40,10 @@ def default_socket_path(environ: dict[str, str]) -> str:
     if explicit:
         return explicit
     runtime = environ.get("XDG_RUNTIME_DIR")
+    app = environ.get("FLATPAK_ID")
+    if app and runtime:
+        # Inside a Flatpak sandbox only $XDG_RUNTIME_DIR/app/$FLATPAK_ID is shared with the host.
+        return os.path.join(runtime, "app", app, "gimp-mcp", "bridge.sock")
     if runtime and os.path.isdir(runtime):
         return os.path.join(runtime, "gimp-mcp", "bridge.sock")
     return os.path.join("/tmp", "gimp-mcp-%d" % os.getuid(), "bridge.sock")

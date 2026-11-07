@@ -1,0 +1,20 @@
+# GIMP from Flathub (org.gimp.GIMP) for the Flatpak end-to-end tests.
+# The app is pinned to a Flathub commit (GIMP 3.2.8, GNOME runtime 51); bump
+# FLATPAK_COMMIT deliberately. Runs with `docker run --privileged` (bubblewrap).
+FROM archlinux:base
+
+ARG ARCH_SNAPSHOT=2026/10/15
+ARG FLATPAK_COMMIT=a13ff5e6c862b2274ef5773704fe31cbb792b2ce0f207b08e8a310e6a6a496d7
+RUN echo "Server = https://archive.archlinux.org/repos/${ARCH_SNAPSHOT}/\$repo/os/\$arch" > /etc/pacman.d/mirrorlist \
+ && pacman -Syyuu --noconfirm \
+ && pacman -S --noconfirm --needed flatpak python uv git \
+ && pacman -Scc --noconfirm
+
+RUN useradd -m tester
+USER tester
+WORKDIR /home/tester
+RUN flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo \
+ && flatpak install --user -y --noninteractive flathub org.gimp.GIMP//stable \
+ && flatpak update --user -y --noninteractive --commit="${FLATPAK_COMMIT}" org.gimp.GIMP \
+ && flatpak info --user org.gimp.GIMP
+ENV XDG_RUNTIME_DIR=/tmp/runtime-tester GIMP_MCP_FLATPAK_E2E=1
