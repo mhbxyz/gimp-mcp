@@ -164,6 +164,18 @@ def find(image: dict[str, Any], name: str) -> dict[str, Any]:
     raise KeyError(name)
 
 
+async def first_text(gimp: Session, image: str, text: str) -> dict[str, Any]:
+    """Find a text layer by its text (layer names of new text layers are derived from the text)."""
+    details = await gimp.call("gimp_inspect_image", image=image)
+    stack = list(details["layers"])
+    while stack:
+        node = stack.pop(0)
+        if node["kind"] == "text" and node["name"].startswith(text):
+            return node
+        stack.extend(node.get("children") or [])
+    raise KeyError(text)
+
+
 def image_size(data: bytes) -> tuple[int, int]:
     from PIL import Image
 
@@ -181,6 +193,8 @@ def pixel(data: bytes, x: int, y: int) -> tuple[int, int, int]:
 
 EXPECTED_TREE = [
     ["Title", "group", [
+        ["Badge text", "text", []],
+        ["Badge", "layer", []],
         ["Title text", "text", []],
         ["Title shadow", "text", []],
         ["Accent", "layer", []],
@@ -277,7 +291,61 @@ async def build(gimp: Session, report: Report) -> dict[str, Any]:
     await gimp.call("gimp_set_text", item=title["id"], color="#fff3d6")
     props = await gimp.call("gimp_inspect_text", item=title["id"])
     report.check("title is still editable text after the edit", props["text"] == FINAL_TITLE, props["text"])
-    final_png = await gimp.preview(image, "04-final", f"4. Final composition, title '{FINAL_TITLE}'")
+    await gimp.preview(image, "04-retitled", f"4. Title re-typed: '{FINAL_TITLE}'")
+
+    # A badge, added as ONE undo step, then undone and redone with checkpoints
+    # (GIMP gives plug-ins no undo/redo: checkpoints are the agent's undo).
+    before = await gimp.call("gimp_create_checkpoint", image=image, label="before badge")
+    await gimp.call("gimp_begin_undo_group", image=image, label="Add badge")
+    badge = await gimp.call("gimp_create_layer", image=image, name="Badge", parent=title_group)
+    await gimp.call(
+        "gimp_draw_shape",
+        item=badge["id"],
+        shape="ellipse",
+        x=1110,
+        y=24,
+        width=140,
+        height=140,
+        fill_color="#e63946",
+        stroke_color="#ffffff",
+        stroke_width=4,
+    )
+    await gimp.call(
+        "gimp_create_text_layer",
+        image=image,
+        text="NEW",
+        font="Sans-serif Bold",
+        size=34,
+        color="#ffffff",
+        x=1110,
+        y=72,
+        justify="center",
+        box_width=140,
+        box_height=45,
+        parent=title_group,
+    )
+    await gimp.call("gimp_set_layer_properties", item=(await first_text(gimp, image, "NEW"))["id"], name="Badge text")
+    closed = await gimp.call("gimp_end_undo_group", image=image)
+    report.check("badge changes grouped into one undo step", closed["depth"] == 0)
+    after = await gimp.call("gimp_create_checkpoint", image=image, label="with badge")
+    badge_png = await gimp.preview(image, "05-badge", "5. Badge added (one undo group)")
+
+    undone = await gimp.call("gimp_restore_checkpoint", image=image, checkpoint=before["checkpoint"])
+    image = undone["image"]
+    undone_tree = tree(await gimp.call("gimp_inspect_image", image=image))
+    report.check("undo (restore 'before badge') removes the badge", ["Badge", "layer", []] not in undone_tree[0][2])
+    undone_png = await gimp.preview(image, "06-undo", "6. Undo: checkpoint 'before badge' restored")
+    redone = await gimp.call("gimp_restore_checkpoint", image=image, checkpoint=after["checkpoint"])
+    image = redone["image"]
+    redo_png = await gimp.preview(image, "07-redo", "7. Redo: checkpoint 'with badge' restored")
+    report.check(
+        "undo/redo visibly change the badge area",
+        pixel(badge_png, 590, 47) == pixel(redo_png, 590, 47) != pixel(undone_png, 590, 47),
+        f"badge {pixel(badge_png, 590, 47)}, undone {pixel(undone_png, 590, 47)}",
+    )
+    for checkpoint in (before, after):
+        await gimp.call("gimp_delete_checkpoint", checkpoint=checkpoint["checkpoint"])
+    final_png = await gimp.preview(image, "08-final", "8. Final composition")
 
     details = await gimp.call("gimp_inspect_image", image=image)
     report.check("canvas is 1280x720", (details["width"], details["height"]) == (WIDTH, HEIGHT))

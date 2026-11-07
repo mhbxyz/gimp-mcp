@@ -53,6 +53,7 @@ def run_bridge(procedure, config, data):
                 "bridge_version": BRIDGE_VERSION,
             },
         )
+        gmb_ops.attach(server)
         server.start()
     except Exception as exc:  # keep GIMP usable even if the bridge cannot start
         gmb_server.log("bridge disabled: %s" % exc)

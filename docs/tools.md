@@ -373,6 +373,45 @@ image dirty. Procedure names, arguments and availability depend on the GIMP
 version; check with `gimp_list_callable_procedures` (the committed matrix lists
 422 callable procedures on GIMP 3.2.6).
 
+## History: undo groups and checkpoints
+
+GIMP 3.2 gives plug-ins **no undo/redo procedure** and no way to read the undo
+history (only to open and close undo *groups*). Two separate mechanisms are
+therefore offered; neither is a transaction and **nothing is ever rolled back
+automatically**.
+
+### Undo groups — one step in GIMP's own history
+
+* `gimp_begin_undo_group(image, label?)` → `depth`; `gimp_end_undo_group(image)`
+  → `depth` (`NO_OPEN_GROUP` if this client has no open group on the image).
+* Every change between them becomes **one** step of GIMP's undo history, which
+  a human undoes with Ctrl+Z in GIMP's UI. Groups nest.
+* **Always closed**: groups are tracked per client connection and closed by the
+  bridge when the client disconnects (exit, crash, timeout), even after errors.
+  A tool error inside a group does not close or cancel it; already applied
+  changes stay applied.
+* Limit: changes made meanwhile in GIMP's UI on the same image join the group.
+  Plug-ins cannot read the undo stack, so the grouping itself is not verified
+  by automated tests (closing on disconnect is: `tests/unit/test_undo_groups.py`,
+  `tests/e2e/test_history.py`).
+
+### Checkpoints — undo/redo for agents
+
+* `gimp_create_checkpoint(image, label?)` keeps a full copy of the image
+  (layers, groups, text, masks, editable filters, selection); copies are hidden
+  from `gimp_status`, use memory, max. 20 per image.
+* `gimp_restore_checkpoint(image, checkpoint)` replaces the image with that
+  state. **The image gets a new id and all item ids change** (`previous_image`
+  becomes `NOT_FOUND`); GIMP windows showing it are reconnected (verified in the
+  GUI); the XCF file association is kept; the image is marked dirty; its GIMP
+  undo history starts empty. Checkpoints survive restorations, so: checkpoint
+  *A*, change, checkpoint *B*, restore *A* = undo, restore *B* = redo.
+* `gimp_list_checkpoints(image)` (oldest first), `gimp_delete_checkpoint(checkpoint)`;
+  closing an image deletes its checkpoints.
+
+Errors: `NO_OPEN_GROUP`, `CHECKPOINT_LIMIT`, `IMAGE_MISMATCH` (checkpoint of
+another image), `NOT_FOUND`.
+
 ## Error codes
 
 | Code | Meaning |
@@ -396,6 +435,8 @@ version; check with `gimp_list_callable_procedures` (the committed matrix lists
 | `UNSUPPORTED_FORMAT` | Extension or file content not supported by this operation. |
 | `UNSAVED_CHANGES` | Closing a dirty image without `discard_changes`. |
 | `IMAGE_IN_USE` | Image shown in a GIMP window the bridge did not create. |
+| `NO_OPEN_GROUP` | `gimp_end_undo_group` without an open group from this client (closed on disconnect). |
+| `CHECKPOINT_LIMIT` | 20 checkpoints already kept for the image. |
 | `PROCEDURE_NOT_ALLOWED` | The procedure is outside the generic-access allowlist (`details.reason`). |
 | `FONT_NOT_FOUND` | Unknown font name; `details.suggestions` lists close names. |
 | `EMPTY_SELECTION` | The operation needs a selection and nothing is selected. |
