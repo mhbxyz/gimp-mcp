@@ -3,9 +3,6 @@
 from __future__ import annotations
 
 import os
-import shutil
-import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -13,7 +10,7 @@ from mcp import Client, StdioServerParameters
 from PIL import Image
 
 import gimp_mcp
-from gimp_mcp.headless import HeadlessGimp, find_gimp_console, system_path
+from gimp_mcp.headless import HeadlessGimp, find_gimp_console
 
 from .dist_helpers import REQUIREMENT, ROOT, install_distribution, run
 
