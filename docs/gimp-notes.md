@@ -43,5 +43,12 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   stable strings in the API.
 * `Gimp.LayerMask` is a subclass of `Gimp.Channel`; `Gimp.Layer.from_mask(mask)`
   finds the owning layer.
+* `image.get_thumbnail(w, h, Gimp.PixbufTransparency.KEEP_ALPHA)` renders the
+  projection into a `GdkPixbuf` (RGBA, exact requested size when proportional)
+  without touching the dirty flag; it returns `None` above 1024 px.
+  `pixbuf.save_to_bufferv("png", [], [])` encodes it.
+* `Gimp.DrawableFilter.new(drawable, "gegl:<op>", name)` + `get_config()`
+  properties + `update()`; `drawable.merge_filter(f)` applies it destructively
+  (afterwards `get_filters()` is empty).
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.

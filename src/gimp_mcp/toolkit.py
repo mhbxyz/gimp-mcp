@@ -35,9 +35,7 @@ def error_result(error: GimpMcpError) -> CallToolResult:
         text += f"\nHint: {error.hint}"
     if error.outcome == "unknown":
         text += "\nOutcome: unknown - the change may or may not have been applied; inspect before retrying."
-    return CallToolResult(
-        content=[TextContent(type="text", text=text)], structured_content=payload, is_error=True
-    )
+    return CallToolResult(content=[TextContent(type="text", text=text)], structured_content=payload, is_error=True)
 
 
 def success_result(data: BaseModel, extra: list[ContentBlock] | None = None) -> CallToolResult:
@@ -102,9 +100,7 @@ class Toolkit:
                     return success_result(value.data, value.extra_content)
                 return success_result(value)
 
-            self.mcp.add_tool(
-                wrapper, name=name, title=title, description=description, annotations=annotations
-            )
+            self.mcp.add_tool(wrapper, name=name, title=title, description=description, annotations=annotations)
             return fn
 
         return decorator

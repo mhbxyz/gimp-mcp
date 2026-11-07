@@ -47,9 +47,7 @@ IMAGE = {
             5,
             "Outer",
             "group",
-            children=[
-                layer(6, "Title", mask={"id": 9, "apply": True, "show": False, "edit": False}, parent=5)
-            ],
+            children=[layer(6, "Title", mask={"id": 9, "apply": True, "show": False, "edit": False}, parent=5)],
         ),
         layer(2, "Background"),
     ],

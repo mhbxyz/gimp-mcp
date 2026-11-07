@@ -26,8 +26,6 @@ async def test_real_client_sees_gimp_version_and_an_open_image(
     data = result.structured_content
     assert data is not None
     assert data["gimp_version"].startswith("3.")
-    assert [(image["file"], image["width"], image["height"]) for image in data["images"]] == [
-        (str(photo), 40, 30)
-    ]
+    assert [(image["file"], image["width"], image["height"]) for image in data["images"]] == [(str(photo), 40, 30)]
     assert "photo" in data["images"][0]["name"]  # display name, localized by GIMP
     assert data["images"][0]["id"].startswith("image:")

@@ -59,6 +59,29 @@ layers the same properties as a tree node with `children` as a list of ids.
 
 Errors: `INVALID_ID`, `NOT_FOUND`, `SESSION_CHANGED`.
 
+## Preview
+
+### `gimp_preview(image, max_size?)`
+
+Read-only. Returns an MCP **image content block** (`image/png`) plus
+structured metadata: `width`, `height` (preview), `source_width`,
+`source_height`, `scale`, `bytes`, `downscaled_for_size`.
+
+* `max_size`: longest side in pixels, 16–1024; default 512, configurable with
+  `GIMP_MCP_PREVIEW_MAX_SIZE`. Proportions are kept; images are never upscaled.
+* Response limit: if the PNG exceeds `GIMP_MCP_PREVIEW_MAX_BYTES` (default
+  2 000 000 bytes, minimum 10 000), the preview is halved until it fits and
+  `downscaled_for_size` is `true`.
+* Fidelity: rendered by GIMP's own projection of the **visible** layers (blend
+  modes, opacity, masks included) through `Gimp.Image.get_thumbnail`, with
+  transparency kept as PNG alpha. Pixels are 8-bit sRGB: high bit-depth
+  precision and embedded color profiles are not reproduced; small details may
+  disappear when scaled down. For full resolution, export the image instead.
+* Side effects: none. The image is not modified, not marked dirty, its undo
+  history and saved file are untouched (verified by
+  `tests/e2e/test_preview.py`).
+* Why at most 1024: GIMP's thumbnail renderer returns nothing above 1024 px.
+
 ## Error codes
 
 | Code | Meaning |
