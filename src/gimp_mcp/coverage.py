@@ -16,6 +16,7 @@ import json
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import ModuleType
 from typing import Literal
 
 Status = Literal["tested", "partial", "unsupported"]
@@ -291,7 +292,15 @@ CAPABILITIES: tuple[Capability, ...] = (
         notes="Rich markup, outlines, kerning, language and text along paths are not exposed; the fixed/dynamic "
         "box mode cannot be read back through libgimp.",
     ),
-    Capability("Generic PDB", "Calling allowed PDB procedures", "unsupported", notes="Planned: #16."),
+    Capability(
+        "Generic PDB",
+        "List and call allowlisted PDB procedures with typed JSON arguments (see section below)",
+        "tested",
+        tools=("gimp_list_callable_procedures", "gimp_call_procedure"),
+        procedures=("libgimp:gimp_procedure_run_config",),
+        tests=("tests/e2e/test_pdb_access.py", "tests/unit/test_pdb_policy.py"),
+        notes="Allowlist policy in plugin/gimp-mcp-bridge/gmb_policy.py; run mode forced to non-interactive.",
+    ),
     Capability(
         "Other",
         "Paths/vectors, channels, guides, color mode conversion, indexed images, animation",
@@ -328,6 +337,25 @@ def all_tools() -> set[str]:
 def _family(name: str) -> str:
     parts = name.split("-")
     return "-".join(parts[:2]) if parts[0] in ("gimp", "file", "plug", "script", "python") else parts[0]
+
+
+def load_plugin_module(name: str) -> ModuleType:
+    from .plugin_modules import load
+
+    return load(name)
+
+
+def _reason_category(reason: str | None) -> str:
+    text = reason or ""
+    if text.startswith("denied"):
+        return "denied by name (code evaluation, UI, shared context, quitting, external effects...)"
+    if text.startswith("outside"):
+        return "outside the allowed families (files, exports, resources, ...)"
+    if "unsupported type" in text:
+        return "argument or return type not representable in JSON (" + text.rsplit(" ", 1)[-1] + ")"
+    if text.startswith("procedure type"):
+        return "temporary/persistent procedure"
+    return text or "unknown"
 
 
 def render_matrix(inventory_path: Path) -> str:
@@ -372,6 +400,22 @@ def render_matrix(inventory_path: Path) -> str:
     ]
     for family, count in sorted(families.items(), key=lambda item: (-item[1], item[0])):
         lines.append(f"| `{family}-*` | {count} | {used_families.get(family, 0)} |")
+    policy = load_plugin_module("gmb_policy")
+    verdicts = {name: policy.evaluate(meta) for name, meta in inventory.procedures.items()}
+    callable_names = sorted(name for name, (ok, _reason) in verdicts.items() if ok)
+    reasons = Counter(_reason_category(reason) for ok, reason in verdicts.values() if not ok)
+    lines += [
+        "",
+        "## Generic access (`gimp_call_procedure`)",
+        "",
+        f"**{len(callable_names)}** of {len(names)} procedures are callable through the allowlist "
+        "(`gmb_policy.evaluate`). Refused procedures by reason:",
+        "",
+        "| Reason | Procedures |",
+        "|---|---|",
+    ]
+    for reason, count in sorted(reasons.items(), key=lambda item: (-item[1], item[0])):
+        lines.append(f"| {reason} | {count} |")
     lines += ["", "## Version-dependent references", ""]
     if missing:
         lines += [

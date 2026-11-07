@@ -40,13 +40,15 @@ def run_bridge(procedure, config, data):
         import gmb_ops
 
         operations = gmb_ops.build_operations()
+        session_id = gmb_server.gimp_session_id()
+        gmb_ops.SESSION["id"] = session_id
         server = gmb_server.BridgeServer(
             socket_path,
             token=secrets.token_hex(32),
             operations=operations,
             session_info={
                 "gimp_version": Gimp.version(),
-                "session_id": gmb_server.gimp_session_id(),
+                "session_id": session_id,
                 "pid": os.getppid(),
                 "bridge_version": BRIDGE_VERSION,
             },

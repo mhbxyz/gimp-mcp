@@ -4,7 +4,7 @@
 
 Inventory: GIMP **3.2.6**, 1030 PDB procedures (722 internal, 3 persistent, 244 plugin, 61 temporary), 200 GEGL operations available to filters.
 
-MCP tools: **44**. PDB procedures relied upon by tools: **112** (10.9% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
+MCP tools: **46**. PDB procedures relied upon by tools: **112** (10.9% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
 
 ## Capabilities
 
@@ -22,7 +22,7 @@ MCP tools: **44**. PDB procedures relied upon by tools: **112** (10.9% of the in
 | Selections | Rectangle/ellipse selections (replace/add/subtract/intersect), all/none/invert, bounds; layer masks | tested | `gimp_select_rectangle`, `gimp_select_ellipse`, `gimp_modify_selection`, `gimp_get_selection`, `gimp_add_layer_mask`, `gimp_set_layer_mask`, `gimp_remove_layer_mask` | `tests/e2e/test_selections.py` | 3.2 | Free/fuzzy/by-color selections, paths and channels are not exposed. |
 | Filters | Brightness/contrast, hue/saturation, Gaussian blur; destructive or editable (non-destructive) filters | tested | `gimp_brightness_contrast`, `gimp_hue_saturation`, `gimp_gaussian_blur`, `gimp_list_filters`, `gimp_remove_filter` | `tests/e2e/test_filters.py` | 3.2 | Other GEGL operations are available in GIMP but not exposed (see gegl_operations in the inventory). |
 | Text | Editable text layers: text, font, size (px/pt), color, justification, spacing, fixed box; font list | tested | `gimp_create_text_layer`, `gimp_set_text`, `gimp_inspect_text`, `gimp_list_fonts` | `tests/e2e/test_text.py` | 3.2 | Rich markup, outlines, kerning, language and text along paths are not exposed; the fixed/dynamic box mode cannot be read back through libgimp. |
-| Generic PDB | Calling allowed PDB procedures | unsupported | — | — | 3.2 | Planned: #16. |
+| Generic PDB | List and call allowlisted PDB procedures with typed JSON arguments (see section below) | tested | `gimp_list_callable_procedures`, `gimp_call_procedure` | `tests/e2e/test_pdb_access.py`, `tests/unit/test_pdb_policy.py` | 3.2 | Allowlist policy in plugin/gimp-mcp-bridge/gmb_policy.py; run mode forced to non-interactive. |
 | Other | Paths/vectors, channels, guides, color mode conversion, indexed images, animation | unsupported | — | — | 3.2 | Not planned yet. |
 
 ## Procedure families
@@ -170,6 +170,25 @@ MCP tools: **44**. PDB procedures relied upon by tools: **112** (10.9% of the in
 | `gimp-temp-*` | 1 | 0 |
 | `gimp-unit-*` | 1 | 0 |
 | `gimp-version-*` | 1 | 0 |
+
+## Generic access (`gimp_call_procedure`)
+
+**422** of 1030 procedures are callable through the allowlist (`gmb_policy.evaluate`). Refused procedures by reason:
+
+| Reason | Procedures |
+|---|---|
+| outside the allowed families (files, exports, resources, ...) | 353 |
+| denied by name (code evaluation, UI, shared context, quitting, external effects...) | 212 |
+| argument or return type not representable in JSON (GFile) | 11 |
+| argument or return type not representable in JSON (GimpDrawableFilter) | 8 |
+| argument or return type not representable in JSON (GimpUnit) | 8 |
+| argument or return type not representable in JSON (GimpFont) | 5 |
+| argument or return type not representable in JSON (GBytes) | 3 |
+| argument or return type not representable in JSON (GimpPalette) | 3 |
+| argument or return type not representable in JSON (GimpValueArray) | 2 |
+| argument or return type not representable in JSON (GimpBrush) | 1 |
+| argument or return type not representable in JSON (GimpGradient) | 1 |
+| argument or return type not representable in JSON (GimpPattern) | 1 |
 
 ## Version-dependent references
 
