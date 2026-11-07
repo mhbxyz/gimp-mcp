@@ -1,0 +1,40 @@
+name: Release (draft)
+
+# Pushing a tag vX.Y.Z builds the artifacts, runs the whole test suite against
+# them in the pinned GIMP image and creates a *draft* GitHub release.
+# Nothing is published to PyPI: that stays a manual maintainer step.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  draft:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Check the tag matches the package version
+        run: |
+          version=$(uv run --quiet python -c "import gimp_mcp; print(gimp_mcp.__version__)")
+          test "v$version" = "${GITHUB_REF_NAME}"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: ci
+          load: true
+          tags: gimp-mcp-ci
+          cache-from: type=gha
+      - name: Full test suite with a real GIMP (includes the installed-wheel test)
+        env:
+          GIMP_MCP_CI_SKIP_BUILD: "1"
+        run: ci/run-e2e.sh
+      - run: scripts/build-release.sh
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" --draft --title "gimp-mcp ${GITHUB_REF_NAME#v}" \
+            --notes-file dist/RELEASE_NOTES.md dist/*.whl dist/*.tar.gz dist/SHA256SUMS

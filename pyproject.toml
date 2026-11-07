@@ -1,16 +1,26 @@
 [project]
 name = "gimp-mcp"
-version = "0.1.0.dev0"
+version = "0.1.0"
 description = "A reliable Model Context Protocol server for inspecting and editing GIMP 3 projects."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "Manoah BERNIER" }]
+keywords = ["gimp", "mcp", "model-context-protocol", "image-editing", "llm"]
 requires-python = ">=3.11"
 classifiers = [
+    "Development Status :: 3 - Alpha",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
     "Topic :: Multimedia :: Graphics :: Editors :: Raster-Based",
 ]
 dependencies = ["mcp>=2.3,<3"]
+
+[project.urls]
+Homepage = "https://github.com/mhbxyz/gimp-mcp"
+Documentation = "https://github.com/mhbxyz/gimp-mcp/tree/main/docs"
+Issues = "https://github.com/mhbxyz/gimp-mcp/issues"
+Changelog = "https://github.com/mhbxyz/gimp-mcp/blob/main/CHANGELOG.md"
 
 [project.scripts]
 gimp-mcp = "gimp_mcp.cli:main"
