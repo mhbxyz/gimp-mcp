@@ -100,7 +100,7 @@ class HeadlessGimp:
         if not self.load_fonts:
             args.append("--no-fonts")
         args += [str(path) for path in self.open_files]
-        with open(self.log_path, "wb") as log_file:
+        with open(self.log_path, "ab") as log_file:
             self.process = subprocess.Popen(
                 args,
                 stdin=subprocess.DEVNULL,
@@ -183,9 +183,11 @@ class HeadlessGimp:
             os.killpg(self.process.pid, signal.SIGKILL)
             self.process.wait(timeout=10)
 
-    def stop(self) -> None:
+    def _terminate(self) -> None:
         process, self.process = self.process, None
-        if process is not None and process.poll() is None:
+        if process is None:
+            return
+        if process.poll() is None:
             try:
                 os.killpg(process.pid, signal.SIGTERM)
                 process.wait(timeout=15)
@@ -194,11 +196,19 @@ class HeadlessGimp:
                 process.wait(timeout=10)
             except ProcessLookupError:
                 pass
-        if process is not None:
-            try:  # plug-in processes share the group; make sure none survive
-                os.killpg(process.pid, signal.SIGKILL)
-            except (ProcessLookupError, PermissionError):
-                pass
+        try:  # plug-in processes share the group; make sure none survive
+            os.killpg(process.pid, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            pass
+
+    def restart(self) -> None:
+        """Quit GIMP and start a new GIMP process on the same socket and profile."""
+        self._terminate()
+        self.open_files = []
+        self.start()
+
+    def stop(self) -> None:
+        self._terminate()
         keep = os.environ.get("GIMP_MCP_LOG_DIR")
         if keep and self.log_path.exists():
             Path(keep).mkdir(parents=True, exist_ok=True)

@@ -17,6 +17,7 @@ import asyncio
 import json
 import logging
 import os
+import select
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -29,6 +30,7 @@ PROTOCOL_VERSION = 1
 MIN_GIMP_VERSION = (3, 2)
 MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 SOCKET_ENV = "GIMP_MCP_SOCKET"
+_POLLRDHUP = getattr(select, "POLLRDHUP", 0)
 
 
 @dataclass(frozen=True)
@@ -115,6 +117,14 @@ class BridgeClient:
     ) -> Any:
         async with self._lock:
             await self._ensure_connected()
+            try:
+                return await self._request(method, params or {}, timeout or self.request_timeout, mutating)
+            except GimpMcpError as error:
+                # A read can safely be retried once on a fresh connection when the
+                # previous one turned out to be dead (e.g. GIMP was restarted).
+                if mutating or error.code != "DISCONNECTED":
+                    raise
+            await self._ensure_connected()
             return await self._request(method, params or {}, timeout or self.request_timeout, mutating)
 
     async def connect(self) -> SessionInfo:
@@ -135,7 +145,13 @@ class BridgeClient:
     # -- internals -----------------------------------------------------------------
 
     async def _ensure_connected(self) -> None:
-        if self._writer is not None and not self._writer.is_closing():
+        if (
+            self._writer is not None
+            and self._reader is not None
+            and not self._writer.is_closing()
+            and not self._reader.at_eof()
+            and not self._peer_went_away()
+        ):
             return
         await self.close()
         socket_path = self.endpoint.socket_path
@@ -205,6 +221,20 @@ class BridgeClient:
             log.info("GIMP session changed: %s -> %s", self.session.session_id, session.session_id)
         self.session = session
 
+    def _peer_went_away(self) -> bool:
+        """Detect a dead idle connection (e.g. GIMP restarted) before sending.
+
+        The bridge never sends unsolicited data, so an idle connection that is
+        readable or hung up has been closed by the other side.
+        """
+        assert self._writer is not None
+        sock = self._writer.get_extra_info("socket")
+        if sock is None:
+            return False
+        poller = select.poll()
+        poller.register(sock.fileno(), select.POLLIN | select.POLLHUP | select.POLLERR | _POLLRDHUP)
+        return bool(poller.poll(0))
+
     async def _request(self, method: str, params: dict[str, Any], timeout: float, mutating: bool) -> Any:
         assert self._reader is not None and self._writer is not None
         self._next_id += 1
@@ -215,6 +245,12 @@ class BridgeClient:
             self._writer.write(payload.encode("utf-8") + b"\n")
             await asyncio.wait_for(self._writer.drain(), timeout=timeout)
             line = await asyncio.wait_for(self._reader.readline(), timeout=timeout)
+        except asyncio.CancelledError:
+            # The caller gave up (e.g. the MCP request was cancelled). GIMP may
+            # still run the operation; its late answer must never be read as
+            # the answer to a later request, so drop the connection.
+            await self.close()
+            raise
         except TimeoutError as exc:
             await self.close()
             raise GimpMcpError(
