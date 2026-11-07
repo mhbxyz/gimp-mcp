@@ -17,6 +17,14 @@ directory).
 
 ## Install
 
+From PyPI (once published; see `docs/releasing.md`):
+
+```sh
+uv tool install gimp-mcp      # or: pipx install gimp-mcp
+gimp-mcp install-plugin
+# or without installing anything: uvx gimp-mcp install-plugin, and `uvx gimp-mcp serve` as MCP command
+```
+
 From a release (wheel attached to the GitHub release):
 
 ```sh
