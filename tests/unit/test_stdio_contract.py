@@ -55,7 +55,9 @@ def test_stdout_carries_only_json_rpc_and_logs_go_to_stderr():
         if json.loads(line).get("id") == 2:
             break
     proc.stdin.close()  # closing stdin shuts the server down
-    rest, stderr = proc.communicate(timeout=20)
+    proc.wait(timeout=20)
+    assert proc.stderr is not None
+    rest, stderr = proc.stdout.read(), proc.stderr.read()
     directory.rmdir()
     assert proc.returncode == 0
     assert time.monotonic() - started < 20
