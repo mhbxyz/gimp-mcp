@@ -21,6 +21,7 @@ FAKE_CLI = """#!/bin/sh
 echo "$0 $*" >> "{log}"
 case "$*" in
   "mcp get gimp") {get_behaviour} ;;
+  "mcp get gimp --scope user") {get_behaviour} ;;
 esac
 exit 0
 """
@@ -63,7 +64,7 @@ def make_world(tmp_path: Path, clients: tuple[str, ...] = (), claude_has_gimp: b
     for name in ("claude", "code"):
         if name in clients:
             script = bin_dir / name
-            get = "exit 0" if claude_has_gimp else "exit 1"
+            get = "echo '  Command: /opt/gimp-mcp/bin/gimp-mcp serve'; exit 0" if claude_has_gimp else "exit 1"
             script.write_text(FAKE_CLI.format(log=log, get_behaviour=get))
             script.chmod(0o755)
     if "claude-desktop" in clients:
