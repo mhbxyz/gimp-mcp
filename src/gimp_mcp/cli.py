@@ -53,10 +53,22 @@ def cmd_uninstall(args: argparse.Namespace) -> int:
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
-    from .doctor import run_doctor
+    import os
 
+    from .doctor import Probe, render_troubleshooting, run_doctor
+
+    if args.troubleshooting:
+        sys.stdout.write(render_troubleshooting())
+        return 0
     endpoint = BridgeEndpoint.for_socket(Path(args.socket)) if args.socket else BridgeEndpoint.default()
-    return asyncio.run(run_doctor(endpoint, Path(args.gimp_dir) if args.gimp_dir else None))
+    probe = Probe(env=dict(os.environ), endpoint=endpoint, gimp_dir=Path(args.gimp_dir) if args.gimp_dir else None)
+    try:
+        code, output = asyncio.run(run_doctor(probe, as_json=args.json))
+    except Exception as exc:  # the doctor must never crash silently
+        print(f"error: the doctor could not run: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 2
+    print(output, file=sys.stdout if args.json else sys.stderr)
+    return code
 
 
 def cmd_inventory(args: argparse.Namespace) -> int:
@@ -117,9 +129,14 @@ def build_parser() -> argparse.ArgumentParser:
         cmd.add_argument("--gimp-dir", help="GIMP config dir (default: $GIMP3_DIRECTORY or ~/.config/GIMP/3.2)")
         cmd.set_defaults(func=func)
 
-    doctor = sub.add_parser("doctor", help="check the installation and the connection to GIMP")
+    doctor = sub.add_parser(
+        "doctor",
+        help="diagnose the installation and the connection to GIMP (exit 0 ok, 1 failures, 2 doctor error)",
+    )
     doctor.add_argument("--socket")
-    doctor.add_argument("--gimp-dir")
+    doctor.add_argument("--gimp-dir", help="GIMP profile to check (default: the one GIMP uses)")
+    doctor.add_argument("--json", action="store_true", help="machine-readable result on stdout")
+    doctor.add_argument("--troubleshooting", action="store_true", help="print the troubleshooting table (Markdown)")
     doctor.set_defaults(func=cmd_doctor)
 
     inventory = sub.add_parser("inventory", help="dump the procedure database of the running GIMP as JSON")

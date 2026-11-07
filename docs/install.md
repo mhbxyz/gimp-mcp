@@ -91,11 +91,8 @@ compatibility policy.
 
 ## Troubleshooting
 
-| Symptom | Cause / fix |
-|---|---|
-| `GIMP_NOT_RUNNING` | GIMP is not running, the plug-in is not installed, or GIMP was restarted without it. Run `gimp-mcp doctor`. |
-| `BRIDGE_UNAVAILABLE` | GIMP is frozen or busy (modal dialog, long filter). Retry later. |
-| `PLUGIN_VERSION_MISMATCH` | The plug-in installed in GIMP comes from another gimp-mcp version: `gimp-mcp install-plugin`, then restart GIMP. |
-| `VERSION_INCOMPATIBLE` | GIMP older than 3.2, or plug-in from another gimp-mcp version: reinstall the plug-in and restart GIMP. |
-| `ModuleNotFoundError: gi` in GIMP's console | GIMP was started from a shell with a virtualenv active; start it normally. |
-| Two GIMP instances | Only the first one gets the bridge (`BRIDGE_ALREADY_RUNNING` in the second one's console). Set `GIMP_MCP_SOCKET` per instance to run several. |
+Run `gimp-mcp doctor`: it checks GIMP, GIMP's Python, the profile and the
+plug-in, the socket permissions, the connection and concurrent GIMP instances,
+and prints how to fix each problem it finds (`--json` for scripts; exit code 1
+when something fails). The list of checks and their fixes is in
+[troubleshooting.md](troubleshooting.md), generated from the doctor itself.
