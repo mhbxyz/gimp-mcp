@@ -78,5 +78,11 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
 * On a position-locked layer GIMP refuses silently: `set_offsets()` returns
   `False`, `transform_flip_simple()` returns `None`. Check locks first.
 * `image.scale()` rounds scaled offsets (2.5 → 3).
+* `Gimp.Selection.bounds(image)` returns `(ok, non_empty, x1, y1, x2, y2)`
+  (x2/y2 exclusive); `Gimp.Selection.value(image, x, y)` is 0–255. Selection
+  changes mark the image dirty. Selecting outside the canvas is clipped.
+* Masks: `layer.create_mask(Gimp.AddMaskType.X)` + `layer.add_mask(mask)`;
+  `remove_mask(Gimp.MaskApplyMode.APPLY|DISCARD)`; masks survive an XCF round
+  trip.
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.
