@@ -38,22 +38,36 @@ def test_stdout_carries_only_json_rpc_and_logs_go_to_stderr():
         },
     )
     started = time.monotonic()
-    proc = subprocess.run(
+    proc = subprocess.Popen(
         [sys.executable, "-m", "gimp_mcp", "serve", "--verbose", "--socket", str(directory / "none.sock")],
-        input=requests,
-        capture_output=True,
-        timeout=30,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
+    assert proc.stdin is not None and proc.stdout is not None
+    proc.stdin.write(requests)
+    proc.stdin.flush()
+    lines: list[bytes] = []
+    while True:  # keep stdin open until the answer to the tool call arrives
+        line = proc.stdout.readline()
+        assert line, "server exited before answering"
+        lines.append(line)
+        if json.loads(line).get("id") == 2:
+            break
+    proc.stdin.close()  # closing stdin shuts the server down
+    proc.wait(timeout=20)
+    assert proc.stderr is not None
+    rest, stderr = proc.stdout.read(), proc.stderr.read()
     directory.rmdir()
+    assert proc.returncode == 0
     assert time.monotonic() - started < 20
-    lines = [line for line in proc.stdout.splitlines() if line.strip()]
-    assert lines, proc.stderr.decode()
+    lines += [line for line in rest.splitlines() if line.strip()]
     responses = [json.loads(line) for line in lines]  # every stdout line is JSON
     assert all(message.get("jsonrpc") == "2.0" for message in responses)
     call = next(message for message in responses if message.get("id") == 2)
     assert call["result"]["isError"] is True
     assert call["result"]["structuredContent"]["error"]["code"] == "GIMP_NOT_RUNNING"
-    assert b"gimp_status" in proc.stderr  # verbose logs are on stderr
+    assert b"gimp_status" in stderr  # verbose logs are on stderr
 
 
 async def test_real_stdio_client_gets_structured_error_when_gimp_is_absent():
