@@ -4,7 +4,7 @@
 
 Inventory: GIMP **3.2.6**, 1030 PDB procedures (722 internal, 3 persistent, 244 plugin, 61 temporary), 200 GEGL operations available to filters.
 
-MCP tools: **40**. PDB procedures relied upon by tools: **96** (9.3% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
+MCP tools: **44**. PDB procedures relied upon by tools: **112** (10.9% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
 
 ## Capabilities
 
@@ -21,7 +21,7 @@ MCP tools: **40**. PDB procedures relied upon by tools: **96** (9.3% of the inve
 | Painting | Fill (selection or whole layer), polylines, rectangles and ellipses with explicit color/width/opacity | tested | `gimp_fill`, `gimp_draw_path`, `gimp_draw_shape` | `tests/e2e/test_paint.py` | 3.2 | Brush-based painting (paintbrush, airbrush, clone...) and gradients are not exposed. |
 | Selections | Rectangle/ellipse selections (replace/add/subtract/intersect), all/none/invert, bounds; layer masks | tested | `gimp_select_rectangle`, `gimp_select_ellipse`, `gimp_modify_selection`, `gimp_get_selection`, `gimp_add_layer_mask`, `gimp_set_layer_mask`, `gimp_remove_layer_mask` | `tests/e2e/test_selections.py` | 3.2 | Free/fuzzy/by-color selections, paths and channels are not exposed. |
 | Filters | Brightness/contrast, hue/saturation, Gaussian blur; destructive or editable (non-destructive) filters | tested | `gimp_brightness_contrast`, `gimp_hue_saturation`, `gimp_gaussian_blur`, `gimp_list_filters`, `gimp_remove_filter` | `tests/e2e/test_filters.py` | 3.2 | Other GEGL operations are available in GIMP but not exposed (see gegl_operations in the inventory). |
-| Text | Editable text layers | unsupported | — | — | 3.2 | Planned: #14. |
+| Text | Editable text layers: text, font, size (px/pt), color, justification, spacing, fixed box; font list | tested | `gimp_create_text_layer`, `gimp_set_text`, `gimp_inspect_text`, `gimp_list_fonts` | `tests/e2e/test_text.py` | 3.2 | Rich markup, outlines, kerning, language and text along paths are not exposed; the fixed/dynamic box mode cannot be read back through libgimp. |
 | Generic PDB | Calling allowed PDB procedures | unsupported | — | — | 3.2 | Planned: #16. |
 | Other | Paths/vectors, channels, guides, color mode conversion, indexed images, animation | unsupported | — | — | 3.2 | Not planned yet. |
 
@@ -33,7 +33,7 @@ MCP tools: **40**. PDB procedures relied upon by tools: **96** (9.3% of the inve
 | `gimp-context-*` | 121 | 15 |
 | `plug-in-*` | 68 | 0 |
 | `gimp-drawable-*` | 56 | 14 |
-| `gimp-text-*` | 50 | 0 |
+| `gimp-text-*` | 50 | 14 |
 | `gimp-item-*` | 46 | 8 |
 | `script-fu-*` | 43 | 0 |
 | `gimp-layer-*` | 34 | 16 |
@@ -56,7 +56,7 @@ MCP tools: **40**. PDB procedures relied upon by tools: **96** (9.3% of the inve
 | `file-psd-*` | 5 | 0 |
 | `gimp-brushes-*` | 5 | 0 |
 | `gimp-display-*` | 5 | 1 |
-| `gimp-fonts-*` | 5 | 0 |
+| `gimp-fonts-*` | 5 | 1 |
 | `gimp-gradients-*` | 5 | 0 |
 | `gimp-online-*` | 5 | 0 |
 | `gimp-palettes-*` | 5 | 0 |
@@ -162,7 +162,7 @@ MCP tools: **40**. PDB procedures relied upon by tools: **96** (9.3% of the inve
 | `gimp-attach-*` | 1 | 0 |
 | `gimp-buffers-*` | 1 | 0 |
 | `gimp-detach-*` | 1 | 0 |
-| `gimp-font-*` | 1 | 0 |
+| `gimp-font-*` | 1 | 1 |
 | `gimp-getpid-*` | 1 | 0 |
 | `gimp-pencil-*` | 1 | 0 |
 | `gimp-plug-*` | 1 | 0 |

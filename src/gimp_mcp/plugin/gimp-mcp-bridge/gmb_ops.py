@@ -1285,8 +1285,132 @@ def filter_remove(params):
     raise BridgeError("NOT_FOUND", "filter %d is not on item %d" % (wanted, drawable.get_id()), {"filter": wanted})
 
 
+# -- text --------------------------------------------------------------------------------
+
+JUSTIFICATIONS = {"left": "LEFT", "right": "RIGHT", "center": "CENTER", "fill": "FILL"}
+
+
+def text_unit(abbreviation):
+    return Gimp.Unit.point() if abbreviation == "pt" else Gimp.Unit.pixel()
+
+
+def get_font(name):
+    font = Gimp.Font.get_by_name(name)
+    if font is None:
+        words = name.split()
+        suggestions = [f.get_name() for f in Gimp.fonts_get_list(words[0] if words else "")][:10]
+        raise BridgeError(
+            "FONT_NOT_FOUND",
+            "GIMP has no font named %r" % name,
+            {"font": name, "suggestions": suggestions},
+        )
+    return font
+
+
+def get_text_layer(params):
+    item = get_item(params)
+    if item_kind(item) != "text":
+        raise BridgeError(
+            "WRONG_KIND",
+            "item %d is a %s, not a text layer" % (item.get_id(), item_kind(item)),
+            {"id": item.get_id(), "kind": item_kind(item)},
+        )
+    return item
+
+
+def _hex(gegl_color):
+    r, g, b, _a = gegl_color.get_rgba_with_space(Babl.space("sRGB"))
+    return "#%02x%02x%02x" % tuple(max(0, min(255, round(v * 255))) for v in (r, g, b))
+
+
+def apply_text_properties(layer, params, font=None):
+    if params.get("text") is not None:
+        layer.set_text(params["text"])
+    if font is not None:
+        layer.set_font(font)
+    if params.get("size") is not None or params.get("unit") is not None:
+        size, unit = layer.get_font_size()
+        if params.get("size") is not None:
+            size = params["size"]
+        if params.get("unit") is not None:
+            unit = text_unit(params["unit"])
+        layer.set_font_size(float(size), unit)
+    if params.get("color") is not None:
+        layer.set_color(color(params["color"]))
+    if params.get("justify") is not None:
+        layer.set_justification(getattr(Gimp.TextJustification, JUSTIFICATIONS[params["justify"]]))
+    if params.get("letter_spacing") is not None:
+        layer.set_letter_spacing(float(params["letter_spacing"]))
+    if params.get("line_spacing") is not None:
+        layer.set_line_spacing(float(params["line_spacing"]))
+    if params.get("antialias") is not None:
+        layer.set_antialias(bool(params["antialias"]))
+    if params.get("box") is not None:
+        layer.resize(float(params["box"][0]), float(params["box"][1]))
+
+
+@mutation
+def text_create(params):
+    image = get_image(params)
+    parent = resolve_parent(image, params)
+    check_position(image, parent, params["position"])
+    font = get_font(params.get("font") or "Sans-serif")
+    with undo_step(image):
+        layer = Gimp.TextLayer.new(image, params["text"], font, float(params["size"]), text_unit(params.get("unit")))
+        image.insert_layer(layer, parent, params["position"])
+        apply_text_properties(layer, dict(params, text=None, size=None, unit=None))
+        layer.set_offsets(params.get("x", 0), params.get("y", 0))
+    return layer_node(layer)
+
+
+@mutation
+def text_set(params):
+    layer = get_text_layer(params)
+    font = get_font(params["font"]) if params.get("font") else None
+    if (params.get("x") is not None or params.get("y") is not None) and layer.get_lock_position():
+        raise BridgeError("LOCKED", "the position of %r is locked" % layer.get_name(), {"item": layer.get_id()})
+    with undo_step(layer.get_image()):
+        apply_text_properties(layer, params, font)
+        if params.get("x") is not None or params.get("y") is not None:
+            _ok, x, y = layer.get_offsets()
+            layer.set_offsets(
+                params["x"] if params.get("x") is not None else x, params["y"] if params.get("y") is not None else y
+            )
+    return layer_node(layer)
+
+
+def text_get(params):
+    layer = get_text_layer(params)
+    size, unit = layer.get_font_size()
+    _ok, x, y = layer.get_offsets()
+    return {
+        "text": layer.get_text() or "",
+        "font": layer.get_font().get_name(),
+        "size": float(size),
+        "size_unit": "pt" if unit.get_abbreviation() == "pt" else "px",
+        "color": _hex(layer.get_color()),
+        "justify": layer.get_justification().value_nick,
+        "letter_spacing": float(layer.get_letter_spacing()),
+        "line_spacing": float(layer.get_line_spacing()),
+        "antialias": bool(layer.get_antialias()),
+        "x": x,
+        "y": y,
+        "width": layer.get_width(),
+        "height": layer.get_height(),
+    }
+
+
+def fonts_list(params):
+    fonts = [f.get_name() for f in Gimp.fonts_get_list(params.get("query") or "")]
+    return {"fonts": fonts[: int(params.get("limit", 100))], "total": len(fonts)}
+
+
 def build_operations():
     return {
+        "text.create": text_create,
+        "text.set": text_set,
+        "text.get": text_get,
+        "fonts.list": fonts_list,
         "filter.apply": filter_apply,
         "filter.list": filter_list,
         "filter.remove": filter_remove,
