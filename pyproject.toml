@@ -1,0 +1,56 @@
+[project]
+name = "gimp-mcp"
+version = "0.1.0.dev0"
+description = "A reliable Model Context Protocol server for inspecting and editing GIMP 3 projects."
+readme = "README.md"
+authors = [{ name = "Manoah BERNIER" }]
+requires-python = ">=3.11"
+classifiers = [
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Graphics :: Editors :: Raster-Based",
+]
+dependencies = ["mcp>=2.3,<3"]
+
+[project.scripts]
+gimp-mcp = "gimp_mcp.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.9.26,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pillow>=13.0.0",
+    "pyright>=1.1.414",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.4.1.post1",
+    "ruff>=0.17.4",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+markers = [
+    "gimp: end-to-end test that drives a real GIMP 3 instance (skipped when GIMP is absent unless GIMP_MCP_REQUIRE_GIMP=1)",
+]
+addopts = "-ra --strict-markers"
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["SIM105"]
+
+[tool.pyright]
+include = ["src", "tests", "demo"]
+exclude = ["src/gimp_mcp/plugin"]
+pythonVersion = "3.11"
+typeCheckingMode = "standard"
+
+[tool.ruff.lint.per-file-ignores]
+# Runs on GIMP's own Python (may be older than the server's): keep it conservative.
+"src/gimp_mcp/plugin/**" = ["UP"]
