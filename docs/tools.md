@@ -224,6 +224,34 @@ error: `changed: false`, `affected: null`, nothing is done.
 Refused before any change: groups and text layers (`WRONG_KIND` — painting a
 text layer would silently rasterize it), layers with locked pixels (`LOCKED`).
 
+## Text
+
+Text layers stay **editable**: no tool rasterizes them silently (painting and
+destructive filters are refused with `WRONG_KIND`; transforms and editable
+filters keep the text — `tests/e2e/test_text.py`).
+
+* `gimp_create_text_layer(image, text, font="Sans-serif", size=32, size_unit="px", color="#000000", x=0, y=0, justify="left", letter_spacing=0, line_spacing=0, box_width?, box_height?, antialias=true, parent?, position=0)`
+  — `x`, `y`: top-left corner in image pixels. `size_unit`: `px` (pixels) or
+  `pt` (points, converted by GIMP with the image resolution). Without
+  `box_width`/`box_height` the layer grows with the text ("dynamic" box); with
+  both, the text wraps inside a fixed box of that size. Spacing in pixels.
+* `gimp_set_text(item, ...)` — same properties plus `x`, `y`; only the given
+  ones change. The layer is re-rendered by GIMP (not painted over).
+* `gimp_inspect_text(item)` — `text`, `font`, `size`, `size_unit`, `color`
+  (`#rrggbb`), `justify`, `letter_spacing`, `line_spacing`, `antialias`, `x`,
+  `y`, `width`, `height`.
+* `gimp_list_fonts(query="", limit=100)` — fontconfig names known to GIMP
+  (`Sans-serif`, `Serif`, `Monospace` are always-available aliases).
+
+Errors: `FONT_NOT_FOUND` (with `details.suggestions`, nothing changed),
+`WRONG_KIND` for non-text targets, `LOCKED` when moving a position-locked layer.
+
+Limits: fonts depend on the fonts installed on the machine running GIMP;
+rendering of a given font name may differ between machines. Rich text
+(markup), outlines, kerning, language, base direction and text on paths are not
+exposed; whether a box is fixed cannot be read back through libgimp, so
+`gimp_inspect_text` reports the layer's actual size.
+
 ## Corrections and filters
 
 | Tool | Parameters (0 = unchanged) | GIMP implementation |
@@ -321,6 +349,7 @@ listed with an `error` field instead of failing the inventory.
 | `UNSUPPORTED_FORMAT` | Extension or file content not supported by this operation. |
 | `UNSAVED_CHANGES` | Closing a dirty image without `discard_changes`. |
 | `IMAGE_IN_USE` | Image shown in a GIMP window the bridge did not create. |
+| `FONT_NOT_FOUND` | Unknown font name; `details.suggestions` lists close names. |
 | `EMPTY_SELECTION` | The operation needs a selection and nothing is selected. |
 | `IMAGE_MISMATCH` | Objects from different images combined in one operation. |
 | `LOCKED` | The targeted property or content is locked in GIMP. |
