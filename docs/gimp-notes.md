@@ -30,5 +30,18 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   `-is-enabled` exist (PDB dump of 3.2.6).
 * `Gimp.Image.get_name()` is a localized display name, e.g.
   `"[photo] (importée)"` for an imported PNG.
+* Layer names are unique **per image**: inserting a second `Dup` anywhere in
+  the same image (even in another group) renames it `Dup #1`. Different images
+  may share names.
+* `Gimp.Image.id_is_valid(n)` / `Gimp.Item.id_is_valid(n)` and
+  `Gimp.Item.get_by_id(n)` (→ `None` when gone) detect stale ids; images and
+  items are numbered by two separate global counters.
+* `layer.get_offsets()` returns `(ok, x, y)`; `image.get_resolution()` returns
+  `(ok, xres, yres)`; a new image defaults to 300 ppi with an empty profile in
+  `gimp-console`.
+* Enum values expose `.value_nick` (`multiply`, `rgb`, `u8-non-linear`), used as
+  stable strings in the API.
+* `Gimp.LayerMask` is a subclass of `Gimp.Channel`; `Gimp.Layer.from_mask(mask)`
+  finds the owning layer.
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.
