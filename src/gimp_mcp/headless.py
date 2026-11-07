@@ -64,6 +64,7 @@ class HeadlessGimp:
         open_files: list[Path] | None = None,
         startup_timeout: float = 120.0,
         load_fonts: bool = True,
+        install_plugin: bool = True,
     ):
         found = console or find_gimp_console()
         if found is None:
@@ -72,6 +73,7 @@ class HeadlessGimp:
         self.open_files = list(open_files or [])
         self.startup_timeout = startup_timeout
         self.load_fonts = load_fonts
+        self.install_plugin = install_plugin
         self.root = Path(tempfile.mkdtemp(prefix="gimp-mcp-", dir=_short_base_dir()))
         self.config_dir = self.root / "config"
         self.socket_path = self.root / "bridge.sock"
@@ -95,7 +97,8 @@ class HeadlessGimp:
 
     def start(self) -> None:
         self.config_dir.mkdir(parents=True, exist_ok=True)
-        install_plugin(self.config_dir)
+        if self.install_plugin:  # False when the plug-in was installed by other means (packaging tests)
+            install_plugin(self.config_dir)
         args = [self.console, "--no-interface", "--console-messages", "--new-instance"]
         if not self.load_fonts:
             args.append("--no-fonts")
