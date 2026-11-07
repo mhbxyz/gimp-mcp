@@ -51,3 +51,23 @@ jobs:
           name: e2e-diagnostics
           path: ci-artifacts/
           if-no-files-found: ignore
+
+  flatpak:
+    name: End-to-end with Flatpak GIMP (Flathub, pinned commit)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the Flatpak GIMP image
+        uses: docker/build-push-action@v6
+        with:
+          context: ci
+          file: ci/Dockerfile.flatpak
+          load: true
+          tags: gimp-mcp-flatpak-ci
+          cache-from: type=gha,scope=flatpak
+          cache-to: type=gha,mode=max,scope=flatpak
+      - name: Flatpak end-to-end tests
+        env:
+          GIMP_MCP_CI_SKIP_BUILD: "1"
+        run: ci/run-flatpak-e2e.sh

@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__
-from .bridge import BridgeClient, BridgeEndpoint, parse_version
+from .bridge import FLATPAK_APP, BridgeClient, BridgeEndpoint, parse_version
 from .errors import GimpMcpError
 from .headless import CONSOLE_CANDIDATES, system_path
 from .installer import PLUGIN_NAME, installed_plugin_dir
@@ -174,6 +174,7 @@ class Context:
     probe: Probe
     console: str | None = None
     gimp_series: str | None = None
+    flatpak: bool = False
     results: list[Result] = field(default_factory=list)
 
     @property
@@ -194,7 +195,10 @@ def check_gimp(ctx: Context) -> Result:
     candidates = [explicit] if explicit else list(CONSOLE_CANDIDATES)
     ctx.console = next((path for name in candidates if (path := ctx.probe.which(name))), None)
     if ctx.console is None:
-        return result("gimp", Status.FAIL, "gimp-console (GIMP 3) was not found on PATH")
+        flatpak = check_flatpak_gimp(ctx)
+        if flatpak is not None:
+            return flatpak
+        return result("gimp", Status.FAIL, "gimp-console (GIMP 3) was not found on PATH, nor a Flatpak GIMP")
     code, output = ctx.probe.run([ctx.console, "--version"])
     match = re.search(r"(\d+\.\d+\.\d+)", output)
     if code != 0 or match is None:
@@ -206,10 +210,39 @@ def check_gimp(ctx: Context) -> Result:
     return result("gimp", Status.OK, f"GIMP {version} ({ctx.console})")
 
 
+def check_flatpak_gimp(ctx: Context) -> Result | None:
+    """GIMP installed from Flathub (org.gimp.GIMP), user or system installation."""
+    flatpak = ctx.probe.which("flatpak")
+    if flatpak is None:
+        return None
+    code, output = ctx.probe.run([flatpak, "info", FLATPAK_APP])
+    match = re.search(r"Version:\s*(\d+\.\d+\.\d+)", output)
+    if code != 0 or match is None:
+        return None
+    version = match.group(1)
+    ctx.flatpak = True
+    ctx.gimp_series = ".".join(version.split(".")[:2])
+    if parse_version(version)[:2] < MIN_GIMP:
+        return result("gimp", Status.FAIL, f"Flatpak GIMP {version} is too old (3.2 or newer is required)")
+    return result("gimp", Status.OK, f"GIMP {version} (Flatpak {FLATPAK_APP})")
+
+
 GI_PROBE = "import gi; gi.require_version('Gimp', '3.0'); from gi.repository import Gimp; print('ok')"
 
 
 def check_gimp_python(ctx: Context) -> Result:
+    if ctx.flatpak:
+        flatpak = ctx.probe.which("flatpak") or "flatpak"
+        code, output = ctx.probe.run([flatpak, "run", "--command=python3", FLATPAK_APP, "-c", GI_PROBE])
+        if code != 0:
+            last = output.strip().splitlines()[-1] if output.strip() else f"exit code {code}"
+            return result(
+                "gimp-python",
+                Status.FAIL,
+                f"Flatpak GIMP's python3 cannot import GIMP's bindings: {last}",
+                "Update the Flatpak: `flatpak update org.gimp.GIMP`.",
+            )
+        return result("gimp-python", Status.OK, "Flatpak GIMP's python3 imports gi and the Gimp 3.0 typelib")
     env = dict(ctx.probe.env)
     env["PATH"] = system_path(env.get("PATH", ""))
     for name in ("VIRTUAL_ENV", "PYTHONPATH", "PYTHONHOME"):
@@ -222,6 +255,8 @@ def check_gimp_python(ctx: Context) -> Result:
 
 
 def check_venv_path(ctx: Context) -> Result:
+    if ctx.flatpak:
+        return result("venv-path", Status.OK, "Flatpak GIMP uses its own Python: not affected by PATH")
     python = ctx.probe.which("python3")
     if python is None:
         return result("venv-path", Status.OK, "no python3 on this shell's PATH")

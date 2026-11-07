@@ -7,6 +7,7 @@
 | Operating system | **Linux** (x86_64) | CI (Ubuntu 24.04 runner + Arch Linux container), developer machine (CachyOS) |
 | GIMP | **3.2.x** (3.2.6 tested) | CI pins GIMP 3.2.6-2 (`ci/Dockerfile`); older versions are refused with `VERSION_INCOMPATIBLE` |
 | GIMP packaging | distribution packages (`/usr/bin/gimp`, system Python with PyGObject) | CI, developer machine |
+| GIMP packaging | **Flatpak from Flathub** (`org.gimp.GIMP`, 3.2.8 tested) | CI job `flatpak` (`ci/Dockerfile.flatpak`, pinned Flathub commit); see [ADR 0003](adr/0003-flatpak-gimp.md) |
 | GIMP's Python (runs the plug-in) | Python 3 with PyGObject ≥ 3.50 and the `Gimp-3.0` typelib | CI (Python 3.14, PyGObject 3.58) |
 | Python for the MCP server | ≥ 3.11 | CI fast job (3.12), e2e (3.14) |
 | MCP | `mcp` Python SDK 2.x, stdio transport | e2e tests use the official client |
@@ -15,7 +16,7 @@
 
 * **Windows and macOS** — the bridge uses Unix sockets, `SO_PEERCRED`,
   `/proc` and the XDG runtime directory; nothing is claimed for them.
-* **Flatpak / Snap GIMP** — sandboxed runtime directories and Python; untested.
+* **Snap GIMP** — different confinement; untested. (Flatpak is supported, see above.)
 * **GIMP 2.10 / 3.0** — refused at connection time.
 * Remote GIMP over a network — by design the bridge is local only.
 

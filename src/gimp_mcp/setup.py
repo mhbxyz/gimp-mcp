@@ -373,6 +373,13 @@ def step_gimp(options: SetupOptions) -> tuple[bool, Path]:
     if found.status is not Status.OK:
         options.say(f"  → {found.fix}")
         return False, ctx.active_profile()
+    socket = options.env.get("GIMP_MCP_SOCKET")
+    if ctx.flatpak and socket:
+        options.say(
+            "  → GIMP_MCP_SOCKET is set: Flatpak GIMP does not see your environment. Give it the same value, "
+            f"with a path visible in its sandbox (e.g. under /tmp): `flatpak override --user "
+            f"--env=GIMP_MCP_SOCKET={socket} org.gimp.GIMP` (not applied by setup)."
+        )
     return True, ctx.active_profile()
 
 
