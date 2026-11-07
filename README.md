@@ -12,15 +12,12 @@ that serves a private local socket.
 
 ```sh
 uv tool install ./gimp_mcp-0.1.0-py3-none-any.whl   # wheel from the GitHub release (or `uv sync` in a checkout)
-gimp-mcp install-plugin                              # then restart GIMP
-gimp-mcp doctor                                      # checks GIMP, the plug-in and the connection
+gimp-mcp setup                                       # plug-in + MCP clients, guided; then restart GIMP
 ```
 
-Register the server in your MCP client (stdio):
-
-```sh
-claude mcp add gimp -- gimp-mcp serve
-```
+`setup` installs the plug-in in the GIMP profile you use, registers the server in Claude Code, Claude Desktop,
+VS Code and Cursor when they are installed (asking before each change), and checks the result.
+`gimp-mcp doctor` diagnoses any remaining problem.
 
 Then ask the client to call `gimp_status`.
 

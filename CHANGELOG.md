@@ -14,6 +14,11 @@ what is covered by the compatibility promise.
   socket, permissions, GIMP running without the bridge, several instances) and
   prints a fix for each; `--json` output and documented exit codes;
   `docs/troubleshooting.md` is generated from its checks (#39).
+- `gimp-mcp setup`: detects GIMP and its profile, installs or updates the
+  plug-in, registers the server in Claude Code, Claude Desktop, VS Code and
+  Cursor (change shown, consent or `--yes`, backups, other entries untouched,
+  snippets for undetected clients), then runs a live check and the doctor;
+  idempotent (#40).
 - Release workflow publishes the same artifacts to TestPyPI, then to PyPI,
   with trusted publishing (no stored token) and maintainer approval, and
   verifies each index serves exactly the built files and that the installed
