@@ -202,6 +202,28 @@ Locks are set with `gimp_set_layer_properties(lock_content, lock_position,
 lock_visibility, lock_alpha)`. All layer tools return the updated layer node
 (new offsets and size); image tools return `width`, `height`, `dirty`.
 
+## Painting
+
+All painting tools are **destructive for the pixels they cover** (one undo
+step each), target one drawable (a layer or a layer mask), and never depend on
+GIMP's UI settings: each call pushes a fresh GIMP context (`context_push` +
+`context_set_defaults`), sets color, opacity, blend mode, antialiasing, line
+width (pixels), cap and join explicitly, strokes with a **plain line** (not
+the user's brush) and pops the context afterwards.
+
+| Tool | Effect |
+|---|---|
+| `gimp_fill(item, color, area="selection", opacity=100, mode="normal")` | `selection`: fills the selected part (`EMPTY_SELECTION` when nothing is selected); `layer`: fills the whole layer, ignoring the selection, which is restored afterwards |
+| `gimp_draw_path(item, points, color, width=2, opacity=100, closed=false, antialias=true, cap="round", join="round")` | Polyline through `[[x, y], ...]` (image pixels, ≥ 2 points); the line is centered on the path |
+| `gimp_draw_shape(item, shape, x, y, width, height, fill_color?, stroke_color?, stroke_width=2, opacity=100, antialias=true)` | Rectangle or inscribed ellipse, filled and/or outlined (stroke centered on the outline); the selection is left unchanged |
+
+Results: `changed` and `affected` (image-space box of the pixels that may have
+changed, clipped to the layer). Drawing completely outside the layer is not an
+error: `changed: false`, `affected: null`, nothing is done.
+
+Refused before any change: groups and text layers (`WRONG_KIND` — painting a
+text layer would silently rasterize it), layers with locked pixels (`LOCKED`).
+
 ## Selections and masks
 
 The selection belongs to the image: it is undoable, **marks the image dirty**
