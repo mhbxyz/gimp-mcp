@@ -19,6 +19,7 @@ import re
 import shutil
 import stat
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -257,7 +258,13 @@ def check_gimp_python(ctx: Context) -> Result:
 def check_venv_path(ctx: Context) -> Result:
     if ctx.flatpak:
         return result("venv-path", Status.OK, "Flatpak GIMP uses its own Python: not affected by PATH")
+    # Ignore the environment running gimp-mcp itself: `uvx`/`uv run` put it first on
+    # PATH for this process only; it is not the user's shell.
+    own = os.path.realpath(Path(sys.prefix) / "bin")
     python = ctx.probe.which("python3")
+    if python is not None and os.path.realpath(Path(python).parent) == own:
+        others = [e for e in ctx.probe.env.get("PATH", "").split(os.pathsep) if e and os.path.realpath(e) != own]
+        python = next((str(Path(e) / "python3") for e in others if (Path(e) / "python3").exists()), None)
     if python is None:
         return result("venv-path", Status.OK, "no python3 on this shell's PATH")
     root = Path(python).parent.parent

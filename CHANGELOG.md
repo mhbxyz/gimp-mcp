@@ -23,6 +23,10 @@ what is covered by the compatibility promise.
   with trusted publishing (no stored token) and maintainer approval, and
   verifies each index serves exactly the built files and that the installed
   package (pip and uvx) drives a real GIMP (#36).
+- Installation documentation rewritten: a three-command quickstart at the top
+  of the README and one page per client (Claude Code, Claude Desktop, VS Code
+  and Cursor, any stdio client); their commands run in CI in a clean Ubuntu
+  26.04 and their configuration snippets are checked against `setup` (#44).
 - `server.json` for the official MCP registry (`io.github.mhbxyz/gimp-mcp`),
   validated in tests and published by the release workflow after PyPI with
   GitHub OIDC; MCPB bundles rejected (macOS/Windows only) (#43).

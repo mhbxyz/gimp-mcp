@@ -45,8 +45,15 @@ def system_path(path: str) -> str:
     venv_bins = {str(Path(sys.prefix) / "bin")}
     if os.environ.get("VIRTUAL_ENV"):
         venv_bins.add(str(Path(os.environ["VIRTUAL_ENV"]) / "bin"))
-    kept = [entry for entry in path.split(os.pathsep) if entry and entry not in venv_bins]
+    kept = [
+        entry for entry in path.split(os.pathsep) if entry and entry not in venv_bins and not is_virtualenv_bin(entry)
+    ]
     return os.pathsep.join(kept)
+
+
+def is_virtualenv_bin(entry: str) -> bool:
+    """A `bin` directory of a virtualenv (uv, venv, uvx and `uv run` environments all have pyvenv.cfg)."""
+    return (Path(entry).parent / "pyvenv.cfg").exists()
 
 
 def _short_base_dir() -> str:

@@ -234,3 +234,15 @@ def test_troubleshooting_doc_is_generated_from_the_checks():
     assert doc.read_text() == render_troubleshooting(), (
         "run: uv run gimp-mcp doctor --troubleshooting > docs/troubleshooting.md"
     )
+
+
+async def test_the_environment_running_gimp_mcp_itself_is_not_reported(tmp_path):
+    """`uvx gimp-mcp doctor` puts its own environment first on PATH: that is not the user's shell."""
+    import sys
+
+    probe = healthy(tmp_path)
+    own = Path(sys.prefix) / "bin"
+    probe.env = {**probe.env, "PATH": f"{own}:/usr/bin"}
+    probe.executables = {**probe.executables, "python3": str(own / "python3")}
+    result = by_id(await run_checks(probe))["venv-path"]
+    assert result.status is Status.OK, result.message
