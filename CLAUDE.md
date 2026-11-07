@@ -11,6 +11,7 @@ verified so far live in `docs/gimp-notes.md` (add to it, don't re-discover).
 - End-to-end (real headless GIMP): `uv run pytest tests/e2e` (`GIMP_MCP_REQUIRE_GIMP=1` to fail when GIMP is absent)
 - Lint/format/types: `uv run ruff check . && uv run ruff format --check . && uv run pyright`
 - Demo: `uv run demo/thumbnail.py` (headless GIMP, outputs + report in `demo/out/`)
+- Release: `scripts/prepare_release.py X.Y.Z` (opens the release PR; merging it tags and starts release.yml). Dry run: `gh workflow run release.yml -f dry_run=true --ref main`
 - Guided install (writes client configs! use a temporary HOME when testing): `uv run gimp-mcp setup`
 - Troubleshooting doc (generated): `uv run gimp-mcp doctor --troubleshooting > docs/troubleshooting.md`
 - Coverage matrix: `uv run gimp-mcp coverage --inventory docs/coverage/pdb-inventory.json --output docs/coverage.md`

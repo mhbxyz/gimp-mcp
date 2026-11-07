@@ -1,0 +1,45 @@
+name: Tag release
+
+# When a pull request titled "Release vX.Y.Z" (made by scripts/prepare_release.py)
+# is squash-merged into main, tag the merge commit and start the release workflow.
+# Tags pushed with GITHUB_TOKEN do not trigger other workflows, hence the
+# explicit `gh workflow run`. Any other push to main does nothing.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  tag:
+    if: ${{ startsWith(github.event.head_commit.message, 'Release v') }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Tag the release commit
+        id: tag
+        run: |
+          version=$(uv run --quiet python -c "import gimp_mcp; print(gimp_mcp.__version__)")
+          case "$(git log -1 --format=%s)" in
+            "Release v$version"*) ;;
+            *) echo "commit title does not match version $version"; exit 1 ;;
+          esac
+          grep -q "^## \[$version\]" CHANGELOG.md
+          if git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null; then
+            echo "tag v$version already exists"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "v$version" -m "gimp-mcp $version"
+            git push origin "v$version"
+          fi
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+      - name: Start the release workflow on the tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run release.yml --ref "${{ steps.tag.outputs.tag }}"
