@@ -25,3 +25,10 @@ def test_malformed_or_wrong_kind_image_id_is_rejected(bad):
     with pytest.raises(GimpMcpError) as excinfo:
         codec.parse_image(bad)
     assert excinfo.value.code == "INVALID_ID"
+
+
+def test_filter_ids_round_trip():
+    codec = IdCodec("a1b2c3d4")
+    assert codec.parse_filter(codec.filter(4)) == 4
+    with pytest.raises(GimpMcpError):
+        codec.parse_filter("item:4@a1b2c3d4")
