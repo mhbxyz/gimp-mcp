@@ -4,7 +4,7 @@
 
 Inventory: GIMP **3.2.6**, 1030 PDB procedures (722 internal, 3 persistent, 244 plugin, 61 temporary), 200 GEGL operations available to filters.
 
-MCP tools: **32**. PDB procedures relied upon by tools: **69** (6.7% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
+MCP tools: **35**. PDB procedures relied upon by tools: **90** (8.7% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
 
 ## Capabilities
 
@@ -18,7 +18,7 @@ MCP tools: **32**. PDB procedures relied upon by tools: **69** (6.7% of the inve
 | Geometry | Scale/resize canvas/crop images; move, scale, rotate, flip layers | tested | `gimp_resize_image`, `gimp_resize_canvas`, `gimp_crop_image`, `gimp_set_layer_offsets`, `gimp_scale_layer`, `gimp_rotate_layer`, `gimp_flip_layer` | `tests/e2e/test_transform.py` | 3.2 | Perspective, shear and arbitrary matrices are not exposed. |
 | Discovery | Search and describe PDB procedures (read-only) | tested | `gimp_search_procedures`, `gimp_describe_procedure` | `tests/e2e/test_procedures.py` | 3.2 | Introspection only; nothing is executed. |
 | History | Undo / redo from a client | unsupported | — | — | 3.2 | GIMP 3.2 offers no undo/redo procedure to plug-ins (only undo groups); see #9. |
-| Painting | Fill and stroke with explicit parameters | unsupported | — | — | 3.2 | Planned: #11. |
+| Painting | Fill (selection or whole layer), polylines, rectangles and ellipses with explicit color/width/opacity | tested | `gimp_fill`, `gimp_draw_path`, `gimp_draw_shape` | `tests/e2e/test_paint.py` | 3.2 | Brush-based painting (paintbrush, airbrush, clone...) and gradients are not exposed. |
 | Selections | Rectangle/ellipse selections (replace/add/subtract/intersect), all/none/invert, bounds; layer masks | tested | `gimp_select_rectangle`, `gimp_select_ellipse`, `gimp_modify_selection`, `gimp_get_selection`, `gimp_add_layer_mask`, `gimp_set_layer_mask`, `gimp_remove_layer_mask` | `tests/e2e/test_selections.py` | 3.2 | Free/fuzzy/by-color selections, paths and channels are not exposed. |
 | Filters | Color corrections and filters | unsupported | — | — | 3.2 | Planned: #13. |
 | Text | Editable text layers | unsupported | — | — | 3.2 | Planned: #14. |
@@ -29,10 +29,10 @@ MCP tools: **32**. PDB procedures relied upon by tools: **69** (6.7% of the inve
 
 | Family | Procedures in GIMP | Used by MCP tools |
 |---|---|---|
-| `gimp-image-*` | 137 | 22 |
-| `gimp-context-*` | 121 | 5 |
+| `gimp-image-*` | 137 | 26 |
+| `gimp-context-*` | 121 | 15 |
 | `plug-in-*` | 68 | 0 |
-| `gimp-drawable-*` | 56 | 4 |
+| `gimp-drawable-*` | 56 | 8 |
 | `gimp-text-*` | 50 | 0 |
 | `gimp-item-*` | 46 | 8 |
 | `script-fu-*` | 43 | 0 |
@@ -40,10 +40,10 @@ MCP tools: **32**. PDB procedures relied upon by tools: **69** (6.7% of the inve
 | `gimp-gradient-*` | 28 | 0 |
 | `file-raw-*` | 27 | 0 |
 | `gimp-vector-*` | 27 | 0 |
-| `gimp-path-*` | 22 | 0 |
+| `gimp-path-*` | 22 | 2 |
 | `gimp-brush-*` | 18 | 0 |
 | `gimp-palette-*` | 17 | 0 |
-| `gimp-selection-*` | 14 | 6 |
+| `gimp-selection-*` | 14 | 7 |
 | `gimp-resource-*` | 11 | 0 |
 | `gimp-channel-*` | 10 | 0 |
 | `gimp-edit-*` | 10 | 0 |
