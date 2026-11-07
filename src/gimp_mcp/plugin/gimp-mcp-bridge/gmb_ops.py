@@ -985,8 +985,193 @@ def mask_remove(params):
     return layer_node(layer)
 
 
+# -- painting ----------------------------------------------------------------------------
+
+
+def get_paintable(params):
+    item = get_item(params)
+    kind = item_kind(item)
+    if kind == "group":
+        raise BridgeError("WRONG_KIND", "groups have no pixels: paint on one of their layers", {"item": item.get_id()})
+    if kind == "text":
+        raise BridgeError(
+            "WRONG_KIND",
+            "painting on a text layer would silently turn it into pixels; paint on another layer",
+            {"item": item.get_id()},
+        )
+    if kind not in ("layer", "mask", "channel"):
+        raise BridgeError("WRONG_KIND", "item %d is a %s, it cannot be painted" % (item.get_id(), kind))
+    if kind == "layer" and item.get_lock_content():
+        raise BridgeError("LOCKED", "the pixels of %r are locked" % item.get_name(), {"item": item.get_id()})
+    return item
+
+
+def drawable_rect(drawable):
+    _ok, x, y = drawable.get_offsets()
+    return (x, y, x + drawable.get_width(), y + drawable.get_height())
+
+
+def intersect(box, rect):
+    x1, y1 = max(box[0], rect[0]), max(box[1], rect[1])
+    x2, y2 = min(box[2], rect[2]), min(box[3], rect[3])
+    if x2 <= x1 or y2 <= y1:
+        return None
+    return {"x": int(x1), "y": int(y1), "width": int(x2 - x1), "height": int(y2 - y1)}
+
+
+class paint_context:
+    """Explicit painting settings; the user's context is restored afterwards."""
+
+    CAPS = (("butt", "BUTT"), ("round", "ROUND"), ("square", "SQUARE"))
+    JOINS = (("miter", "MITER"), ("round", "ROUND"), ("bevel", "BEVEL"))
+
+    def __init__(self, params, color_key="color"):
+        self.params = params
+        self.color_key = color_key
+
+    def __enter__(self):
+        params = self.params
+        Gimp.context_push()
+        Gimp.context_set_defaults()
+        if params.get(self.color_key) is not None:
+            Gimp.context_set_foreground(color(params[self.color_key]))
+        Gimp.context_set_opacity(float(params.get("opacity", 100.0)))
+        Gimp.context_set_paint_mode(layer_mode(params.get("mode") or "normal"))
+        Gimp.context_set_antialias(bool(params.get("antialias", True)))
+        Gimp.context_set_stroke_method(Gimp.StrokeMethod.LINE)
+        Gimp.context_set_line_width(float(params.get("width", 2.0)))
+        Gimp.context_set_line_width_unit(Gimp.Unit.pixel())
+        Gimp.context_set_line_cap_style(getattr(Gimp.CapStyle, dict(self.CAPS)[params.get("cap", "round")]))
+        Gimp.context_set_line_join_style(getattr(Gimp.JoinStyle, dict(self.JOINS)[params.get("join", "round")]))
+        return self
+
+    def __exit__(self, *exc):
+        Gimp.context_pop()
+        return False
+
+
+class saved_selection:
+    """Temporarily replace the selection, restoring the user's afterwards."""
+
+    def __init__(self, image):
+        self.image = image
+        self.channel = None
+
+    def __enter__(self):
+        if not Gimp.Selection.is_empty(self.image):
+            self.channel = Gimp.Selection.save(self.image)
+        Gimp.Selection.none(self.image)
+        return self
+
+    def __exit__(self, *exc):
+        if self.channel is not None:
+            self.image.select_item(Gimp.ChannelOps.REPLACE, self.channel)
+            self.image.remove_channel(self.channel)
+        else:
+            Gimp.Selection.none(self.image)
+        return False
+
+
+@mutation
+def paint_fill(params):
+    drawable = get_paintable(params)
+    layer_mode(params.get("mode") or "normal")
+    image = drawable.get_image()
+    rect = drawable_rect(drawable)
+    if params["area"] == "selection":
+        if Gimp.Selection.is_empty(image):
+            raise BridgeError("EMPTY_SELECTION", "nothing is selected (use area='layer' to fill the whole layer)")
+        _ok, _non_empty, x1, y1, x2, y2 = Gimp.Selection.bounds(image)
+        affected = intersect((x1, y1, x2, y2), rect)
+        if affected is None:
+            return {"changed": False, "affected": None}
+        with undo_step(image), paint_context(params):
+            drawable.edit_fill(Gimp.FillType.FOREGROUND)
+    else:
+        affected = intersect(rect, rect)
+        with undo_step(image), paint_context(params), saved_selection(image):
+            drawable.edit_fill(Gimp.FillType.FOREGROUND)
+    return {"changed": True, "affected": affected}
+
+
+def _points_box(points, margin):
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+    return (min(xs) - margin, min(ys) - margin, max(xs) + margin, max(ys) + margin)
+
+
+@mutation
+def paint_path(params):
+    import math
+
+    drawable = get_paintable(params)
+    image = drawable.get_image()
+    points = params["points"]
+    margin = float(params.get("width", 2.0)) / 2.0 + 1
+    box = _points_box(points, margin)
+    affected = intersect(
+        (math.floor(box[0]), math.floor(box[1]), math.ceil(box[2]), math.ceil(box[3])), drawable_rect(drawable)
+    )
+    if affected is None:
+        return {"changed": False, "affected": None}
+    controls = []
+    for x, y in points:
+        controls += [float(x), float(y)] * 3
+    with undo_step(image), paint_context(params):
+        path = Gimp.Path.new(image, "gimp-mcp stroke")
+        image.insert_path(path, None, 0)
+        try:
+            path.stroke_new_from_points(Gimp.PathStrokeType.BEZIER, controls, bool(params.get("closed")))
+            if not drawable.edit_stroke_item(path):
+                raise BridgeError("GIMP_ERROR", "GIMP refused to stroke the path")
+        finally:
+            image.remove_path(path)
+    return {"changed": True, "affected": affected}
+
+
+@mutation
+def paint_shape(params):
+    import math
+
+    drawable = get_paintable(params)
+    image = drawable.get_image()
+    x, y, width, height = params["rect"]
+    margin = float(params.get("width", 2.0)) / 2.0 + 1 if params.get("stroke") else 0
+    box = (
+        math.floor(x - margin),
+        math.floor(y - margin),
+        math.ceil(x + width + margin),
+        math.ceil(y + height + margin),
+    )
+    affected = intersect(box, drawable_rect(drawable))
+    if affected is None:
+        return {"changed": False, "affected": None}
+    with undo_step(image), saved_selection(image):
+        Gimp.context_push()
+        try:
+            Gimp.context_set_antialias(bool(params.get("antialias", True)))
+            Gimp.context_set_feather(False)
+            if params["shape"] == "rectangle":
+                image.select_rectangle(Gimp.ChannelOps.REPLACE, x, y, width, height)
+            else:
+                image.select_ellipse(Gimp.ChannelOps.REPLACE, x, y, width, height)
+        finally:
+            Gimp.context_pop()
+        if params.get("fill") is not None:
+            with paint_context(params, color_key="fill"):
+                drawable.edit_fill(Gimp.FillType.FOREGROUND)
+        if params.get("stroke") is not None:
+            with paint_context(params, color_key="stroke"):
+                if not drawable.edit_stroke_selection():
+                    raise BridgeError("GIMP_ERROR", "GIMP refused to stroke the shape")
+    return {"changed": True, "affected": affected}
+
+
 def build_operations():
     return {
+        "paint.fill": paint_fill,
+        "paint.path": paint_path,
+        "paint.shape": paint_shape,
         "selection.rect": selection_rect,
         "selection.ellipse": selection_ellipse,
         "selection.modify": selection_modify,
