@@ -224,6 +224,37 @@ error: `changed: false`, `affected: null`, nothing is done.
 Refused before any change: groups and text layers (`WRONG_KIND` — painting a
 text layer would silently rasterize it), layers with locked pixels (`LOCKED`).
 
+## Corrections and filters
+
+| Tool | Parameters (0 = unchanged) | GIMP implementation |
+|---|---|---|
+| `gimp_brightness_contrast(item, brightness=0, contrast=0, destructive=true)` | brightness, contrast: −100…100 (mapped to GIMP's −1…1) | destructive: `gimp-drawable-brightness-contrast`; editable: `gimp:brightness-contrast` |
+| `gimp_hue_saturation(item, hue=0, saturation=0, lightness=0, hue_range="all", overlap=0, destructive=true)` | hue: −180…180°; saturation, lightness: −100…100; overlap 0…100; `hue_range`: `all`, `red`, `yellow`, `green`, `cyan`, `blue`, `magenta` | destructive: `gimp-drawable-hue-saturation`; editable: `gimp:hue-saturation` |
+| `gimp_gaussian_blur(item, radius, radius_y?, destructive=true)` | radius = Gaussian standard deviation in pixels (0 < r ≤ 1500) | `gegl:gaussian-blur` (merged when destructive) |
+
+`destructive` (verified by `tests/e2e/test_filters.py`):
+
+* `true` — the layer's **pixels are changed** (plain layers only; `LOCKED`
+  when its pixels are locked; one undo step). The result has `filter: null`.
+* `false` — an **editable GIMP filter** is attached to the layer: pixels are
+  untouched, the rendering changes, the filter is listed by
+  `gimp_list_filters`, survives an XCF save/reopen and can be removed with
+  `gimp_remove_filter`, which restores the original rendering. The returned
+  `filter` id is only given after GIMP confirmed the filter is attached.
+
+Both modes **respect the selection** at the time of the call
+(`restricted_to_selection: true`); without a selection the whole layer is
+affected. Groups and text layers only accept `destructive=false`
+(`WRONG_KIND` otherwise, so text is never rasterized).
+
+* `gimp_list_filters(item)` → `filters[]`: `id`, `name`, `operation`,
+  `visible`, `opacity` (0–100).
+* `gimp_remove_filter(item, filter)` → remaining filters; `NOT_FOUND` when the
+  filter is not on that layer.
+
+Version note: editable filters on drawables require GIMP ≥ 3.0
+(`Gimp.DrawableFilter`); verified on 3.2.6.
+
 ## Selections and masks
 
 The selection belongs to the image: it is undoable, **marks the image dirty**

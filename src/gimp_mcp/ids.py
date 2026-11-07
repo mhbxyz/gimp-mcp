@@ -13,7 +13,7 @@ import re
 
 from .errors import GimpMcpError
 
-_ID_RE = re.compile(r"^(image|item):(\d+)@([0-9A-Za-z]+)$")
+_ID_RE = re.compile(r"^(image|item|filter):(\d+)@([0-9A-Za-z]+)$")
 
 
 class IdCodec:
@@ -25,6 +25,12 @@ class IdCodec:
 
     def item(self, number: int) -> str:
         return f"item:{number}@{self.session_id}"
+
+    def filter(self, number: int) -> str:
+        return f"filter:{number}@{self.session_id}"
+
+    def parse_filter(self, value: str) -> int:
+        return self._parse(value, "filter")
 
     def parse_image(self, value: str) -> int:
         return self._parse(value, "image")
