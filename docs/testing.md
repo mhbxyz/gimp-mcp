@@ -58,6 +58,17 @@ ci/run-e2e.sh                 # build the image, run everything
 ci/run-e2e.sh tests/e2e -x    # extra pytest arguments
 ```
 
+### Documentation (doc tests)
+
+Shell blocks preceded by `<!-- doctest: <name> -->` in `README.md` and
+`docs/clients/*.md` are executed by `ci/run-doctests.sh` in a fresh Ubuntu 26.04
+account (only sudo and uv installed; `claude`/`code` are recording fakes),
+exactly as written, answering "y" to `setup`'s questions; GIMP is started before
+the first `doctor`. Blocks preceded by `<!-- snippet: <client> -->` are compared
+with what `gimp-mcp setup` writes (`tests/unit/test_docs.py`). Until gimp-mcp is
+on PyPI, `uvx gimp-mcp` resolves to the wheel built from the commit
+(`UV_FIND_LINKS`).
+
 ### Linux distributions
 
 `ci/run-distro.sh <id>` builds a clean image of one distribution from

@@ -244,3 +244,11 @@ def test_setup_is_documented_in_the_cli(flag):
 
     proc = subprocess.run([sys.executable, "-m", "gimp_mcp", "setup", flag], capture_output=True, text=True)
     assert "--yes" in proc.stdout and "--clients" in proc.stdout
+
+
+async def test_without_gimp_running_setup_says_what_to_do_instead_of_failing_checks(tmp_path):
+    world = make_world(tmp_path)
+    code = await run_setup(options(world, run_doctor=True))
+    assert code == 0
+    assert "[FAIL]" not in world.text
+    assert "then run `gimp-mcp doctor`" in world.text

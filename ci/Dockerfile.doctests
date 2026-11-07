@@ -1,0 +1,13 @@
+# A fresh Ubuntu 26.04 user account with only the documented prerequisites
+# (plus tzdata, configured on any installed system, which otherwise prompts for a time zone):
+# sudo, uv (https://docs.astral.sh/uv) and an MCP client's CLI (faked: they record calls).
+ARG BASE_IMAGE=ubuntu:26.04@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c
+FROM ghcr.io/astral-sh/uv:0.9.26 AS uv
+FROM ${BASE_IMAGE}
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends sudo ca-certificates tzdata \
+ && rm -rf /var/lib/apt/lists/* \
+ && useradd -m -s /bin/bash tester && echo "tester ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/tester
+COPY --from=uv /uv /uvx /usr/local/bin/
+USER tester
+WORKDIR /home/tester
+ENV XDG_RUNTIME_DIR=/tmp/runtime-tester

@@ -461,15 +461,20 @@ def step_clients(options: SetupOptions, server: list[str], outcome: Outcome) -> 
             options.say(f"✗ {client.name}: {exc}")
 
 
-async def step_live(options: SetupOptions) -> None:
+async def step_live(options: SetupOptions) -> bool:
     client = BridgeClient(options.endpoint, connect_timeout=3)
     try:
         session = await client.connect()
         options.say(f"✓ GIMP {session.gimp_version} answers (plug-in {session.bridge_version})")
+        return True
     except GimpMcpError as error:
-        options.say(f"• live check: {error.code}: {error.message}")
-        if error.hint:
-            options.say(f"  → {error.hint}")
+        if error.code == "GIMP_NOT_RUNNING":
+            options.say("• GIMP is not running: start (or restart) GIMP, then run `gimp-mcp doctor` to check.")
+        else:
+            options.say(f"• live check: {error.code}: {error.message}")
+            if error.hint:
+                options.say(f"  → {error.hint}")
+        return False
     finally:
         await client.close()
 
@@ -488,8 +493,8 @@ async def run_setup(options: SetupOptions) -> int:
         options.say("Clients not configured automatically — add the server yourself:")
         for snippet in outcome.snippets:
             options.say(snippet)
-    await step_live(options)
-    if options.run_doctor:
+    running = await step_live(options)
+    if options.run_doctor and running:
         from .doctor import render_text, run_checks
 
         options.say(render_text(await run_checks(_probe(options))))

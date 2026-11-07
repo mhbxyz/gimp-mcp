@@ -7,3 +7,4 @@ dist/
 demo/out/
 ci-artifacts/
 dist-distro/
+dist-doctests/
