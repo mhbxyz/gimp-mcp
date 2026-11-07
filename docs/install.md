@@ -29,7 +29,7 @@ gimp-mcp install-plugin
 From a release (wheel attached to the GitHub release):
 
 ```sh
-uv tool install ./gimp_mcp-0.1.0-py3-none-any.whl   # or: pipx install ./gimp_mcp-…whl
+uv tool install ./gimp_mcp-X.Y.Z-py3-none-any.whl   # or: pipx install ./gimp_mcp-X.Y.Z-py3-none-any.whl
 gimp-mcp install-plugin      # copies the plug-in into ~/.config/GIMP/3.2/plug-ins/
 ```
 

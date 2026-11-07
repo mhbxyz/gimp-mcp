@@ -24,7 +24,7 @@ One JSON object per line (UTF-8, `\n`-terminated).
 
 ```json
 → {"id": 1, "method": "hello", "params": {"token": "…", "protocol": 1}}
-← {"id": 1, "result": {"protocol": 1, "gimp_version": "3.2.6", "session_id": "e5fec992", "pid": 4242, "bridge_version": "0.1.0"}}
+← {"id": 1, "result": {"protocol": 1, "gimp_version": "3.2.6", "session_id": "e5fec992", "pid": 4242, "bridge_version": "0.2.0"}}
 → {"id": 2, "method": "session.images", "params": {"_session": "e5fec992"}}
 ← {"id": 2, "result": {"images": [...]}}
 ← {"id": 3, "error": {"code": "NOT_FOUND", "message": "…", "details": {...}}}

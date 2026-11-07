@@ -6,6 +6,8 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-08
+
 Installing and releasing made easy. Linux only, GIMP 3.2+.
 
 ### Upgrade note
@@ -90,4 +92,5 @@ First usable release. Linux only, GIMP 3.2+.
 - Demo (`demo/thumbnail.py`) building a 1280×720 thumbnail through MCP only.
 - CI with a real GIMP 3.2.6 pinned through an Arch Linux Archive snapshot.
 
+[0.2.0]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v0.2.0
 [0.1.0]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v0.1.0
