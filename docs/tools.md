@@ -275,8 +275,9 @@ Both modes **respect the selection** at the time of the call
 affected. Groups and text layers only accept `destructive=false`
 (`WRONG_KIND` otherwise, so text is never rasterized).
 
-* `gimp_list_filters(item)` → `filters[]`: `id`, `name`, `operation`,
-  `visible`, `opacity` (0–100).
+* `gimp_list_filters(item)` → `filters[]` (top of the filter stack first,
+  i.e. most recently added first; order kept in XCF): `id`, `name`,
+  `operation`, `visible`, `opacity` (0–100).
 * `gimp_remove_filter(item, filter)` → remaining filters; `NOT_FOUND` when the
   filter is not on that layer.
 
