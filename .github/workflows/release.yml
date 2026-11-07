@@ -1,10 +1,14 @@
 name: Release
 
-# Builds the artifacts once, tests them with a real GIMP, then:
-#   * creates a draft GitHub release;
+# Builds the artifacts once, tests them with a real GIMP, attests their
+# provenance, then:
+#   * creates (or updates) a draft GitHub release with artifacts, checksums and notes;
 #   * publishes the same files to TestPyPI (approval in the `testpypi` environment),
 #     verifies them there, then promotes them to PyPI (approval in the `pypi`
-#     environment) and verifies the published package.
+#     environment) and verifies the published package;
+#   * only then makes the GitHub release public.
+# Every step can be re-run safely. A dry run (manual run with dry_run=true, from
+# any branch) builds and tests everything and publishes nothing.
 #
 # Publishing uses PyPI trusted publishing (OIDC): no token is stored anywhere.
 # The publish jobs must stay in THIS file: PyPI does not accept reusable
@@ -12,9 +16,15 @@ name: Release
 on:
   push:
     tags: ["v*"]
-  # Manual re-run: "Run workflow" with "Use workflow from" set to the tag (the
-  # testpypi/pypi environments only accept deployments from v* tags).
+  # Started by tag-release.yml when a "Release vX.Y.Z" PR is merged, or by hand:
+  # "Run workflow" with "Use workflow from" set to the tag (the testpypi/pypi
+  # environments only accept deployments from v* tags), or dry_run=true anywhere.
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build and test only; publish nothing"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -39,9 +49,11 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - id: version
         name: Check the tag matches the package version
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
           version=$(uv run --quiet python -c "import gimp_mcp; print(gimp_mcp.__version__)")
-          test "v$version" = "$RELEASE_REF"
+          if [ "$DRY_RUN" != "true" ]; then test "v$version" = "$RELEASE_REF"; fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
       - run: scripts/build-release.sh
       - uses: actions/upload-artifact@v4
@@ -70,9 +82,30 @@ jobs:
           GIMP_MCP_CI_SKIP_BUILD: "1"
         run: ci/run-e2e.sh
 
+  attest:
+    name: Attest build provenance
+    needs: [build, test]
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - uses: actions/attest@v4
+        with:
+          subject-path: |
+            dist/*.whl
+            dist/*.tar.gz
+
   github-draft:
     name: Draft GitHub release
-    needs: [build, test]
+    needs: [build, test, attest]
+    if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -84,16 +117,23 @@ jobs:
         with:
           name: dist
           path: dist
-      - name: Create the draft release
+      - name: Create or update the draft release (never touches a published one)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "$RELEASE_REF" --draft --verify-tag --title "gimp-mcp ${RELEASE_REF#v}" \
-            --notes-file dist/RELEASE_NOTES.md dist/*.whl dist/*.tar.gz dist/SHA256SUMS
+          if draft=$(gh release view "$RELEASE_REF" --json isDraft -q .isDraft 2>/dev/null); then
+            if [ "$draft" != "true" ]; then echo "release $RELEASE_REF is already public"; exit 1; fi
+            gh release edit "$RELEASE_REF" --notes-file dist/RELEASE_NOTES.md
+            gh release upload "$RELEASE_REF" --clobber dist/*.whl dist/*.tar.gz dist/SHA256SUMS
+          else
+            gh release create "$RELEASE_REF" --draft --verify-tag --title "gimp-mcp ${RELEASE_REF#v}" \
+              --notes-file dist/RELEASE_NOTES.md dist/*.whl dist/*.tar.gz dist/SHA256SUMS
+          fi
 
   publish-testpypi:
     name: Publish to TestPyPI
-    needs: [build, test]
+    needs: [build, test, attest]
+    if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-24.04
     environment:
       name: testpypi
@@ -143,6 +183,7 @@ jobs:
   publish-pypi:
     name: Publish to PyPI
     needs: [build, verify-testpypi]
+    if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-24.04
     environment:
       name: pypi
@@ -154,9 +195,22 @@ jobs:
         with:
           name: dist
           path: dist
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_REF }}
+          path: source
+      - id: existing
+        name: Already on PyPI? (safe re-runs)
+        run: |
+          if python3 source/scripts/verify_published.py pypi "${{ needs.build.outputs.version }}" dist/SHA256SUMS --once; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Keep only the distributions
         run: mkdir packages && cp dist/*.whl dist/*.tar.gz packages/
       - uses: pypa/gh-action-pypi-publish@release/v1
+        if: steps.existing.outputs.published != 'true'
         with:
           packages-dir: packages/
 
@@ -186,3 +240,17 @@ jobs:
           GIMP_MCP_CI_SKIP_BUILD: "1"
           GIMP_MCP_CI_ENV: GIMP_MCP_DIST_REQUIREMENT=gimp-mcp==${{ needs.build.outputs.version }}
         run: ci/run-e2e.sh tests/e2e/test_distribution.py
+
+  finalize:
+    name: Make the GitHub release public
+    needs: [build, github-draft, verify-pypi]
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Publish the draft (approved through the pypi environment)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release edit "$RELEASE_REF" --draft=false --latest

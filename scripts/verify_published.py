@@ -4,6 +4,7 @@
     python scripts/verify_published.py testpypi 0.2.0 dist/SHA256SUMS
     python scripts/verify_published.py pypi 0.2.0 dist/SHA256SUMS
     python scripts/verify_published.py testpypi 0.2.0 dist/SHA256SUMS --download wheels/
+    python scripts/verify_published.py pypi 0.2.0 dist/SHA256SUMS --once   # no waiting (re-runs)
 
 With --download, the verified files are saved (to install them without
 resolving dependencies against TestPyPI, which anyone can upload to).
@@ -65,6 +66,10 @@ def download(release: dict, directory: str) -> None:
 
 
 def main(argv: list[str]) -> int:
+    attempts = 30
+    if "--once" in argv:  # single check, no waiting: exit 0 identical, 1 different, 2 absent
+        argv = [a for a in argv if a != "--once"]
+        attempts = 1
     target = None
     if "--download" in argv:
         position = argv.index("--download")
@@ -74,8 +79,10 @@ def main(argv: list[str]) -> int:
     with open(sums_path, encoding="utf-8") as handle:
         sums = parse_sums(handle.read())
     problems = ["not published yet"]
-    for _attempt in range(30):
+    for attempt in range(attempts):
         release = fetch(index, version)
+        if release is None and attempts == 1:
+            return 2
         if release is not None:
             problems = compare(release, sums)
             if not problems:
@@ -83,7 +90,8 @@ def main(argv: list[str]) -> int:
                 if target:
                     download(release, target)
                 return 0
-        time.sleep(10)
+        if attempt + 1 < attempts:
+            time.sleep(10)
     for problem in problems:
         print(f"error: {problem}", file=sys.stderr)
     return 1
