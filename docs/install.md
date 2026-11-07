@@ -98,18 +98,43 @@ uv run gimp-mcp doctor
 prints, on stderr, whether `gimp-console` is found, whether the plug-in is
 installed and whether a running GIMP answers on the socket.
 
+## Upgrade
+
+| Installed with | Upgrade the package | Then |
+|---|---|---|
+| `uv tool install gimp-mcp` | `uv tool upgrade gimp-mcp` | `gimp-mcp setup` |
+| `pipx install gimp-mcp` | `pipx upgrade gimp-mcp` | `gimp-mcp setup` |
+| `uvx gimp-mcp …` | nothing (`uvx` takes the latest; setup pins the version it configured) | `uvx gimp-mcp setup` |
+| a wheel from a GitHub release | `uv tool install --force ./gimp_mcp-X.Y.Z-py3-none-any.whl` | `gimp-mcp setup` |
+| a checkout | `git pull && uv sync` | `uv run gimp-mcp setup` |
+
+`setup` updates the plug-in in **every** GIMP profile where it is installed
+and tells you to restart GIMP. A plug-in left at another MAJOR.MINOR version is
+never used silently: every tool fails with `PLUGIN_VERSION_MISMATCH` and
+`gimp-mcp doctor` reports it.
+
 ## Uninstall
 
 ```sh
-gimp-mcp uninstall-plugin    # removes the plug-in; restart GIMP
-uv tool uninstall gimp-mcp   # removes the server (or pipx uninstall gimp-mcp)
+gimp-mcp uninstall           # shows each removal and asks; --yes to remove everything
 ```
 
-Nothing else is left: the socket and token are recreated by GIMP at each start
-in `$XDG_RUNTIME_DIR/gimp-mcp/`, which the system clears at logout.
+It removes the plug-in from every GIMP profile where it is installed and the
+`gimp` entries gimp-mcp created in Claude Code, Claude Desktop, VS Code and
+Cursor (backups kept; entries named `gimp` that run something else are left).
+It does not touch GIMP's profiles otherwise, nor other servers. It ends by
+printing what is left for you:
 
-See also [compatibility.md](compatibility.md) for supported versions and the
-compatibility policy.
+| Installed with | Remove the package |
+|---|---|
+| `uv tool install` | `uv tool uninstall gimp-mcp` |
+| `pipx install` | `pipx uninstall gimp-mcp` |
+| `uvx` | nothing; `uv cache clean gimp-mcp` frees the cache |
+| a checkout | delete the directory |
+
+Restart GIMP and your MCP clients afterwards. The socket and token in
+`$XDG_RUNTIME_DIR/gimp-mcp/` disappear with the session. The older
+`gimp-mcp uninstall-plugin` (plug-in of one profile only) still works.
 
 ## Troubleshooting
 

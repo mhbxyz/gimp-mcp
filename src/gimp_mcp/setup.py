@@ -114,6 +114,10 @@ class Client:
     def snippet(self) -> str:
         raise NotImplementedError
 
+    def removal(self) -> Change | None:
+        """None when there is nothing to remove. May raise AlreadyThere / ClientError."""
+        raise NotImplementedError
+
 
 def server_entry(server: list[str], env: dict[str, str]) -> dict[str, Any]:
     entry: dict[str, Any] = {"command": server[0], "args": server[1:]}
@@ -159,10 +163,38 @@ class JsonFileClient(Client):
         )
         return Change(description, lambda: write_json_with_backup(path, new))
 
+    def removal(self) -> Change | None:
+        path = self.path()
+        if not path.exists():
+            return None
+        try:
+            data = json.loads(path.read_text(encoding="utf-8") or "{}")
+        except ValueError as exc:
+            raise ClientError(f"{path} is not valid JSON ({exc}); left unchanged") from exc
+        entry = (data.get("mcpServers") or {}).get(SERVER_NAME) if isinstance(data, dict) else None
+        if entry is None:
+            return None
+        if not is_ours(entry):
+            raise AlreadyThere(f"{self.name}: the '{SERVER_NAME}' entry in {path} was not created by gimp-mcp; left")
+        new = dict(data)
+        new["mcpServers"] = {k: v for k, v in data["mcpServers"].items() if k != SERVER_NAME}
+        return Change(
+            f"{self.name}: remove the '{SERVER_NAME}' entry from {path} (backup kept next to it)",
+            lambda: write_json_with_backup(path, new),
+        )
+
     def snippet(self) -> str:
         return f"{self.name}: add to {self.path()}:\n" + json.dumps(
             {"mcpServers": {SERVER_NAME: server_entry(self.server, self.env)}}, indent=2
         )
+
+
+def is_ours(entry: Any) -> bool:
+    """An entry gimp-mcp would have written: its command line runs gimp-mcp."""
+    if not isinstance(entry, dict):
+        return False
+    words = [str(entry.get("command", ""))] + [str(a) for a in entry.get("args", []) or []]
+    return any("gimp-mcp" in word or "gimp_mcp" in word for word in words)
 
 
 def write_json_with_backup(path: Path, data: dict[str, Any]) -> None:
@@ -222,6 +254,23 @@ class ClaudeCode(Client):
 
         return Change(f"Claude Code: run `{shlex.join(self.add_command())}`", apply)
 
+    def removal(self) -> Change | None:
+        executable = self.executable()
+        assert executable is not None
+        found = _run([executable, "mcp", "get", SERVER_NAME], self.env)
+        if found.returncode != 0:
+            return None
+        if "gimp-mcp" not in found.stdout and "gimp_mcp" not in found.stdout:
+            raise AlreadyThere(f"Claude Code: the '{SERVER_NAME}' server was not created by gimp-mcp; left")
+        command = [executable, "mcp", "remove", SERVER_NAME, "--scope", "user"]
+
+        def apply() -> None:
+            proc = _run(command, self.env)
+            if proc.returncode != 0:
+                raise ClientError(f"`{shlex.join(command)}` failed: {(proc.stderr or proc.stdout).strip()}")
+
+        return Change(f"Claude Code: run `claude mcp remove {SERVER_NAME} --scope user`", apply)
+
     def snippet(self) -> str:
         return f"Claude Code: {shlex.join(self.add_command())}"
 
@@ -261,6 +310,24 @@ class VSCode(Client):
                 raise ClientError(f"`code --add-mcp` failed: {(proc.stderr or proc.stdout).strip()}")
 
         return Change(f"VS Code: run `code --add-mcp '{command[-1]}'`", apply)
+
+    def removal(self) -> Change | None:
+        path = self.user_config()
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+        entry = (data.get("servers") or {}).get(SERVER_NAME) if isinstance(data, dict) else None
+        if entry is None:
+            return None
+        if not is_ours(entry):
+            raise AlreadyThere(f"VS Code: the '{SERVER_NAME}' server was not created by gimp-mcp; left")
+        new = dict(data)
+        new["servers"] = {k: v for k, v in data["servers"].items() if k != SERVER_NAME}
+        return Change(
+            f"VS Code: remove the '{SERVER_NAME}' server from {path} (backup kept next to it)",
+            lambda: write_json_with_backup(path, new),
+        )
 
     def snippet(self) -> str:
         return f"VS Code: code --add-mcp '{json.dumps(self.payload(), separators=(',', ':'))}'"
@@ -309,19 +376,43 @@ def step_gimp(options: SetupOptions) -> tuple[bool, Path]:
     return True, ctx.active_profile()
 
 
-def step_plugin(options: SetupOptions, profile: Path) -> None:
-    directory = installed_plugin_dir(profile)
+def installed_profiles(options: SetupOptions, active: Path) -> list[Path]:
+    """Every known GIMP profile that has the plug-in (the active one first)."""
+    from .doctor import Context, _has_plugin, _profiles
+
+    ctx = Context(_probe(options))
+    profiles = [p for p in _profiles(ctx) if _has_plugin(p)]
+    return sorted(profiles, key=lambda p: p != active)
+
+
+def _installed_version(directory: Path) -> str | None:
     try:
-        installed = (directory / "VERSION").read_text().strip()
+        return (directory / "VERSION").read_text().strip() or None
     except OSError:
-        installed = None
-    if installed == __version__ and (directory / f"{PLUGIN_NAME}.py").exists():
-        options.say(f"✓ plug-in {__version__} up to date in {directory}")
-        return
-    install_plugin(profile)
-    action = f"updated from {installed}" if installed else "installed"
-    options.say(f"✓ plug-in {__version__} {action} in {directory}")
-    options.say("  → restart GIMP (or start it) so it loads the plug-in")
+        return None
+
+
+def step_plugin(options: SetupOptions, profile: Path) -> None:
+    targets = [profile] + [p for p in installed_profiles(options, profile) if p != profile]
+    restart = False
+    for target in targets:
+        directory = installed_plugin_dir(target)
+        present = (directory / f"{PLUGIN_NAME}.py").exists()
+        installed = _installed_version(directory)
+        if present and installed == __version__:
+            options.say(f"✓ plug-in {__version__} up to date in {directory}")
+            continue
+        install_plugin(target)
+        restart = True
+        if not present:
+            action = "installed"
+        elif installed is None:
+            action = "updated from an older version"
+        else:
+            action = f"updated from {installed}"
+        options.say(f"✓ plug-in {__version__} {action} in {directory}")
+    if restart:
+        options.say("  → restart GIMP (or start it) so it loads the plug-in")
 
 
 def step_clients(options: SetupOptions, server: list[str], outcome: Outcome) -> None:
@@ -396,3 +487,76 @@ async def run_setup(options: SetupOptions) -> int:
 
         options.say(render_text(await run_checks(_probe(options))))
     return 1 if outcome.failures else 0
+
+
+def removal_hint(prefix: str | None = None) -> str:
+    """How the user removes the package itself, depending on how it was installed."""
+    where = (prefix or sys.prefix).replace(os.sep, "/")
+    if "/uv/tools/" in where:
+        return "uv tool uninstall gimp-mcp"
+    if "/pipx/" in where:
+        return "pipx uninstall gimp-mcp"
+    if "/uv/archive-v" in where or "/.cache/uv/" in where:
+        return "nothing to uninstall (run through uvx); `uv cache clean gimp-mcp` frees the cache"
+    return "uv tool uninstall gimp-mcp (or pipx uninstall gimp-mcp / pip uninstall gimp-mcp, as you installed it)"
+
+
+def _confirm(options: SetupOptions, description: str, question: str) -> bool:
+    options.say(description)
+    if options.assume_yes:
+        return True
+    if options.interactive:
+        return options.ask(question)
+    options.say("  skipped: run with --yes to apply it")
+    return False
+
+
+def active_profile(options: SetupOptions) -> Path:
+    """The profile GIMP uses; works without GIMP installed (uninstall must)."""
+    from .doctor import Context, check_gimp
+
+    ctx = Context(_probe(options))
+    check_gimp(ctx)  # sets the GIMP series when GIMP is there
+    return ctx.active_profile()
+
+
+async def run_uninstall(options: SetupOptions) -> int:
+    from .installer import uninstall_plugin
+
+    failures = 0
+    removed = 0
+    for target in installed_profiles(options, active_profile(options)):
+        directory = installed_plugin_dir(target)
+        if _confirm(options, f"Plug-in: remove {directory}", f"Remove the plug-in from {target}? [y/N] "):
+            uninstall_plugin(target)
+            removed += 1
+            options.say(f"✓ removed {directory}")
+    wanted = options.clients if options.clients is not None else set(CLIENT_KEYS)
+    for client in clients_for(options.env, options.server or server_command(env=options.env)):
+        if client.key not in wanted or not client.detected():
+            continue
+        try:
+            change = client.removal()
+        except AlreadyThere as exc:
+            options.say(f"• {exc}")
+            continue
+        except ClientError as exc:
+            failures += 1
+            options.say(f"✗ {client.name}: {exc}")
+            continue
+        if change is None:
+            continue
+        if _confirm(options, change.description, f"Apply this change to {client.name}? [y/N] "):
+            try:
+                change.apply()
+                removed += 1
+                options.say(f"✓ {client.name}: entry removed (restart it)")
+            except ClientError as exc:
+                failures += 1
+                options.say(f"✗ {client.name}: {exc}")
+    if removed == 0 and failures == 0:
+        options.say("Nothing to remove: no plug-in and no client entry created by gimp-mcp were found.")
+    elif removed:
+        options.say("Restart GIMP and the MCP clients so they forget gimp-mcp.")
+    options.say(f"Left for you: the gimp-mcp package itself — {removal_hint()}.")
+    return 1 if failures else 0

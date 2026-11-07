@@ -24,7 +24,7 @@ docker run --rm "${extra_env[@]}" \
   "$IMAGE" bash -euo pipefail -c '
     mkdir -p -m 700 "$XDG_RUNTIME_DIR"
     mkdir repo
-    tar -C /src --exclude=.venv --exclude=.git --exclude=ci-artifacts -cf - . | tar -C repo -xf -
+    tar -C /src --exclude=.venv --exclude=ci-artifacts -cf - . | tar -C repo -xf -  # .git kept: upgrade tests build the previous release
     cd repo
     gimp-console --version
     uv sync --frozen -q
