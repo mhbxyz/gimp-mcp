@@ -82,6 +82,70 @@ structured metadata: `width`, `height` (preview), `source_width`,
   `tests/e2e/test_preview.py`).
 * Why at most 1024: GIMP's thumbnail renderer returns nothing above 1024 px.
 
+## Files
+
+### Path rules (all file tools)
+
+* Paths are read and written **on the machine running GIMP, with the user's
+  permissions**. They must be **absolute** (`~` is expanded): GIMP and the MCP
+  server do not share a working directory, so relative paths are refused
+  (`INVALID_ARGUMENT`).
+* Directories are never created (`WRITE_FAILED` when the parent is missing or
+  not writable).
+* An existing file is **never replaced** unless `overwrite: true`
+  (`FILE_EXISTS`, outcome `not_applied`). The only exception is
+  `gimp_save_image` without `path`, which saves the project to its own XCF file
+  like GIMP's *Save*.
+
+### `gimp_create_image(width, height, base_type="rgb", fill="white", layer_name="Background", resolution=null)`
+
+Creates an image with one layer filled with an explicit color (`#rrggbb`,
+`#rgb`, names `white`, `black`, `red`, `green`, `blue`, or `transparent` for an
+alpha layer; semi-transparent fills are refused). Like *File › New*, the new
+image has no unsaved changes and no undo history. Returns an image reference
+(`id`, `name`, `file`, `xcf_file`, `width`, `height`, `dirty`, `layer_count`,
+`displayed`). In a GUI session the image is shown in a new window.
+
+### `gimp_open_image(path)`
+
+Opens any file GIMP can load (XCF, PNG, JPEG, TIFF, WebP…). Errors:
+`FILE_NOT_FOUND`, `PERMISSION_DENIED`, `UNSUPPORTED_FORMAT` (unknown or corrupt
+content). PNG/JPEG files open as *imported* images (`xcf_file` is null).
+
+### `gimp_save_image(image, path=null, overwrite=false)`
+
+Saves the project as **XCF** (layers, groups, masks, text are kept) and marks
+the image clean. `path` must end in `.xcf` (`UNSUPPORTED_FORMAT` otherwise);
+without `path`, saves to the current XCF file (`INVALID_ARGUMENT` if the image
+was never saved). Returns `xcf_file`, `bytes`, `dirty`.
+
+### `gimp_export_image(image, path, overwrite=false, format=null, png_options=null, jpeg_options=null)`
+
+Writes the composite of the **visible** layers to PNG or JPEG (format from the
+extension `.png`, `.jpg`, `.jpeg`; `format` may confirm it). The project is not
+modified and stays dirty/clean as before. Metadata (Exif, IPTC, XMP,
+thumbnail, comment) is not written, for reproducible files.
+
+| Option | Default | Range |
+|---|---|---|
+| `png_options.compression` | 9 | 0–9 (lossless) |
+| `png_options.interlaced` | false | |
+| `jpeg_options.quality` | 90 | 0–100 |
+| `jpeg_options.progressive` | false (baseline) | |
+| `jpeg_options.optimize` | true | |
+| `jpeg_options.smoothing` | 0 | 0–1 |
+| `jpeg_options.background` | `#ffffff` | color transparent pixels are flattened onto |
+
+Returns `path`, `format`, `width`, `height`, `bytes` and the effective `options`.
+Errors: `FILE_EXISTS`, `WRITE_FAILED`, `UNSUPPORTED_FORMAT` (e.g. `.gif`, `.xcf`).
+
+### `gimp_close_image(image, discard_changes=false)`
+
+Closes the image; refused with `UNSAVED_CHANGES` when it is dirty unless
+`discard_changes: true`. The image and item ids become invalid (`NOT_FOUND`).
+In a GUI session, images shown in windows the bridge did not open must be
+closed in GIMP (`IMAGE_IN_USE`).
+
 ## Error codes
 
 | Code | Meaning |
@@ -98,4 +162,11 @@ structured metadata: `width`, `height` (preview), `source_width`,
 | `NOT_FOUND` | The image/item no longer exists (closed, deleted). |
 | `WRONG_KIND` | The id exists but designates another kind of object (e.g. a mask where a layer is required). |
 | `INVALID_ARGUMENT` | An argument is out of range or inconsistent. |
+| `FILE_NOT_FOUND` | Input file missing. |
+| `FILE_EXISTS` | Output exists and `overwrite` is false. |
+| `PERMISSION_DENIED` | Input file not readable. |
+| `WRITE_FAILED` | Missing/unwritable directory or GIMP failed to write. |
+| `UNSUPPORTED_FORMAT` | Extension or file content not supported by this operation. |
+| `UNSAVED_CHANGES` | Closing a dirty image without `discard_changes`. |
+| `IMAGE_IN_USE` | Image shown in a GIMP window the bridge did not create. |
 | `GIMP_ERROR` | Unexpected failure inside GIMP; for a mutation the outcome is `unknown`. |

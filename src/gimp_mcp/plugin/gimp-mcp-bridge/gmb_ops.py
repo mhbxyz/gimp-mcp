@@ -6,10 +6,56 @@ changing anything; validation of argument types/ranges is done by the MCP
 server, the checks here guard against stale ids and GIMP-side conditions.
 """
 
-from gi.repository import Gimp
-from gmb_server import BridgeError
+import os
 
-# -- resolving ids ---------------------------------------------------------------------
+import gi
+
+gi.require_version("Babl", "0.1")
+from gi.repository import Babl, Gegl, Gimp, Gio  # noqa: E402
+from gmb_server import BridgeError  # noqa: E402
+
+# Displays created by the bridge, per image id (GUI sessions only).
+_DISPLAYS = {}
+_UI = {"available": None}
+
+
+def mutation(fn):
+    """Refresh GIMP's windows after a change (no-op without a UI)."""
+
+    def wrapper(params):
+        result = fn(params)
+        Gimp.displays_flush()
+        return result
+
+    wrapper.__name__ = fn.__name__
+    return wrapper
+
+
+def show(image):
+    """Open a window on the image when GIMP has a UI; returns whether it is displayed."""
+    if _UI["available"] is False:
+        return False
+    try:
+        display = Gimp.Display.new(image)
+    except Exception:
+        display = None
+    if display is None:
+        _UI["available"] = False
+        return False
+    _UI["available"] = True
+    _DISPLAYS.setdefault(image.get_id(), []).append(display)
+    return True
+
+
+def color(rgba):
+    """sRGB 0-1 floats -> GeglColor.
+
+    GeglColor.set_rgba() and GEGL's CSS ``rgb()`` parser take *linear* RGB;
+    '#rrggbb' in the API means sRGB, so the sRGB babl space is explicit.
+    """
+    value = Gegl.Color.new("black")
+    value.set_rgba_with_space(rgba[0], rgba[1], rgba[2], rgba[3], Babl.space("sRGB"))
+    return value
 
 
 def _int_param(params, key):
@@ -225,8 +271,168 @@ def image_preview(params):
     }
 
 
+def image_ref(image, displayed=False):
+    data = image_summary(image)
+    data["xcf_file"] = _path(image.get_xcf_file())
+    data["layer_count"] = len(image.get_layers())
+    data["displayed"] = displayed or bool(_DISPLAYS.get(image.get_id()))
+    return data
+
+
+BASE_TYPES = {"rgb": Gimp.ImageBaseType.RGB, "gray": Gimp.ImageBaseType.GRAY}
+
+
+@mutation
+def image_create(params):
+    base = BASE_TYPES[params["base_type"]]
+    width, height, fill = params["width"], params["height"], params["fill"]
+    transparent = fill[3] == 0
+    if base == Gimp.ImageBaseType.RGB:
+        layer_type = Gimp.ImageType.RGBA_IMAGE if transparent else Gimp.ImageType.RGB_IMAGE
+    else:
+        layer_type = Gimp.ImageType.GRAYA_IMAGE if transparent else Gimp.ImageType.GRAY_IMAGE
+    image = Gimp.Image.new(width, height, base)
+    image.undo_disable()  # like File > New: the creation is not an undoable step
+    try:
+        if params.get("resolution"):
+            image.set_resolution(params["resolution"], params["resolution"])
+        layer = Gimp.Layer.new(image, params["layer_name"], width, height, layer_type, 100.0, Gimp.LayerMode.NORMAL)
+        image.insert_layer(layer, None, 0)
+        if transparent:
+            layer.fill(Gimp.FillType.TRANSPARENT)
+        else:
+            Gimp.context_push()
+            try:
+                Gimp.context_set_foreground(color(fill))
+                layer.fill(Gimp.FillType.FOREGROUND)
+            finally:
+                Gimp.context_pop()
+    finally:
+        image.undo_enable()
+    image.clean_all()
+    return image_ref(image, show(image))
+
+
+@mutation
+def image_open(params):
+    path = params["path"]
+    image = Gimp.file_load(Gimp.RunMode.NONINTERACTIVE, Gio.File.new_for_path(path))
+    if image is None:
+        raise BridgeError(
+            "UNSUPPORTED_FORMAT",
+            "GIMP could not load %s (unsupported format or corrupt file)" % os.path.basename(path),
+            {"path": path},
+        )
+    return image_ref(image, show(image))
+
+
+@mutation
+def image_save(params):
+    image = get_image(params)
+    path = params.get("path")
+    if path is None:
+        current = image.get_xcf_file()
+        if current is None:
+            raise BridgeError(
+                "INVALID_ARGUMENT",
+                "the image was never saved as XCF: give a path",
+                {"image": image.get_id()},
+            )
+        path = current.get_path()
+    try:
+        ok = Gimp.file_save(Gimp.RunMode.NONINTERACTIVE, image, Gio.File.new_for_path(path), None)
+    except Exception as exc:
+        raise BridgeError("WRITE_FAILED", "saving %s failed: %s" % (path, exc), {"path": path}) from exc
+    if not ok:
+        raise BridgeError("WRITE_FAILED", "GIMP could not write %s" % path, {"path": path})
+    return {"xcf_file": path, "bytes": os.path.getsize(path), "dirty": bool(image.is_dirty())}
+
+
+def _run_export(procedure_name, image, path, settings):
+    procedure = Gimp.get_pdb().lookup_procedure(procedure_name)
+    config = procedure.create_config()
+    config.set_property("image", image)
+    config.set_property("file", Gio.File.new_for_path(path))
+    for key, value in settings.items():
+        config.set_property(key, value)
+    result = procedure.run(config)
+    status = result.index(0)
+    if status != Gimp.PDBStatusType.SUCCESS:
+        message = ""
+        try:
+            message = str(result.index(1))
+        except Exception:
+            pass
+        raise BridgeError("WRITE_FAILED", "export to %s failed %s" % (path, message), {"path": path})
+
+
+METADATA_OFF = {
+    "include-exif": False,
+    "include-iptc": False,
+    "include-xmp": False,
+    "include-thumbnail": False,
+    "include-comment": False,
+}
+
+
+@mutation
+def image_export(params):
+    image = get_image(params)
+    path, kind, options = params["path"], params["format"], params["options"]
+    if kind == "png":
+        settings = dict(METADATA_OFF)
+        settings.update({"compression": options["compression"], "interlaced": options["interlaced"], "bkgd": False})
+        _run_export("file-png-export", image, path, settings)
+    elif kind == "jpeg":
+        settings = dict(METADATA_OFF)
+        settings.update(
+            {
+                "quality": options["quality"] / 100.0,
+                "progressive": options["progressive"],
+                "optimize": options["optimize"],
+                "smoothing": options["smoothing"],
+            }
+        )
+        Gimp.context_push()
+        try:
+            Gimp.context_set_background(color(options["background"]))
+            _run_export("file-jpeg-export", image, path, settings)
+        finally:
+            Gimp.context_pop()
+    else:
+        raise BridgeError("UNSUPPORTED_FORMAT", "unknown export format %r" % kind)
+    return {"path": path, "width": image.get_width(), "height": image.get_height(), "bytes": os.path.getsize(path)}
+
+
+@mutation
+def image_close(params):
+    image = get_image(params)
+    if image.is_dirty() and not params.get("discard_changes"):
+        raise BridgeError(
+            "UNSAVED_CHANGES",
+            "the image has unsaved changes",
+            {"image": image.get_id()},
+        )
+    number = image.get_id()
+    for display in _DISPLAYS.pop(number, []):
+        if display.is_valid():
+            display.delete()
+    if Gimp.Image.id_is_valid(number) and not image.delete():
+        raise BridgeError(
+            "IMAGE_IN_USE",
+            "the image is shown in a GIMP window the bridge did not open; close it in GIMP",
+            {"image": number},
+        )
+    return {"image": number}
+
+
 def build_operations():
     return {
+        "image.create": image_create,
+        "image.open": image_open,
+        "image.save": image_save,
+        "image.export": image_export,
+        "image.close": image_close,
         "image.preview": image_preview,
         "session.images": session_images,
         "image.inspect": image_inspect,

@@ -50,5 +50,19 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
 * `Gimp.DrawableFilter.new(drawable, "gegl:<op>", name)` + `get_config()`
   properties + `update()`; `drawable.merge_filter(f)` applies it destructively
   (afterwards `get_filters()` is empty).
+* **Colors**: `GeglColor.set_rgba()` and GEGL's CSS `rgb()/rgba()` parser take
+  *linear* RGB floats (`rgb(51,102,153)` is *not* 0–255!). `"#336699"` and
+  `set_rgba_with_space(r, g, b, a, Babl.space("sRGB"))` are sRGB.
+* `Gimp.file_load()` returns `None` (no exception, PDB last error "success")
+  for missing, corrupt or unknown files.
+* `file-png-export` / `file-jpeg-export` merge the visible layers; JPEG
+  flattens alpha onto the context background color. JPEG `quality` is 0–1
+  (default 0.9) and `progressive` defaults to true. Exporting through the PDB
+  neither cleans the image nor sets `get_exported_file()`.
+* `Gimp.file_save(..., "x.xcf")` cleans the image and sets `get_xcf_file()`.
+* `Gimp.Display.new(image)` raises `TypeError: constructor returned NULL` in
+  `gimp-console`.
+* PDB status values: `EXECUTION_ERROR=0`, `CALLING_ERROR=1`, `PASS_THROUGH=2`,
+  `SUCCESS=3` (`result.index(0)`).
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.
