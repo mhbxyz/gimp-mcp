@@ -1484,6 +1484,17 @@ def _describe_filter_params(config):
     return specs
 
 
+def _trace(text):
+    """Append a line to $GIMP_MCP_TRACE (synced to disk) when set: locates crashes inside GIMP."""
+    path = os.environ.get("GIMP_MCP_TRACE")
+    if not path:
+        return
+    with open(path, "a", encoding="utf-8") as handle:
+        handle.write(text + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
 def filter_catalog():
     """Every operation GIMP offers to filters, introspected once per GIMP session."""
     if _CATALOG:
@@ -1494,8 +1505,10 @@ def filter_catalog():
         layer = Gimp.Layer.new(scratch, "scratch", 8, 8, Gimp.ImageType.RGBA_IMAGE, 100.0, Gimp.LayerMode.NORMAL)
         scratch.insert_layer(layer, None, 0)
         for name in Gimp.DrawableFilter.operation_get_available():
+            _trace("catalog %s details" % name)
             _ok, keys, values = Gimp.DrawableFilter.operation_get_details(name)
             details = {key: values.index(i) for i, key in enumerate(keys)}
+            _trace("catalog %s new" % name)
             categories = [c for c in (details.get("categories") or "").split(":") if c]
             try:
                 params = _describe_filter_params(Gimp.DrawableFilter.new(layer, name, "catalog").get_config())
