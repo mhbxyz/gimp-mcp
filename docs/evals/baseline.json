@@ -1,9 +1,8 @@
 {
   "meta": {
-    "package": "0.5.0 (checkout)",
+    "package": "main at f9d1da5, released as 0.6.0",
     "model": "claude-sonnet-5-5",
-    "date": "2026-11-08",
-    "updated": "old-photo-restoration, product-cutout and social-media-kit on 2026-11-08; screenshot-annotation on 2026-11-08; web-photo-batch on 2026-11-08; animated-sticker on 2026-11-08; print-flyer on 2026-11-08; sky-replacement on 2026-11-08"
+    "date": "2026-11-09"
   },
   "tasks": {
     "resize-export": {
@@ -45,14 +44,16 @@
       "other_tools": [
         "ToolSearch"
       ],
-      "duration_s": 10.8,
+      "duration_s": 10.2,
       "turns": 5,
       "input_tokens": 10,
-      "output_tokens": 748,
-      "cache_read_tokens": 69709,
-      "cache_creation_tokens": 3203,
+      "output_tokens": 753,
+      "cache_read_tokens": 64143,
+      "cache_creation_tokens": 8704,
       "model": "claude-sonnet-5-5",
-      "gimp_tools": 50
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "crop-quadrant": {
       "passed": true,
@@ -93,14 +94,16 @@
       "other_tools": [
         "ToolSearch"
       ],
-      "duration_s": 10.3,
+      "duration_s": 11.5,
       "turns": 5,
       "input_tokens": 10,
-      "output_tokens": 658,
-      "cache_read_tokens": 64946,
-      "cache_creation_tokens": 7021,
+      "output_tokens": 648,
+      "cache_read_tokens": 65317,
+      "cache_creation_tokens": 7144,
       "model": "claude-sonnet-5-5",
-      "gimp_tools": 50
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "text-title": {
       "passed": true,
@@ -133,7 +136,7 @@
         {
           "description": "dark text in the middle, white corners",
           "passed": true,
-          "detail": "11306 dark pixels, corners [255, 255, 255, 255]"
+          "detail": "10141 dark pixels, corners [255, 255, 255, 255]"
         }
       ],
       "tool_calls": 5,
@@ -148,14 +151,16 @@
       "other_tools": [
         "ToolSearch"
       ],
-      "duration_s": 15.8,
+      "duration_s": 13.6,
       "turns": 7,
-      "input_tokens": 12,
-      "output_tokens": 951,
-      "cache_read_tokens": 88843,
-      "cache_creation_tokens": 9761,
+      "input_tokens": 10,
+      "output_tokens": 953,
+      "cache_read_tokens": 71227,
+      "cache_creation_tokens": 9724,
       "model": "claude-sonnet-5-5",
-      "gimp_tools": 50
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "logo-overlay": {
       "passed": true,
@@ -198,14 +203,16 @@
       "other_tools": [
         "ToolSearch"
       ],
-      "duration_s": 16.7,
+      "duration_s": 11.8,
       "turns": 7,
       "input_tokens": 12,
-      "output_tokens": 820,
-      "cache_read_tokens": 85574,
-      "cache_creation_tokens": 8904,
+      "output_tokens": 854,
+      "cache_read_tokens": 85586,
+      "cache_creation_tokens": 8906,
       "model": "claude-sonnet-5-5",
-      "gimp_tools": 50
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "rotate": {
       "passed": true,
@@ -236,15 +243,14 @@
           "detail": ""
         }
       ],
-      "tool_calls": 7,
+      "tool_calls": 6,
       "tools": [
         "gimp_open_image",
         "gimp_inspect_image",
         "gimp_rotate_layer",
-        "gimp_inspect_image",
         "gimp_resize_canvas",
-        "gimp_set_layer_offsets",
-        "gimp_export_image"
+        "gimp_export_image",
+        "gimp_inspect_image"
       ],
       "errors": [],
       "other_tools": [
@@ -252,14 +258,16 @@
         "ToolSearch",
         "ToolSearch"
       ],
-      "duration_s": 26.1,
-      "turns": 11,
-      "input_tokens": 18,
-      "output_tokens": 1302,
-      "cache_read_tokens": 130496,
-      "cache_creation_tokens": 9864,
+      "duration_s": 18.4,
+      "turns": 10,
+      "input_tokens": 16,
+      "output_tokens": 1320,
+      "cache_read_tokens": 112513,
+      "cache_creation_tokens": 9408,
       "model": "claude-sonnet-5-5",
-      "gimp_tools": 50
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "red-rectangle": {
       "passed": true,
@@ -293,24 +301,26 @@
       "tool_calls": 5,
       "tools": [
         "gimp_create_image",
-        "gimp_select_rectangle",
         "gimp_inspect_image",
+        "gimp_select_rectangle",
         "gimp_fill",
         "gimp_export_image"
       ],
       "errors": [],
       "other_tools": [
-        "Bash",
+        "ToolSearch",
         "ToolSearch"
       ],
-      "duration_s": 22.2,
+      "duration_s": 16.1,
       "turns": 8,
       "input_tokens": 14,
-      "output_tokens": 1059,
-      "cache_read_tokens": 98353,
-      "cache_creation_tokens": 8787,
+      "output_tokens": 973,
+      "cache_read_tokens": 101483,
+      "cache_creation_tokens": 8948,
       "model": "claude-sonnet-5-5",
-      "gimp_tools": 50
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "blur": {
       "passed": true,
@@ -352,14 +362,16 @@
       "other_tools": [
         "ToolSearch"
       ],
-      "duration_s": 12.7,
+      "duration_s": 10.8,
       "turns": 6,
-      "input_tokens": 10,
-      "output_tokens": 659,
-      "cache_read_tokens": 65633,
-      "cache_creation_tokens": 7604,
+      "input_tokens": 12,
+      "output_tokens": 681,
+      "cache_read_tokens": 81225,
+      "cache_creation_tokens": 7623,
       "model": "claude-sonnet-5-5",
-      "gimp_tools": 50
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "darken": {
       "passed": false,
@@ -401,14 +413,16 @@
       "other_tools": [
         "ToolSearch"
       ],
-      "duration_s": 13.9,
+      "duration_s": 9.5,
       "turns": 6,
-      "input_tokens": 12,
-      "output_tokens": 658,
-      "cache_read_tokens": 80047,
-      "cache_creation_tokens": 7263,
+      "input_tokens": 10,
+      "output_tokens": 683,
+      "cache_read_tokens": 64840,
+      "cache_creation_tokens": 7329,
       "model": "claude-sonnet-5-5",
-      "gimp_tools": 50
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "white-border": {
       "passed": true,
@@ -449,14 +463,16 @@
       "other_tools": [
         "ToolSearch"
       ],
-      "duration_s": 15.6,
+      "duration_s": 13.2,
       "turns": 5,
       "input_tokens": 10,
-      "output_tokens": 863,
-      "cache_read_tokens": 67665,
-      "cache_creation_tokens": 8020,
+      "output_tokens": 769,
+      "cache_read_tokens": 67564,
+      "cache_creation_tokens": 7979,
       "model": "claude-sonnet-5-5",
-      "gimp_tools": 50
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "undo": {
       "passed": true,
@@ -502,11 +518,10 @@
           "detail": "blurred std dev 2; restored (0, 0, 0), (255, 255, 255)"
         }
       ],
-      "tool_calls": 7,
+      "tool_calls": 6,
       "tools": [
         "gimp_open_image",
         "gimp_inspect_image",
-        "gimp_create_checkpoint",
         "gimp_gaussian_blur",
         "gimp_export_image",
         "gimp_remove_filter",
@@ -516,14 +531,16 @@
       "other_tools": [
         "ToolSearch"
       ],
-      "duration_s": 20.8,
-      "turns": 9,
-      "input_tokens": 16,
-      "output_tokens": 1091,
-      "cache_read_tokens": 118566,
-      "cache_creation_tokens": 8999,
+      "duration_s": 17.3,
+      "turns": 8,
+      "input_tokens": 14,
+      "output_tokens": 1041,
+      "cache_read_tokens": 100352,
+      "cache_creation_tokens": 8656,
       "model": "claude-sonnet-5-5",
-      "gimp_tools": 50
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "grayscale": {
       "passed": true,
@@ -563,17 +580,18 @@
       ],
       "errors": [],
       "other_tools": [
-        "Bash",
         "ToolSearch"
       ],
-      "duration_s": 20.4,
-      "turns": 7,
-      "input_tokens": 12,
-      "output_tokens": 824,
-      "cache_read_tokens": 79705,
-      "cache_creation_tokens": 8130,
+      "duration_s": 12.0,
+      "turns": 6,
+      "input_tokens": 10,
+      "output_tokens": 732,
+      "cache_read_tokens": 65921,
+      "cache_creation_tokens": 7704,
       "model": "claude-sonnet-5-5",
-      "gimp_tools": 50
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "invert": {
       "passed": true,
@@ -604,31 +622,31 @@
           "detail": ""
         }
       ],
-      "tool_calls": 7,
+      "tool_calls": 6,
       "tools": [
-        "gimp_open_image",
         "gimp_list_toolsets",
+        "gimp_open_image",
         "gimp_enable_toolsets",
-        "gimp_invert",
         "gimp_inspect_image",
         "gimp_invert",
         "gimp_export_image"
       ],
-      "errors": [
-        "gimp_invert: Error executing tool gimp_invert: 1 validation error for gimp_invertArguments\nitem\n  Field required [type=missing, input_value={'image': 'image:1@4ff4da95'}, input_type=dict]\n    For further informati"
-      ],
+      "errors": [],
       "other_tools": [
         "Bash",
+        "ToolSearch",
         "ToolSearch"
       ],
-      "duration_s": 32.9,
+      "duration_s": 16.2,
       "turns": 10,
-      "input_tokens": 18,
-      "output_tokens": 1094,
-      "cache_read_tokens": 143909,
-      "cache_creation_tokens": 11959,
+      "input_tokens": 16,
+      "output_tokens": 1201,
+      "cache_read_tokens": 126246,
+      "cache_creation_tokens": 12185,
       "model": "claude-sonnet-5-5",
-      "gimp_tools": 50
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "batch-thumbnails": {
       "passed": true,
@@ -704,40 +722,39 @@
           "detail": "['a.jpg', 'b.jpg', 'c.jpg']"
         }
       ],
-      "tool_calls": 16,
+      "tool_calls": 12,
       "tools": [
         "gimp_status",
         "gimp_list_toolsets",
+        "gimp_enable_toolsets",
         "gimp_enable_toolsets",
         "gimp_run_batch",
         "gimp_open_image",
         "gimp_open_image",
         "gimp_open_image",
-        "gimp_resize_image",
-        "gimp_resize_image",
-        "gimp_resize_image",
-        "gimp_export_image",
-        "gimp_export_image",
-        "gimp_export_image",
         "gimp_close_image",
         "gimp_close_image",
-        "gimp_close_image"
+        "gimp_close_image",
+        "gimp_run_batch"
       ],
-      "errors": [],
+      "errors": [
+        "gimp_enable_toolsets: Error executing tool gimp_enable_toolsets: 1 validation error for gimp_enable_toolsetsArguments\ntoolsets\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information vi"
+      ],
       "other_tools": [
         "Bash",
         "ToolSearch",
-        "ListMcpResourcesTool",
         "ToolSearch"
       ],
-      "duration_s": 36.6,
-      "turns": 21,
-      "input_tokens": 22,
-      "output_tokens": 2536,
-      "cache_read_tokens": 193961,
-      "cache_creation_tokens": 15215,
+      "duration_s": 27.2,
+      "turns": 16,
+      "input_tokens": 20,
+      "output_tokens": 2059,
+      "cache_read_tokens": 168495,
+      "cache_creation_tokens": 14645,
       "model": "claude-sonnet-5-5",
-      "gimp_tools": 50
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "animated-gif": {
       "passed": true,
@@ -768,14 +785,13 @@
           "detail": "0"
         }
       ],
-      "tool_calls": 8,
+      "tool_calls": 7,
       "tools": [
         "gimp_list_toolsets",
         "gimp_enable_toolsets",
         "gimp_create_image",
         "gimp_add_frame",
         "gimp_add_frame",
-        "gimp_list_frames",
         "gimp_set_frame",
         "gimp_export_animation"
       ],
@@ -783,19 +799,22 @@
       "other_tools": [
         "Bash",
         "ToolSearch",
+        "ToolSearch",
         "ToolSearch"
       ],
-      "duration_s": 35.8,
+      "duration_s": 27.0,
       "turns": 12,
-      "input_tokens": 16,
-      "output_tokens": 1767,
-      "cache_read_tokens": 136380,
-      "cache_creation_tokens": 15967,
+      "input_tokens": 20,
+      "output_tokens": 2095,
+      "cache_read_tokens": 185958,
+      "cache_creation_tokens": 17292,
       "model": "claude-sonnet-5-5",
-      "gimp_tools": 50
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "lossless-webp": {
-      "passed": false,
+      "passed": true,
       "checks": [
         {
           "description": "the session finished",
@@ -804,31 +823,53 @@
         },
         {
           "description": "photo.webp exists and is an image",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
+          "description": "photo.webp is WEBP",
+          "passed": true,
+          "detail": "WEBP"
+        },
+        {
+          "description": "photo.webp is 1200x800",
+          "passed": true,
+          "detail": "1200x800"
+        },
+        {
           "description": "lossless: pixels identical to the source",
-          "passed": false,
-          "detail": "no image of the right size"
+          "passed": true,
+          "detail": ""
         }
       ],
-      "tool_calls": 0,
-      "tools": [],
-      "errors": [],
+      "tool_calls": 6,
+      "tools": [
+        "gimp_list_toolsets",
+        "gimp_enable_toolsets",
+        "gimp_open_image",
+        "gimp_enable_toolsets",
+        "gimp_describe_file_format",
+        "gimp_export_as"
+      ],
+      "errors": [
+        "gimp_enable_toolsets: Error executing tool gimp_enable_toolsets: 1 validation error for gimp_enable_toolsetsArguments\ntoolsets\n  Field required [type=missing, input_value={'names': '[\"formats\"]'}, input_type=dict]\n    For "
+      ],
       "other_tools": [
         "Bash",
         "ToolSearch",
+        "ToolSearch",
         "ToolSearch"
       ],
-      "duration_s": 16.3,
-      "turns": 4,
-      "input_tokens": 8,
-      "output_tokens": 703,
-      "cache_read_tokens": 47571,
-      "cache_creation_tokens": 6828,
+      "duration_s": 21.9,
+      "turns": 11,
+      "input_tokens": 20,
+      "output_tokens": 1189,
+      "cache_read_tokens": 161637,
+      "cache_creation_tokens": 13466,
       "model": "claude-sonnet-5-5",
-      "gimp_tools": 50
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "indexed-4-colors": {
       "passed": true,
@@ -859,30 +900,30 @@
           "detail": "mode P, 4 colors"
         }
       ],
-      "tool_calls": 6,
+      "tool_calls": 5,
       "tools": [
         "gimp_list_toolsets",
         "gimp_open_image",
         "gimp_enable_toolsets",
         "gimp_convert_mode",
-        "gimp_convert_mode",
         "gimp_export_image"
       ],
-      "errors": [
-        "gimp_convert_mode: Error executing tool gimp_convert_mode: 2 validation errors for gimp_convert_modeArguments\nimage\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit http"
-      ],
+      "errors": [],
       "other_tools": [
         "Bash",
+        "ToolSearch",
         "ToolSearch"
       ],
-      "duration_s": 29.9,
+      "duration_s": 17.7,
       "turns": 9,
       "input_tokens": 16,
-      "output_tokens": 1042,
-      "cache_read_tokens": 123861,
-      "cache_creation_tokens": 11736,
+      "output_tokens": 1081,
+      "cache_read_tokens": 123592,
+      "cache_creation_tokens": 11691,
       "model": "claude-sonnet-5-5",
-      "gimp_tools": 50
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "dominant-color": {
       "passed": true,
@@ -895,10 +936,10 @@
         {
           "description": "the answer gives the dominant color's hex code (#e63946)",
           "passed": true,
-          "detail": "#e63946, #ffffff"
+          "detail": "#e63946, #e63946, #ffffff"
         }
       ],
-      "tool_calls": 9,
+      "tool_calls": 8,
       "tools": [
         "gimp_open_image",
         "gimp_list_toolsets",
@@ -907,24 +948,24 @@
         "gimp_inspect_image",
         "gimp_dominant_colors",
         "gimp_sample_colors",
-        "gimp_sample_colors",
-        "gimp_histogram"
+        "gimp_sample_colors"
       ],
-      "errors": [
-        "gimp_sample_colors: Error executing tool gimp_sample_colors: 2 validation errors for gimp_sample_colorsArguments\ntarget\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit h"
-      ],
+      "errors": [],
       "other_tools": [
+        "ToolSearch",
         "ToolSearch",
         "ToolSearch"
       ],
-      "duration_s": 21.6,
+      "duration_s": 26.2,
       "turns": 12,
-      "input_tokens": 16,
-      "output_tokens": 1147,
-      "cache_read_tokens": 123024,
-      "cache_creation_tokens": 11995,
+      "input_tokens": 20,
+      "output_tokens": 1576,
+      "cache_read_tokens": 162675,
+      "cache_creation_tokens": 12973,
       "model": "claude-sonnet-5-5",
-      "gimp_tools": 50
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "print-resolution": {
       "passed": true,
@@ -966,675 +1007,19 @@
       "errors": [],
       "other_tools": [
         "ToolSearch",
-        "ToolSearch"
-      ],
-      "duration_s": 20.8,
-      "turns": 8,
-      "input_tokens": 14,
-      "output_tokens": 926,
-      "cache_read_tokens": 113082,
-      "cache_creation_tokens": 12025,
-      "model": "claude-sonnet-5-5",
-      "gimp_tools": 50
-    },
-    "old-photo-restoration": {
-      "passed": true,
-      "checks": [
-        {
-          "description": "the session finished",
-          "passed": true,
-          "detail": "success"
-        },
-        {
-          "description": "restored-print.tif is a 16-bit TIFF",
-          "passed": true,
-          "detail": "(16, 16, 16)"
-        },
-        {
-          "description": "the TIFF says 300 dpi",
-          "passed": true,
-          "detail": "(300.0, 300.0)"
-        },
-        {
-          "description": "restored-web.jpg is an image",
-          "passed": true,
-          "detail": "1181x732"
-        },
-        {
-          "description": "the sky's color bands are level (under 0.5\u00b0 measured)",
-          "passed": true,
-          "detail": "-0.17\u00b0"
-        },
-        {
-          "description": "no scanner bed remains along the edges",
-          "passed": true,
-          "detail": "0 white"
-        },
-        {
-          "description": "full contrast again (1%-99%: <=30 and >=225)",
-          "passed": true,
-          "detail": "22-229"
-        },
-        {
-          "description": "the output is the print, straight (aligned within 12/255)",
-          "passed": true,
-          "detail": "mean difference 3.7 at offset 8,8"
-        },
-        {
-          "description": "every dust spot has the clean print's color again (within 40)",
-          "passed": true,
-          "detail": "worst 13/255 over 14"
-        }
-      ],
-      "tool_calls": 31,
-      "tools": [
-        "gimp_open_image",
-        "gimp_list_toolsets",
-        "gimp_enable_toolsets",
-        "gimp_preview",
-        "gimp_inspect_image",
-        "gimp_convert_precision",
-        "gimp_rotate_layer",
-        "gimp_preview",
-        "gimp_crop_image",
-        "gimp_preview",
-        "gimp_select_by_color",
-        "gimp_select_by_color",
-        "gimp_modify_selection_shape",
-        "gimp_describe_filter_operation",
-        "gimp_apply_filter",
-        "gimp_modify_selection",
-        "gimp_preview",
-        "gimp_apply_filter",
-        "gimp_histogram",
-        "gimp_levels",
-        "gimp_preview",
-        "gimp_preview_region",
-        "gimp_describe_filter_operation",
-        "gimp_apply_filter",
-        "gimp_preview_region",
-        "gimp_set_print_size",
-        "gimp_enable_toolsets",
-        "gimp_export_as",
-        "gimp_export_image",
-        "gimp_set_alpha_channel",
-        "gimp_export_as"
-      ],
-      "errors": [],
-      "other_tools": [
-        "Bash",
-        "ToolSearch",
-        "ToolSearch",
-        "ToolSearch",
-        "ToolSearch",
         "ToolSearch",
         "ToolSearch"
       ],
-      "duration_s": 76.0,
-      "turns": 39,
-      "input_tokens": 48,
-      "output_tokens": 8101,
-      "cache_read_tokens": 797084,
-      "cache_creation_tokens": 40591,
+      "duration_s": 18.2,
+      "turns": 9,
+      "input_tokens": 16,
+      "output_tokens": 1026,
+      "cache_read_tokens": 123749,
+      "cache_creation_tokens": 12215,
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
-      "date": "2026-11-08",
-      "package": "0.5.0 (checkout)"
-    },
-    "product-cutout": {
-      "passed": false,
-      "checks": [
-        {
-          "description": "the session finished",
-          "passed": true,
-          "detail": "success"
-        },
-        {
-          "description": "product-2000.jpg is 2000x2000 with an sRGB profile",
-          "passed": false,
-          "detail": "(2000, 2000), profile none"
-        },
-        {
-          "description": "product-2000.webp is 2000x2000 with an sRGB profile",
-          "passed": false,
-          "detail": "(2000, 2000), profile none"
-        },
-        {
-          "description": "product-800.jpg is 800x800 with an sRGB profile",
-          "passed": false,
-          "detail": "(800, 800), profile none"
-        },
-        {
-          "description": "product-800.webp is 800x800 with an sRGB profile",
-          "passed": false,
-          "detail": "(800, 800), profile none"
-        },
-        {
-          "description": "product-400.jpg is 400x400 with an sRGB profile",
-          "passed": false,
-          "detail": "(400, 400), profile none"
-        },
-        {
-          "description": "product-400.webp is 400x400 with an sRGB profile",
-          "passed": false,
-          "detail": "(400, 400), profile none"
-        },
-        {
-          "description": "the product is centered with a 5% margin",
-          "passed": true,
-          "detail": "box (641, 103, 1360, 1899), center 1000,1001, largest side 1796 (target 1800)"
-        },
-        {
-          "description": "outside the product and its shadow, pixels are exactly white",
-          "passed": true,
-          "detail": "0 other pixels"
-        },
-        {
-          "description": "a soft shadow lies below the product, none visible above it",
-          "passed": true,
-          "detail": "darkest below 162, above 254"
-        }
-      ],
-      "tool_calls": 52,
-      "tools": [
-        "gimp_open_image",
-        "gimp_list_toolsets",
-        "gimp_enable_toolsets",
-        "gimp_preview",
-        "gimp_sample_colors",
-        "gimp_select_by_color",
-        "gimp_get_selection",
-        "gimp_modify_selection",
-        "gimp_modify_selection",
-        "gimp_inspect_image",
-        "gimp_add_layer_mask",
-        "gimp_add_layer_mask",
-        "gimp_modify_selection",
-        "gimp_scale_layer",
-        "gimp_resize_canvas",
-        "gimp_set_layer_offsets",
-        "gimp_alpha_to_selection",
-        "gimp_select_item",
-        "gimp_modify_selection",
-        "gimp_create_layer",
-        "gimp_create_layer",
-        "gimp_move_layer",
-        "gimp_select_ellipse",
-        "gimp_move_layer",
-        "gimp_fill",
-        "gimp_modify_selection",
-        "gimp_move_layer",
-        "gimp_gaussian_blur",
-        "gimp_set_layer_properties",
-        "gimp_gaussian_blur",
-        "gimp_inspect_image",
-        "gimp_preview",
-        "gimp_set_layer_offsets",
-        "gimp_set_layer_properties",
-        "gimp_preview_region",
-        "gimp_set_color_profile",
-        "gimp_describe_file_format",
-        "gimp_describe_file_format",
-        "gimp_create_checkpoint",
-        "gimp_export_as",
-        "gimp_export_as",
-        "gimp_resize_image",
-        "gimp_export_as",
-        "gimp_export_as",
-        "gimp_restore_checkpoint",
-        "gimp_restore_checkpoint",
-        "gimp_resize_image",
-        "gimp_export_as",
-        "gimp_export_as",
-        "gimp_open_image",
-        "gimp_get_color_profile",
-        "gimp_sample_colors"
-      ],
-      "errors": [
-        "gimp_modify_selection: Error executing tool gimp_modify_selection: 1 validation error for gimp_modify_selectionArguments\naction\n  Field required [type=missing, input_value={'image': 'image:1@f1087c..., 'operation': 'invert'",
-        "gimp_add_layer_mask: Error executing tool gimp_add_layer_mask: 1 validation error for gimp_add_layer_maskArguments\nitem\n  Field required [type=missing, input_value={'image': 'image:1@f1087cb2'}, input_type=dict]\n    For f",
-        "gimp_alpha_to_selection: WRONG_KIND: item 7 is a mask, not a layer",
-        "gimp_move_layer: Error executing tool gimp_move_layer: 1 validation error for gimp_move_layerArguments\nparent\n  Field required [type=missing, input_value={'item': 'item:8@f1087cb2', 'position': 2}, input_type=dict]\n  ",
-        "gimp_gaussian_blur: Error executing tool gimp_gaussian_blur: 1 validation error for gimp_gaussian_blurArguments\nradius\n  Field required [type=missing, input_value={'item': 'item:9@f1087cb2...'18', 'std_dev_y': '12'}, inp",
-        "gimp_restore_checkpoint: Error executing tool gimp_restore_checkpoint: 1 validation error for gimp_restore_checkpointArguments\nimage\n  Field required [type=missing, input_value={'checkpoint': 'checkpoint:1@f1087cb2'}, input_t"
-      ],
-      "other_tools": [
-        "ToolSearch",
-        "ToolSearch"
-      ],
-      "duration_s": 89.0,
-      "turns": 55,
-      "input_tokens": 60,
-      "output_tokens": 9789,
-      "cache_read_tokens": 890864,
-      "cache_creation_tokens": 35250,
-      "model": "claude-sonnet-5-5",
-      "gimp_tools": 50,
-      "date": "2026-11-08",
-      "package": "0.5.0 (checkout)"
-    },
-    "social-media-kit": {
-      "passed": true,
-      "checks": [
-        {
-          "description": "the session finished",
-          "passed": true,
-          "detail": "success"
-        },
-        {
-          "description": "social-post.png is 1080x1080",
-          "passed": true,
-          "detail": "1080x1080"
-        },
-        {
-          "description": "post: the brand colors are there (navy band, cream text, red accent)",
-          "passed": true,
-          "detail": "navy 13.0%, cream 1.96%, red 0.74%"
-        },
-        {
-          "description": "post: the logo lies inside the safe area",
-          "passed": true,
-          "detail": "logo (64, 64, 244, 244), safe 64,64-1016,1016"
-        },
-        {
-          "description": "social-post.xcf keeps the headline as an editable text layer",
-          "passed": true,
-          "detail": "419764 bytes"
-        },
-        {
-          "description": "social-story.png is 1080x1920",
-          "passed": true,
-          "detail": "1080x1920"
-        },
-        {
-          "description": "story: the brand colors are there (navy band, cream text, red accent)",
-          "passed": true,
-          "detail": "navy 18.3%, cream 2.64%, red 0.52%"
-        },
-        {
-          "description": "story: the logo lies inside the safe area",
-          "passed": true,
-          "detail": "logo (64, 250, 284, 470), safe 64,250-1016,1670"
-        },
-        {
-          "description": "social-story.xcf keeps the headline as an editable text layer",
-          "passed": true,
-          "detail": "926186 bytes"
-        },
-        {
-          "description": "social-banner.png is 1500x500",
-          "passed": true,
-          "detail": "1500x500"
-        },
-        {
-          "description": "banner: the brand colors are there (navy band, cream text, red accent)",
-          "passed": true,
-          "detail": "navy 30.3%, cream 3.57%, red 1.60%"
-        },
-        {
-          "description": "banner: the logo lies inside the safe area",
-          "passed": true,
-          "detail": "logo (1300, 180, 1440, 320), safe 60,60-1440,440"
-        },
-        {
-          "description": "social-banner.xcf keeps the headline as an editable text layer",
-          "passed": true,
-          "detail": "350391 bytes"
-        },
-        {
-          "description": "social-thumbnail.png is 1280x720",
-          "passed": true,
-          "detail": "1280x720"
-        },
-        {
-          "description": "thumbnail: the brand colors are there (navy band, cream text, red accent)",
-          "passed": true,
-          "detail": "navy 19.2%, cream 2.82%, red 1.11%"
-        },
-        {
-          "description": "thumbnail: the logo lies inside the safe area",
-          "passed": true,
-          "detail": "logo (64, 64, 184, 184), safe 64,64-1216,656"
-        },
-        {
-          "description": "social-thumbnail.xcf keeps the headline as an editable text layer",
-          "passed": true,
-          "detail": "285650 bytes"
-        }
-      ],
-      "tool_calls": 74,
-      "tools": [
-        "gimp_status",
-        "gimp_list_toolsets",
-        "gimp_list_fonts",
-        "gimp_open_image",
-        "gimp_open_image",
-        "gimp_enable_toolsets",
-        "gimp_preview",
-        "gimp_preview",
-        "gimp_create_image",
-        "gimp_import_layer",
-        "gimp_scale_layer",
-        "gimp_create_layer",
-        "gimp_create_layer",
-        "gimp_import_layer",
-        "gimp_create_text_layer",
-        "gimp_scale_layer",
-        "gimp_set_layer_offsets",
-        "gimp_set_layer_offsets",
-        "gimp_add_guide",
-        "gimp_add_guide",
-        "gimp_add_guide",
-        "gimp_add_guide",
-        "gimp_preview",
-        "gimp_save_image",
-        "gimp_export_image",
-        "gimp_create_image",
-        "gimp_import_layer",
-        "gimp_scale_layer",
-        "gimp_create_layer",
-        "gimp_create_layer",
-        "gimp_import_layer",
-        "gimp_create_text_layer",
-        "gimp_add_guide",
-        "gimp_add_guide",
-        "gimp_add_guide",
-        "gimp_add_guide",
-        "gimp_set_layer_offsets",
-        "gimp_set_layer_offsets",
-        "gimp_scale_layer",
-        "gimp_preview",
-        "gimp_save_image",
-        "gimp_export_image",
-        "gimp_create_image",
-        "gimp_create_image",
-        "gimp_import_layer",
-        "gimp_import_layer",
-        "gimp_scale_layer",
-        "gimp_scale_layer",
-        "gimp_set_layer_offsets",
-        "gimp_set_layer_offsets",
-        "gimp_create_layer",
-        "gimp_create_layer",
-        "gimp_import_layer",
-        "gimp_create_text_layer",
-        "gimp_create_layer",
-        "gimp_create_layer",
-        "gimp_import_layer",
-        "gimp_create_text_layer",
-        "gimp_scale_layer",
-        "gimp_scale_layer",
-        "gimp_add_guide",
-        "gimp_add_guide",
-        "gimp_add_guide",
-        "gimp_add_guide",
-        "gimp_add_guide",
-        "gimp_add_guide",
-        "gimp_add_guide",
-        "gimp_add_guide",
-        "gimp_preview",
-        "gimp_preview",
-        "gimp_save_image",
-        "gimp_export_image",
-        "gimp_save_image",
-        "gimp_export_image"
-      ],
-      "errors": [],
-      "other_tools": [
-        "ToolSearch",
-        "ToolSearch"
-      ],
-      "duration_s": 88.4,
-      "turns": 77,
-      "input_tokens": 40,
-      "output_tokens": 12850,
-      "cache_read_tokens": 663588,
-      "cache_creation_tokens": 37993,
-      "model": "claude-sonnet-5-5",
-      "gimp_tools": 50,
-      "date": "2026-11-08",
-      "package": "0.5.0 (checkout)"
-    },
-    "screenshot-annotation": {
-      "passed": false,
-      "checks": [
-        {
-          "description": "the session finished",
-          "passed": true,
-          "detail": "success"
-        },
-        {
-          "description": "tutorial.png is a lossless PNG of the same size",
-          "passed": true,
-          "detail": "PNG (1280, 800)"
-        },
-        {
-          "description": "the e-mail keeps no detail (no glyph pixel left)",
-          "passed": true,
-          "detail": "dark pixels 0 (were 229)"
-        },
-        {
-          "description": "the avatar keeps no detail (flatter, eyes and mouth gone)",
-          "passed": true,
-          "detail": "std dev 39.3 (was 71.4), features still visible at []"
-        },
-        {
-          "description": "outside the annotations and redactions, pixels are identical to the screenshot",
-          "passed": true,
-          "detail": "0 other changed pixels"
-        },
-        {
-          "description": "red annotations at the Save button, the E-mail field, the Name and Phone fields",
-          "passed": true,
-          "detail": "red pixels: save 2236, e-mail 608, name 636, phone 608"
-        },
-        {
-          "description": "the PNG carries no metadata (no text, Exif, time or profile chunk)",
-          "passed": false,
-          "detail": "chunks ['IHDR', 'sRGB', 'gAMA', 'cHRM', 'pHYs', 'tIME', 'IDAT', 'IDAT', 'IDAT', 'IEND']"
-        }
-      ],
-      "tool_calls": 36,
-      "tools": [
-        "gimp_open_image",
-        "gimp_preview",
-        "gimp_list_toolsets",
-        "gimp_enable_toolsets",
-        "gimp_describe_filter_operation",
-        "gimp_inspect_image",
-        "gimp_select_rectangle",
-        "gimp_apply_filter",
-        "gimp_select_rectangle",
-        "gimp_apply_filter",
-        "gimp_select_rectangle",
-        "gimp_create_layer",
-        "gimp_draw_shape",
-        "gimp_draw_shape",
-        "gimp_draw_shape",
-        "gimp_draw_shape",
-        "gimp_draw_path",
-        "gimp_draw_path",
-        "gimp_create_text_layer",
-        "gimp_create_text_layer",
-        "gimp_create_text_layer",
-        "gimp_create_text_layer",
-        "gimp_set_layer_offsets",
-        "gimp_set_layer_offsets",
-        "gimp_set_layer_offsets",
-        "gimp_set_layer_offsets",
-        "gimp_preview",
-        "gimp_select_rectangle",
-        "gimp_draw_path",
-        "gimp_draw_path",
-        "gimp_draw_path",
-        "gimp_draw_path",
-        "gimp_draw_path",
-        "gimp_draw_path",
-        "gimp_preview",
-        "gimp_export_image"
-      ],
-      "errors": [],
-      "other_tools": [
-        "ToolSearch",
-        "Bash",
-        "ToolSearch",
-        "ToolSearch"
-      ],
-      "duration_s": 76.3,
-      "turns": 41,
-      "input_tokens": 38,
-      "output_tokens": 8628,
-      "cache_read_tokens": 492658,
-      "cache_creation_tokens": 32545,
-      "model": "claude-sonnet-5-5",
-      "gimp_tools": 50,
-      "date": "2026-11-08",
-      "package": "0.5.0 (checkout)"
-    },
-    "web-photo-batch": {
-      "passed": false,
-      "checks": [
-        {
-          "description": "the session finished",
-          "passed": true,
-          "detail": "success"
-        },
-        {
-          "description": "every photo has a WebP and a JPEG, longest side 1600 px",
-          "passed": true,
-          "detail": "40 files"
-        },
-        {
-          "description": "each is upright as EXIF said (red marker top-left)",
-          "passed": true,
-          "detail": ""
-        },
-        {
-          "description": "the watermark is in the bottom-right corner at about 60%",
-          "passed": true,
-          "detail": ""
-        },
-        {
-          "description": "no GPS position in any export",
-          "passed": true,
-          "detail": ""
-        },
-        {
-          "description": "the copyright is kept in every export",
-          "passed": true,
-          "detail": ""
-        },
-        {
-          "description": "every export carries an sRGB profile",
-          "passed": false,
-          "detail": "beach-web.webp, beach-web.jpg, harbor-web.webp, harbor-web.jpg, market-web.webp, market-web.jpg"
-        }
-      ],
-      "tool_calls": 80,
-      "tools": [
-        "gimp_list_toolsets",
-        "gimp_enable_toolsets",
-        "gimp_enable_toolsets",
-        "gimp_run_batch",
-        "gimp_open_image",
-        "gimp_get_metadata",
-        "gimp_get_color_profile",
-        "gimp_describe_file_format",
-        "gimp_run_batch",
-        "gimp_open_image",
-        "gimp_open_image",
-        "gimp_get_metadata",
-        "gimp_get_metadata",
-        "gimp_open_image",
-        "gimp_open_image",
-        "gimp_open_image",
-        "gimp_open_image",
-        "gimp_open_image",
-        "gimp_open_image",
-        "gimp_get_metadata",
-        "gimp_open_image",
-        "gimp_open_image",
-        "gimp_open_image",
-        "gimp_get_metadata",
-        "gimp_get_metadata",
-        "gimp_get_metadata",
-        "gimp_get_metadata",
-        "gimp_get_metadata",
-        "gimp_get_metadata",
-        "gimp_get_metadata",
-        "gimp_get_metadata",
-        "gimp_enable_toolsets",
-        "gimp_describe_file_format",
-        "gimp_resize_image",
-        "gimp_import_layer",
-        "gimp_set_layer_offsets",
-        "gimp_set_layer_properties",
-        "gimp_set_color_profile",
-        "gimp_set_metadata",
-        "gimp_export_as",
-        "gimp_export_as",
-        "gimp_open_image",
-        "gimp_open_image",
-        "gimp_get_color_profile",
-        "gimp_get_color_profile",
-        "gimp_get_metadata",
-        "gimp_get_metadata",
-        "gimp_open_image",
-        "gimp_inspect_image",
-        "gimp_set_layer_properties",
-        "gimp_export_as",
-        "gimp_export_as",
-        "gimp_open_image",
-        "gimp_open_image",
-        "gimp_open_image",
-        "gimp_open_image",
-        "gimp_open_image",
-        "gimp_open_image",
-        "gimp_open_image",
-        "gimp_open_image",
-        "gimp_get_metadata",
-        "gimp_get_metadata",
-        "gimp_get_metadata",
-        "gimp_get_metadata",
-        "gimp_get_color_profile",
-        "gimp_get_color_profile",
-        "gimp_get_color_profile",
-        "gimp_run_batch",
-        "gimp_open_image",
-        "gimp_preview",
-        "gimp_run_batch",
-        "gimp_run_batch",
-        "gimp_run_batch",
-        "gimp_run_batch",
-        "gimp_run_batch",
-        "gimp_run_batch",
-        "gimp_open_image",
-        "gimp_open_image",
-        "gimp_preview",
-        "gimp_preview"
-      ],
-      "errors": [
-        "gimp_enable_toolsets: Error executing tool gimp_enable_toolsets: 1 validation error for gimp_enable_toolsetsArguments\ntoolsets\n  Field required [type=missing, input_value={'names': '[\"batch\",\"docu...\",\"formats\",\"compose\"]'",
-        "gimp_export_as: WRITE_FAILED: directory /home/demo/work does not exist\nHint: Create the directory first; file tools never create directories."
-      ],
-      "other_tools": [
-        "Bash",
-        "ToolSearch",
-        "ToolSearch",
-        "ToolSearch",
-        "ToolSearch",
-        "ToolSearch"
-      ],
-      "duration_s": 145.8,
-      "turns": 87,
-      "input_tokens": 68,
-      "output_tokens": 16407,
-      "cache_read_tokens": 1214075,
-      "cache_creation_tokens": 54949,
-      "model": "claude-sonnet-5-5",
-      "gimp_tools": 50,
-      "date": "2026-11-08",
-      "package": "0.5.0 (checkout)"
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "animated-sticker": {
       "passed": true,
@@ -1685,118 +1070,261 @@
           "detail": "2992 bytes"
         }
       ],
-      "tool_calls": 87,
+      "tool_calls": 56,
       "tools": [
         "gimp_list_toolsets",
         "gimp_enable_toolsets",
         "gimp_create_image",
-        "gimp_status",
         "gimp_inspect_image",
+        "gimp_duplicate_layer",
+        "gimp_duplicate_layer",
+        "gimp_duplicate_layer",
+        "gimp_duplicate_layer",
+        "gimp_duplicate_layer",
+        "gimp_duplicate_layer",
+        "gimp_duplicate_layer",
+        "gimp_duplicate_layer",
+        "gimp_duplicate_layer",
+        "gimp_duplicate_layer",
+        "gimp_duplicate_layer",
+        "gimp_duplicate_layer",
         "gimp_import_layer",
-        "gimp_duplicate_layer",
+        "gimp_import_layer",
+        "gimp_import_layer",
+        "gimp_import_layer",
+        "gimp_import_layer",
+        "gimp_import_layer",
+        "gimp_import_layer",
+        "gimp_import_layer",
+        "gimp_import_layer",
+        "gimp_import_layer",
+        "gimp_import_layer",
+        "gimp_import_layer",
         "gimp_set_layer_properties",
-        "gimp_set_layer_offsets",
-        "gimp_duplicate_layer",
-        "gimp_duplicate_layer",
-        "gimp_set_layer_offsets",
         "gimp_set_layer_properties",
-        "gimp_merge_layers",
-        "gimp_duplicate_layer",
-        "gimp_duplicate_layer",
-        "gimp_set_layer_offsets",
         "gimp_set_layer_properties",
-        "gimp_merge_layers",
-        "gimp_duplicate_layer",
-        "gimp_duplicate_layer",
-        "gimp_set_layer_offsets",
         "gimp_set_layer_properties",
-        "gimp_merge_layers",
-        "gimp_duplicate_layer",
-        "gimp_duplicate_layer",
-        "gimp_set_layer_offsets",
         "gimp_set_layer_properties",
-        "gimp_merge_layers",
-        "gimp_duplicate_layer",
-        "gimp_duplicate_layer",
-        "gimp_set_layer_offsets",
+        "gimp_set_layer_properties",
+        "gimp_set_layer_properties",
+        "gimp_set_layer_properties",
+        "gimp_set_layer_properties",
+        "gimp_set_layer_properties",
         "gimp_set_layer_properties",
         "gimp_merge_layers",
-        "gimp_duplicate_layer",
-        "gimp_duplicate_layer",
-        "gimp_set_layer_offsets",
-        "gimp_set_layer_properties",
         "gimp_merge_layers",
-        "gimp_duplicate_layer",
-        "gimp_duplicate_layer",
-        "gimp_set_layer_offsets",
-        "gimp_set_layer_properties",
         "gimp_merge_layers",
-        "gimp_duplicate_layer",
-        "gimp_duplicate_layer",
-        "gimp_set_layer_offsets",
-        "gimp_set_layer_properties",
         "gimp_merge_layers",
-        "gimp_duplicate_layer",
-        "gimp_duplicate_layer",
-        "gimp_set_layer_offsets",
-        "gimp_set_layer_properties",
         "gimp_merge_layers",
-        "gimp_duplicate_layer",
-        "gimp_duplicate_layer",
-        "gimp_set_layer_offsets",
-        "gimp_set_layer_properties",
         "gimp_merge_layers",
-        "gimp_duplicate_layer",
-        "gimp_duplicate_layer",
-        "gimp_set_layer_offsets",
-        "gimp_set_layer_properties",
         "gimp_merge_layers",
-        "gimp_duplicate_layer",
-        "gimp_duplicate_layer",
-        "gimp_set_layer_offsets",
+        "gimp_merge_layers",
+        "gimp_merge_layers",
+        "gimp_merge_layers",
+        "gimp_merge_layers",
         "gimp_merge_layers",
         "gimp_delete_layer",
-        "gimp_delete_layer",
+        "gimp_set_frame",
         "gimp_list_frames",
-        "gimp_set_frame",
-        "gimp_set_frame",
-        "gimp_set_frame",
-        "gimp_set_frame",
-        "gimp_set_frame",
-        "gimp_set_frame",
-        "gimp_set_frame",
-        "gimp_set_frame",
-        "gimp_set_frame",
-        "gimp_set_frame",
-        "gimp_set_frame",
-        "gimp_set_frame",
         "gimp_export_animation",
-        "gimp_export_animation",
-        "gimp_preview_frame",
-        "gimp_preview_frame"
+        "gimp_export_animation"
+      ],
+      "errors": [],
+      "other_tools": [
+        "bash",
+        "ToolSearch",
+        "ToolSearch",
+        "ToolSearch",
+        "ToolSearch"
+      ],
+      "duration_s": 84.2,
+      "turns": 62,
+      "input_tokens": 30,
+      "output_tokens": 10355,
+      "cache_read_tokens": 395355,
+      "cache_creation_tokens": 38581,
+      "model": "claude-sonnet-5-5",
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
+    },
+    "old-photo-restoration": {
+      "passed": false,
+      "checks": [
+        {
+          "description": "the session finished",
+          "passed": true,
+          "detail": "success"
+        },
+        {
+          "description": "restored-print.tif is a 16-bit TIFF",
+          "passed": true,
+          "detail": "(16, 16, 16)"
+        },
+        {
+          "description": "the TIFF says 300 dpi",
+          "passed": true,
+          "detail": "(300.0, 300.0)"
+        },
+        {
+          "description": "restored-web.jpg is an image",
+          "passed": true,
+          "detail": "1186x738"
+        },
+        {
+          "description": "the sky's color bands are level (under 0.5\u00b0 measured)",
+          "passed": true,
+          "detail": "-0.09\u00b0"
+        },
+        {
+          "description": "no scanner bed remains along the edges",
+          "passed": true,
+          "detail": "0 white"
+        },
+        {
+          "description": "full contrast again (1%-99%: <=30 and >=225)",
+          "passed": false,
+          "detail": "11-218"
+        },
+        {
+          "description": "the output is the print, straight (aligned within 12/255)",
+          "passed": false,
+          "detail": "mean difference 13.8 at offset 8,4"
+        }
+      ],
+      "tool_calls": 106,
+      "tools": [
+        "gimp_list_toolsets",
+        "gimp_status",
+        "gimp_enable_toolsets",
+        "gimp_open_image",
+        "gimp_preview",
+        "gimp_inspect_image",
+        "gimp_describe_filter_operation",
+        "gimp_convert_precision",
+        "gimp_rotate_layer",
+        "gimp_preview",
+        "gimp_preview_region",
+        "gimp_preview_region",
+        "gimp_preview_region",
+        "gimp_crop_image",
+        "gimp_preview",
+        "gimp_paint_stroke",
+        "gimp_preview_region",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_describe_filter_operation",
+        "gimp_apply_filter",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_preview",
+        "gimp_preview_region",
+        "gimp_describe_filter_operation",
+        "gimp_list_filter_operations",
+        "gimp_describe_filter_operation",
+        "gimp_apply_filter",
+        "gimp_histogram",
+        "gimp_histogram",
+        "gimp_preview_region",
+        "gimp_levels",
+        "gimp_levels",
+        "gimp_levels",
+        "gimp_preview",
+        "gimp_set_print_size",
+        "gimp_list_checkpoints",
+        "gimp_search_procedures",
+        "gimp_enable_toolsets",
+        "gimp_search_procedures",
+        "gimp_open_image",
+        "gimp_convert_precision",
+        "gimp_inspect_image",
+        "gimp_rotate_layer",
+        "gimp_crop_image",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_select_rectangle",
+        "gimp_apply_filter",
+        "gimp_select_rectangle",
+        "gimp_apply_filter",
+        "gimp_create_checkpoint",
+        "gimp_histogram",
+        "gimp_levels",
+        "gimp_preview",
+        "gimp_set_alpha_channel",
+        "gimp_set_print_size",
+        "gimp_describe_file_format",
+        "gimp_export_as",
+        "gimp_export_image",
+        "gimp_open_image",
+        "gimp_inspect_image"
       ],
       "errors": [
-        "gimp_duplicate_layer: Error executing tool gimp_duplicate_layer: 1 validation error for gimp_duplicate_layerArguments\nitem\n  Field required [type=missing, input_value={'layer': 'item:2@b0f8cd23'}, input_type=dict]\n    For ",
-        "gimp_set_layer_properties: Error executing tool gimp_set_layer_properties: 1 validation error for gimp_set_layer_propertiesArguments\nitem\n  Field required [type=missing, input_value={'layer': 'item:5@b0f8cd23', 'opacity': 8}, i",
-        "gimp_set_layer_offsets: Error executing tool gimp_set_layer_offsets: 1 validation error for gimp_set_layer_offsetsArguments\nitem\n  Field required [type=missing, input_value={'layer': 'item:5@b0f8cd23', 'x': 40, 'y': 24}, inp",
-        "gimp_preview_frame: Error executing tool gimp_preview_frame: 1 validation error for gimp_preview_frameArguments\nindex\n  Field required [type=missing, input_value={'image': 'image:1@b0f8cd...em': 'item:65@b0f8cd23'}, inpu"
+        "gimp_describe_filter_operation: NOT_FOUND: GIMP offers no filter operation 'gegl:rotate' (see gimp_list_filter_operations)",
+        "gimp_describe_filter_operation: NOT_FOUND: GIMP offers no filter operation 'gegl:wavelet-denoise' (see gimp_list_filter_operations)",
+        "gimp_histogram: Error executing tool gimp_histogram: 1 validation error for gimp_histogramArguments\ntarget\n  Field required [type=missing, input_value={'image': 'image:1@44779e57'}, input_type=dict]\n    For further i",
+        "gimp_search_procedures: <tool_use_error>Error: No such tool available: mcp__gimp__gimp_search_procedures</tool_use_error>"
       ],
       "other_tools": [
         "Bash",
         "ToolSearch",
         "ToolSearch",
+        "ToolSearch",
+        "ToolSearch",
         "ToolSearch"
       ],
-      "duration_s": 95.8,
-      "turns": 92,
-      "input_tokens": 52,
-      "output_tokens": 12380,
-      "cache_read_tokens": 769104,
-      "cache_creation_tokens": 47997,
+      "duration_s": 160.8,
+      "turns": 113,
+      "input_tokens": 86,
+      "output_tokens": 20343,
+      "cache_read_tokens": 1956182,
+      "cache_creation_tokens": 63051,
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
-      "date": "2026-11-08",
-      "package": "0.5.0 (checkout)"
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "print-flyer": {
       "passed": false,
@@ -1827,11 +1355,12 @@
           "detail": "[('horizontal', 35), ('horizontal', 94), ('horizontal', 2457), ('horizontal', 2516), ('vertical', 35), ('vertical', 94), ('vertical', 1725), ('vertical', 1784)]"
         }
       ],
-      "tool_calls": 19,
+      "tool_calls": 21,
       "tools": [
         "gimp_list_toolsets",
         "gimp_enable_toolsets",
         "gimp_create_image",
+        "gimp_list_fonts",
         "gimp_add_guide",
         "gimp_add_guide",
         "gimp_add_guide",
@@ -1844,26 +1373,259 @@
         "gimp_scale_layer",
         "gimp_create_text_layer",
         "gimp_create_text_layer",
-        "gimp_preview",
+        "gimp_create_text_layer",
         "gimp_save_image",
         "gimp_export_as",
-        "gimp_export_as"
+        "gimp_export_as",
+        "gimp_inspect_image"
+      ],
+      "errors": [
+        "gimp_create_text_layer: FONT_NOT_FOUND: GIMP has no font named 'DejaVu Sans'"
+      ],
+      "other_tools": [
+        "ToolSearch",
+        "ToolSearch"
+      ],
+      "duration_s": 35.2,
+      "turns": 24,
+      "input_tokens": 16,
+      "output_tokens": 3885,
+      "cache_read_tokens": 176072,
+      "cache_creation_tokens": 22817,
+      "model": "claude-sonnet-5-5",
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
+    },
+    "product-cutout": {
+      "passed": false,
+      "checks": [
+        {
+          "description": "the session finished",
+          "passed": true,
+          "detail": "success"
+        },
+        {
+          "description": "product-2000.jpg is 2000x2000 with an sRGB profile",
+          "passed": false,
+          "detail": "(2000, 2000), profile none"
+        },
+        {
+          "description": "product-2000.webp is 2000x2000 with an sRGB profile",
+          "passed": false,
+          "detail": "(2000, 2000), profile none"
+        },
+        {
+          "description": "product-800.jpg is 800x800 with an sRGB profile",
+          "passed": false,
+          "detail": "(800, 800), profile none"
+        },
+        {
+          "description": "product-800.webp is 800x800 with an sRGB profile",
+          "passed": false,
+          "detail": "(800, 800), profile none"
+        },
+        {
+          "description": "product-400.jpg is 400x400 with an sRGB profile",
+          "passed": false,
+          "detail": "(400, 400), profile none"
+        },
+        {
+          "description": "product-400.webp is 400x400 with an sRGB profile",
+          "passed": false,
+          "detail": "(400, 400), profile none"
+        },
+        {
+          "description": "the product is centered with a 5% margin",
+          "passed": true,
+          "detail": "box (640, 100, 1360, 1898), center 1000,999, largest side 1798 (target 1800)"
+        },
+        {
+          "description": "outside the product and its shadow, pixels are exactly white",
+          "passed": true,
+          "detail": "0 other pixels"
+        },
+        {
+          "description": "a soft shadow lies below the product, none visible above it",
+          "passed": true,
+          "detail": "darkest below 165, above 255"
+        }
+      ],
+      "tool_calls": 62,
+      "tools": [
+        "gimp_open_image",
+        "gimp_preview",
+        "gimp_list_toolsets",
+        "gimp_enable_toolsets",
+        "gimp_select_by_color",
+        "gimp_get_selection",
+        "gimp_modify_selection",
+        "gimp_get_selection",
+        "gimp_inspect_image",
+        "gimp_add_layer_mask",
+        "gimp_modify_selection",
+        "gimp_scale_layer",
+        "gimp_resize_canvas",
+        "gimp_set_layer_offsets",
+        "gimp_alpha_to_selection",
+        "gimp_select_item",
+        "gimp_modify_selection",
+        "gimp_create_layer",
+        "gimp_create_layer",
+        "gimp_select_ellipse",
+        "gimp_fill",
+        "gimp_modify_selection",
+        "gimp_gaussian_blur",
+        "gimp_preview",
+        "gimp_get_color_profile",
+        "gimp_fill",
+        "gimp_select_ellipse",
+        "gimp_fill",
+        "gimp_modify_selection",
+        "gimp_gaussian_blur",
+        "gimp_preview_region",
+        "gimp_sample_colors",
+        "gimp_inspect_image",
+        "gimp_sample_colors",
+        "gimp_delete_layer",
+        "gimp_create_layer",
+        "gimp_select_ellipse",
+        "gimp_fill",
+        "gimp_modify_selection",
+        "gimp_gaussian_blur",
+        "gimp_sample_colors",
+        "gimp_preview_region",
+        "gimp_describe_file_format",
+        "gimp_describe_file_format",
+        "gimp_create_checkpoint",
+        "gimp_set_color_profile",
+        "gimp_export_as",
+        "gimp_export_as",
+        "gimp_open_image",
+        "gimp_get_color_profile",
+        "gimp_sample_colors",
+        "gimp_set_color_profile",
+        "gimp_resize_image",
+        "gimp_export_as",
+        "gimp_export_as",
+        "gimp_restore_checkpoint",
+        "gimp_restore_checkpoint",
+        "gimp_resize_image",
+        "gimp_export_as",
+        "gimp_export_as",
+        "gimp_open_image",
+        "gimp_sample_colors"
+      ],
+      "errors": [
+        "gimp_alpha_to_selection: WRONG_KIND: item 3 is a mask, not a layer",
+        "gimp_set_color_profile: FILE_NOT_FOUND: /usr/share/color/icc/colord/sRGB.icc does not exist",
+        "gimp_restore_checkpoint: Error executing tool gimp_restore_checkpoint: 1 validation error for gimp_restore_checkpointArguments\nimage\n  Field required [type=missing, input_value={'checkpoint': 'checkpoint:1@8f18522c'}, input_t"
+      ],
+      "other_tools": [
+        "ToolSearch",
+        "ToolSearch",
+        "ToolSearch"
+      ],
+      "duration_s": 97.9,
+      "turns": 66,
+      "input_tokens": 72,
+      "output_tokens": 11049,
+      "cache_read_tokens": 1161184,
+      "cache_creation_tokens": 39753,
+      "model": "claude-sonnet-5-5",
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
+    },
+    "screenshot-annotation": {
+      "passed": true,
+      "checks": [
+        {
+          "description": "the session finished",
+          "passed": true,
+          "detail": "success"
+        },
+        {
+          "description": "tutorial.png is a lossless PNG of the same size",
+          "passed": true,
+          "detail": "PNG (1280, 800)"
+        },
+        {
+          "description": "the e-mail keeps no detail (no glyph pixel left)",
+          "passed": true,
+          "detail": "dark pixels 0 (were 229)"
+        },
+        {
+          "description": "the avatar keeps no detail (flatter, eyes and mouth gone)",
+          "passed": true,
+          "detail": "std dev 43.4 (was 71.4), features still visible at []"
+        },
+        {
+          "description": "outside the annotations and redactions, pixels are identical to the screenshot",
+          "passed": true,
+          "detail": "0 other changed pixels"
+        },
+        {
+          "description": "red annotations at the Save button, the E-mail field, the Name and Phone fields",
+          "passed": true,
+          "detail": "red pixels: save 2713, e-mail 842, name 882, phone 842"
+        },
+        {
+          "description": "the PNG carries no metadata (no text, Exif, time or profile chunk)",
+          "passed": true,
+          "detail": "chunks ['IHDR', 'sRGB', 'gAMA', 'cHRM', 'IDAT', 'IDAT', 'IDAT', 'IEND']"
+        }
+      ],
+      "tool_calls": 32,
+      "tools": [
+        "gimp_open_image",
+        "gimp_preview",
+        "gimp_list_toolsets",
+        "gimp_enable_toolsets",
+        "gimp_describe_filter_operation",
+        "gimp_inspect_image",
+        "gimp_describe_file_format",
+        "gimp_select_rectangle",
+        "gimp_apply_filter",
+        "gimp_select_rectangle",
+        "gimp_apply_filter",
+        "gimp_select_rectangle",
+        "gimp_create_layer",
+        "gimp_preview_region",
+        "gimp_draw_shape",
+        "gimp_draw_path",
+        "gimp_draw_path",
+        "gimp_draw_path",
+        "gimp_draw_shape",
+        "gimp_draw_shape",
+        "gimp_draw_shape",
+        "gimp_create_text_layer",
+        "gimp_create_text_layer",
+        "gimp_create_text_layer",
+        "gimp_create_text_layer",
+        "gimp_set_layer_offsets",
+        "gimp_set_layer_offsets",
+        "gimp_set_layer_offsets",
+        "gimp_set_layer_offsets",
+        "gimp_preview_region",
+        "gimp_export_as",
+        "gimp_preview_region"
       ],
       "errors": [],
       "other_tools": [
         "ToolSearch",
         "ToolSearch"
       ],
-      "duration_s": 29.4,
-      "turns": 22,
-      "input_tokens": 16,
-      "output_tokens": 3472,
-      "cache_read_tokens": 172711,
-      "cache_creation_tokens": 21520,
+      "duration_s": 57.8,
+      "turns": 35,
+      "input_tokens": 34,
+      "output_tokens": 6890,
+      "cache_read_tokens": 444281,
+      "cache_creation_tokens": 31204,
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
-      "date": "2026-11-08",
-      "package": "0.5.0 (checkout)"
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     },
     "sky-replacement": {
       "passed": true,
@@ -1886,7 +1648,7 @@
         {
           "description": "foreground pixels change only by a bounded color grade (at most 40, not none)",
           "passed": true,
-          "detail": "largest 28, mean 19.2"
+          "detail": "largest 36, mean 24.4"
         },
         {
           "description": "the horizon transition is narrower than 6 px (no gray halo, no sky on the ground)",
@@ -1899,44 +1661,368 @@
           "detail": "[('New Sky', True), ('Background', False)]"
         }
       ],
-      "tool_calls": 19,
+      "tool_calls": 17,
       "tools": [
-        "gimp_status",
         "gimp_list_toolsets",
         "gimp_enable_toolsets",
         "gimp_open_image",
         "gimp_preview",
-        "gimp_sample_colors",
-        "gimp_import_layer",
-        "gimp_inspect_image",
         "gimp_select_by_color",
-        "gimp_modify_selection_shape",
+        "gimp_import_layer",
         "gimp_modify_selection_shape",
         "gimp_add_layer_mask",
-        "gimp_color_balance",
-        "gimp_remove_filter",
-        "gimp_select_rectangle",
+        "gimp_inspect_image",
         "gimp_color_balance",
         "gimp_preview",
+        "gimp_remove_filter",
+        "gimp_modify_selection",
+        "gimp_color_balance",
         "gimp_save_image",
-        "gimp_export_image"
+        "gimp_export_image",
+        "gimp_preview_region"
       ],
       "errors": [],
       "other_tools": [
         "ToolSearch",
-        "Bash",
+        "ToolSearch",
         "ToolSearch"
       ],
-      "duration_s": 35.1,
-      "turns": 23,
-      "input_tokens": 26,
-      "output_tokens": 3281,
-      "cache_read_tokens": 284468,
-      "cache_creation_tokens": 21771,
+      "duration_s": 29.8,
+      "turns": 21,
+      "input_tokens": 22,
+      "output_tokens": 3168,
+      "cache_read_tokens": 266030,
+      "cache_creation_tokens": 23592,
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
-      "date": "2026-11-08",
-      "package": "0.5.0 (checkout)"
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
+    },
+    "social-media-kit": {
+      "passed": true,
+      "checks": [
+        {
+          "description": "the session finished",
+          "passed": true,
+          "detail": "success"
+        },
+        {
+          "description": "social-post.png is 1080x1080",
+          "passed": true,
+          "detail": "1080x1080"
+        },
+        {
+          "description": "post: the brand colors are there (navy band, cream text, red accent)",
+          "passed": true,
+          "detail": "navy 11.7%, cream 2.23%, red 0.93%"
+        },
+        {
+          "description": "post: the logo lies inside the safe area",
+          "passed": true,
+          "detail": "logo (64, 64, 224, 224), safe 64,64-1016,1016"
+        },
+        {
+          "description": "social-post.xcf keeps the headline as an editable text layer",
+          "passed": true,
+          "detail": "417834 bytes"
+        },
+        {
+          "description": "social-story.png is 1080x1920",
+          "passed": true,
+          "detail": "1080x1920"
+        },
+        {
+          "description": "story: the brand colors are there (navy band, cream text, red accent)",
+          "passed": true,
+          "detail": "navy 6.9%, cream 1.54%, red 0.62%"
+        },
+        {
+          "description": "story: the logo lies inside the safe area",
+          "passed": true,
+          "detail": "logo (64, 250, 264, 450), safe 64,250-1016,1670"
+        },
+        {
+          "description": "social-story.xcf keeps the headline as an editable text layer",
+          "passed": true,
+          "detail": "903344 bytes"
+        },
+        {
+          "description": "social-banner.png is 1500x500",
+          "passed": true,
+          "detail": "1500x500"
+        },
+        {
+          "description": "banner: the brand colors are there (navy band, cream text, red accent)",
+          "passed": true,
+          "detail": "navy 22.8%, cream 2.69%, red 1.60%"
+        },
+        {
+          "description": "banner: the logo lies inside the safe area",
+          "passed": true,
+          "detail": "logo (60, 60, 180, 180), safe 60,60-1440,440"
+        },
+        {
+          "description": "social-banner.xcf keeps the headline as an editable text layer",
+          "passed": true,
+          "detail": "342596 bytes"
+        },
+        {
+          "description": "social-thumbnail.png is 1280x720",
+          "passed": true,
+          "detail": "1280x720"
+        },
+        {
+          "description": "thumbnail: the brand colors are there (navy band, cream text, red accent)",
+          "passed": true,
+          "detail": "navy 17.6%, cream 3.12%, red 1.39%"
+        },
+        {
+          "description": "thumbnail: the logo lies inside the safe area",
+          "passed": true,
+          "detail": "logo (64, 64, 204, 204), safe 64,64-1216,656"
+        },
+        {
+          "description": "social-thumbnail.xcf keeps the headline as an editable text layer",
+          "passed": true,
+          "detail": "290015 bytes"
+        }
+      ],
+      "tool_calls": 74,
+      "tools": [
+        "gimp_list_toolsets",
+        "gimp_status",
+        "gimp_list_fonts",
+        "gimp_enable_toolsets",
+        "gimp_create_image",
+        "gimp_import_layer",
+        "gimp_import_layer",
+        "gimp_preview",
+        "gimp_scale_layer",
+        "gimp_scale_layer",
+        "gimp_set_layer_offsets",
+        "gimp_set_layer_offsets",
+        "gimp_create_layer",
+        "gimp_create_layer",
+        "gimp_create_text_layer",
+        "gimp_set_layer_offsets",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_preview",
+        "gimp_save_image",
+        "gimp_export_image",
+        "gimp_create_image",
+        "gimp_import_layer",
+        "gimp_import_layer",
+        "gimp_scale_layer",
+        "gimp_scale_layer",
+        "gimp_set_layer_offsets",
+        "gimp_set_layer_offsets",
+        "gimp_create_layer",
+        "gimp_create_layer",
+        "gimp_create_text_layer",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_preview",
+        "gimp_save_image",
+        "gimp_export_image",
+        "gimp_create_image",
+        "gimp_import_layer",
+        "gimp_import_layer",
+        "gimp_scale_layer",
+        "gimp_scale_layer",
+        "gimp_set_layer_offsets",
+        "gimp_set_layer_offsets",
+        "gimp_create_layer",
+        "gimp_create_layer",
+        "gimp_create_text_layer",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_preview",
+        "gimp_save_image",
+        "gimp_export_image",
+        "gimp_create_image",
+        "gimp_import_layer",
+        "gimp_import_layer",
+        "gimp_scale_layer",
+        "gimp_scale_layer",
+        "gimp_set_layer_offsets",
+        "gimp_set_layer_offsets",
+        "gimp_create_layer",
+        "gimp_create_layer",
+        "gimp_create_text_layer",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_save_image",
+        "gimp_export_image",
+        "gimp_preview"
+      ],
+      "errors": [],
+      "other_tools": [
+        "ToolSearch",
+        "ListMcpResourcesTool",
+        "ToolSearch"
+      ],
+      "duration_s": 90.8,
+      "turns": 78,
+      "input_tokens": 50,
+      "output_tokens": 12476,
+      "cache_read_tokens": 858932,
+      "cache_creation_tokens": 42473,
+      "model": "claude-sonnet-5-5",
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
+    },
+    "web-photo-batch": {
+      "passed": false,
+      "checks": [
+        {
+          "description": "the session finished",
+          "passed": true,
+          "detail": "success"
+        },
+        {
+          "description": "every photo has a WebP and a JPEG, longest side 1600 px",
+          "passed": true,
+          "detail": "40 files"
+        },
+        {
+          "description": "each is upright as EXIF said (red marker top-left)",
+          "passed": false,
+          "detail": "beach-web.jpg (240, 170, 170); harbor-web.jpg (240, 170, 170); market-web.jpg (240, 170, 170); tower-web.jpg (240, 170, 170); stairs-web.jpg (240, 170, 170); door-web.jpg (240, 170, 170)"
+        },
+        {
+          "description": "the watermark is in the bottom-right corner at about 60%",
+          "passed": false,
+          "detail": "beach-web.webp (41, 157, 143) ~ (97, 138, 130); beach-web.jpg (42, 157, 142) ~ (111, 169, 160); harbor-web.webp (41, 157, 143) ~ (100, 140, 128); harbor-web.jpg (42, 157, 142) ~ (113, 169, 160); market-web.webp (41, 157, 143) ~ (104, 142, 126); market-web.jpg (42, 157, 142) ~ (114, 170, 159)"
+        },
+        {
+          "description": "no GPS position in any export",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "description": "the copyright is kept in every export",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "description": "every export carries an sRGB profile",
+          "passed": false,
+          "detail": "beach-web.webp, harbor-web.webp, market-web.webp, tower-web.webp, stairs-web.webp, door-web.webp"
+        }
+      ],
+      "tool_calls": 73,
+      "tools": [
+        "gimp_list_toolsets",
+        "gimp_enable_toolsets",
+        "gimp_run_batch",
+        "gimp_run_batch",
+        "gimp_open_image",
+        "gimp_describe_file_format",
+        "gimp_get_metadata",
+        "gimp_get_color_profile",
+        "gimp_describe_file_format",
+        "gimp_run_batch",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_get_metadata",
+        "gimp_get_metadata",
+        "gimp_get_metadata",
+        "gimp_get_metadata",
+        "gimp_get_metadata",
+        "gimp_get_metadata",
+        "gimp_get_metadata",
+        "gimp_get_metadata",
+        "gimp_get_metadata",
+        "gimp_get_metadata",
+        "gimp_get_metadata",
+        "gimp_get_metadata",
+        "gimp_get_metadata",
+        "gimp_get_metadata",
+        "gimp_get_metadata",
+        "gimp_get_metadata",
+        "gimp_get_metadata",
+        "gimp_get_metadata",
+        "gimp_get_metadata",
+        "gimp_open_image",
+        "gimp_run_batch",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_get_metadata",
+        "gimp_get_metadata",
+        "gimp_get_color_profile",
+        "gimp_get_color_profile",
+        "gimp_preview",
+        "gimp_run_batch",
+        "gimp_run_batch",
+        "gimp_run_batch",
+        "gimp_run_batch",
+        "gimp_run_batch",
+        "gimp_run_batch",
+        "gimp_run_batch",
+        "gimp_run_batch",
+        "gimp_run_batch",
+        "gimp_run_batch",
+        "gimp_run_batch",
+        "gimp_run_batch",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_preview",
+        "gimp_preview"
+      ],
+      "errors": [
+        "gimp_run_batch: INVALID_ARGUMENT: an output pattern is given but no step writes to {output}",
+        "gimp_describe_file_format: INVALID_ARGUMENT: give an extension or a procedure\n\nThis tool's input schema was not in your prompt when you called it. The input schema is: {\"type\":\"object\",\"properties\":{\"extension\":{\"anyOf\":[{\"type",
+        "gimp_run_batch: INVALID_ARGUMENT: step 7 (gimp_export_image): set overwrite on the batch, not on the step",
+        "gimp_run_batch: INVALID_ARGUMENT: step 6 (gimp_export_image): set overwrite on the batch, not on the step",
+        "gimp_run_batch: INVALID_ARGUMENT: step 6 (gimp_export_image): set overwrite on the batch, not on the step",
+        "gimp_run_batch: INVALID_ARGUMENT: step 6 (gimp_export_image): set overwrite on the batch, not on the step",
+        "gimp_run_batch: INVALID_ARGUMENT: step 7 (gimp_export_image): set overwrite on the batch, not on the step",
+        "gimp_run_batch: INVALID_ARGUMENT: step 7 (gimp_export_image): set overwrite on the batch, not on the step"
+      ],
+      "other_tools": [
+        "ToolSearch",
+        "ToolSearch",
+        "ToolSearch",
+        "ToolSearch",
+        "ToolSearch"
+      ],
+      "duration_s": 161.8,
+      "turns": 79,
+      "input_tokens": 50,
+      "output_tokens": 21178,
+      "cache_read_tokens": 1264713,
+      "cache_creation_tokens": 76169,
+      "model": "claude-sonnet-5-5",
+      "gimp_tools": 50,
+      "date": "2026-11-09",
+      "package": "main at f9d1da5, released as 0.6.0"
     }
   }
 }
