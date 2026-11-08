@@ -12,6 +12,11 @@ what is covered by the compatibility promise.
   Exchange (`.ase`) and RIFF or Paint Shop Pro palettes (`.pal`) by converting them to `.gpl` (#81).
   Their RGB, HSB and grayscale colors are imported; CMYK and Lab colors are refused.
 
+### Changed
+
+- `gimp_open_with_options` loads only the requested PDF pages, in the order given, instead of loading
+  every page and removing the others (#86). Page numbers still start at 1.
+
 ### Fixed
 
 - `demo/video/record.sh` resolves a relative output directory from the caller's directory, not
