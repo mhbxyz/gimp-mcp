@@ -5,7 +5,7 @@ gets one prompt ([prompt.txt](prompt.txt)) and drives a real GIMP 3.2 through
 the gimp-mcp package published on PyPI. Nothing is scripted on the GIMP side.
 
 ```sh
-CLAUDE_CODE_OAUTH_TOKEN=... demo/video/record.sh 0.3.0   # token: `claude setup-token`
+CLAUDE_CODE_OAUTH_TOKEN=... demo/video/record.sh 0.4.0   # token: `claude setup-token`
 ```
 
 * [Dockerfile](Dockerfile): an Arch Linux snapshot with GIMP, Xvfb, Alacritty and ffmpeg.
@@ -13,7 +13,8 @@ CLAUDE_CODE_OAUTH_TOKEN=... demo/video/record.sh 0.3.0   # token: `claude setup-
   installs the plug-in with `uvx gimp-mcp==VERSION install-plugin` in a fresh profile,
   opens GIMP on the right and Claude Code on the left (fresh HOME, only the gimp server
   through `--strict-mcp-config`, `dontAsk` permissions: no prompt can block the run,
-  shell and file-editing tools disabled), types the
+  `Bash`, file-editing and web tools in `--disallowedTools`; Claude Code 2.1.319 still ran one
+  read-only `ls` in the 0.4.0 take), types the
   prompt, and records until the export exists and the terminal has been still for 12 s.
   Every 1.5 s it also puts GIMP's window back in its half of the screen and sends
   the "Fit Image in Window" shortcut, so the canvas stays framed. That is the only
