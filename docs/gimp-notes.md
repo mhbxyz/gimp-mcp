@@ -309,4 +309,8 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   `gimp-console -i --batch-interpreter=python-fu-eval -b <code> --quit` runs Python headless;
   `-b "Gimp.quit()"` fails ("returned no return values") and leaves GIMP running. `XDG_RUNTIME_DIR` is
   unset. The runners' own CPython: macOS has `AF_UNIX`/`LOCAL_PEERCRED`, Windows has neither (named
-  pipes only).
+  pipes only). On macOS a plug-in that walks every filter (`Gimp.DrawableFilter.new(...).get_config()`
+  and its properties) crashes with a segmentation fault after "type name GeglBuffer is not registered"
+  (`gimp_gp_param_to_value`); touching `Gegl.Buffer.__gtype__` first registers the type and the same
+  walk completes (checked by replaying it on the runner). GIMP's own Python is used for plug-ins
+  (`Contents/MacOS/python3`, `bin\python.exe`): the system `python3` does not matter there.

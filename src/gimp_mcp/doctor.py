@@ -234,6 +234,14 @@ def check_gimp_python(ctx: Context) -> Result:
     env["PATH"] = system_path(env.get("PATH", ""))
     for name in ("VIRTUAL_ENV", "PYTHONPATH", "PYTHONHOME"):
         env.pop(name, None)
+    bundled = platforms.bundled_gimp_python(ctx.console) if ctx.console else None
+    if bundled:  # macOS and Windows: GIMP runs plug-ins with the Python of its own bundle
+        code, output = ctx.probe.run([bundled, "-c", GI_PROBE], env=env)
+        if code != 0:
+            last = output.strip().splitlines()[-1] if output.strip() else f"exit code {code}"
+            return result("gimp-python", Status.FAIL, f"GIMP's bundled Python ({bundled}) cannot import gi: {last}",
+                          "Reinstall GIMP 3.2 from gimp.org.")  # fmt: skip
+        return result("gimp-python", Status.OK, f"GIMP's bundled Python ({bundled}) imports gi and Gimp 3.0")
     code, output = ctx.probe.run(["/usr/bin/env", "python3", "-c", GI_PROBE], env=env)
     if code != 0:
         last = output.strip().splitlines()[-1] if output.strip() else f"exit code {code}"
@@ -244,6 +252,8 @@ def check_gimp_python(ctx: Context) -> Result:
 def check_venv_path(ctx: Context) -> Result:
     if ctx.flatpak:
         return result("venv-path", Status.OK, "Flatpak GIMP uses its own Python: not affected by PATH")
+    if ctx.console and platforms.bundled_gimp_python(ctx.console):
+        return result("venv-path", Status.OK, "GIMP uses the Python of its own bundle: not affected by PATH")
     # Ignore the environment running gimp-mcp itself: `uvx`/`uv run` put it first on
     # PATH for this process only; it is not the user's shell.
     own = os.path.realpath(Path(sys.prefix) / "bin")

@@ -6,6 +6,12 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+### Fixed
+
+- macOS: the bridge plug-in no longer crashes while listing filters (GEGL's buffer type is registered
+  before GIMP describes filter parameters); `gimp-mcp doctor` checks the Python bundled with GIMP on macOS
+  and Windows instead of the system `python3` (#99).
+
 ### Changed
 
 - The README demo is re-recorded with 0.4.0.

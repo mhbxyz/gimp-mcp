@@ -25,6 +25,11 @@ import gmb_warp  # noqa: E402
 from gi.repository import Babl, Gegl, Gimp, Gio, GObject  # noqa: E402
 from gmb_server import BridgeError  # noqa: E402
 
+# GEGL's types must exist in this process before libgimp deserializes filter param specs that use them:
+# on macOS (GIMP 3.2.6) a GeglBuffer property of an operation otherwise arrives as an unregistered type and
+# the plug-in crashes while listing filters (docs/gimp-notes.md, "Windows and macOS").
+_GEGL_TYPES = (Gegl.Buffer.__gtype__,)
+
 # Session id of this GIMP process (set by the plug-in entry point).
 SESSION = {"id": ""}
 

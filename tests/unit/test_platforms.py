@@ -147,3 +147,11 @@ def test_text_files_are_read_and_written_as_utf_8():
         tree = ast.parse(path.read_text(encoding="utf-8"))
         offenders += [f"{path.relative_to(ROOT)}:{line}" for line in _text_io_without_encoding(tree)]
     assert offenders == []
+
+
+def test_gimp_bundles_its_own_python_on_macos_and_windows():
+    mac = "/Applications/GIMP.app/Contents/MacOS/gimp-console-3.2"
+    assert platforms.bundled_gimp_python(mac, "macos") == "/Applications/GIMP.app/Contents/MacOS/python3"
+    win = r"C:\Program Files\GIMP 3\bin\gimp-console-3.2.exe"
+    assert platforms.bundled_gimp_python(win, "windows") == r"C:\Program Files\GIMP 3\bin\python.exe"
+    assert platforms.bundled_gimp_python("/usr/bin/gimp-console-3.2", "linux") is None

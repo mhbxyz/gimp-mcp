@@ -148,6 +148,16 @@ def gimp_console_candidates(env: Mapping[str, str], kind: OsKind | None = None) 
     return names
 
 
+def bundled_gimp_python(console: str, kind: OsKind | None = None) -> str | None:
+    """The Python shipped inside GIMP's bundle next to gimp-console (macOS app, Windows installer), which
+    runs its plug-ins; None on Linux, where GIMP uses the system python3."""
+    kind = _kind(kind)
+    if kind == "linux":
+        return None
+    name = "python.exe" if kind == "windows" else "python3"
+    return str(_pure(kind)(console).parent / name)
+
+
 def gimp_processes(kind: OsKind | None = None) -> list[tuple[int, str]] | None:
     """GIMP main processes of this user (not its plug-ins); None where it cannot be listed (non-Linux)."""
     kind = _kind(kind)
