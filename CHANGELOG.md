@@ -8,6 +8,9 @@ what is covered by the compatibility promise.
 
 ### Added
 
+- Demo: photo montage with sky replacement (#115). `uv run demo/run.py sky-replacement` replaces a sky
+  through a color selection and a layer mask and warms the foreground with an editable color balance,
+  checked against the known horizon and both pictures; its agent version is an evaluation task.
 - Demo: print-ready A5 flyer (#114). `uv run demo/run.py print-flyer` lays out an A5 flyer with 3 mm
   bleed and safe-margin guides at 300 dpi and exports a PDF (page size checked with pypdf) and a TIFF;
   its agent version is an evaluation task.

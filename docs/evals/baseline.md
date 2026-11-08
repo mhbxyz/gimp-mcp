@@ -1,8 +1,8 @@
 # gimp-mcp agent evaluation
 
-**19/25 tasks passed** — gimp-mcp 0.5.0 (checkout), model claude-sonnet-5-5, 2026-11-08. Default toolsets; the agent enables others itself.
+**20/26 tasks passed** — gimp-mcp 0.5.0 (checkout), model claude-sonnet-5-5, 2026-11-08. Default toolsets; the agent enables others itself.
 
-Updated since: old-photo-restoration, product-cutout and social-media-kit on 2026-11-08; screenshot-annotation on 2026-11-08; web-photo-batch on 2026-11-08; animated-sticker on 2026-11-08; print-flyer on 2026-11-08 (each task's package and date are in the JSON).
+Updated since: old-photo-restoration, product-cutout and social-media-kit on 2026-11-08; screenshot-annotation on 2026-11-08; web-photo-batch on 2026-11-08; animated-sticker on 2026-11-08; print-flyer on 2026-11-08; sky-replacement on 2026-11-08 (each task's package and date are in the JSON).
 
 | Task | Result | Tool calls | Errors returned | Duration | Tokens in / out (cache read) |
 |---|---|---|---|---|---|
@@ -31,6 +31,7 @@ Updated since: old-photo-restoration, product-cutout and social-media-kit on 202
 | `web-photo-batch` | **FAIL** | 80 | 2 | 145.8 s | 68 / 16407 (1214075) |
 | `animated-sticker` | pass | 87 | 4 | 95.8 s | 52 / 12380 (769104) |
 | `print-flyer` | **FAIL** | 19 | 0 | 29.4 s | 16 / 3472 (172711) |
+| `sky-replacement` | pass | 19 | 0 | 35.1 s | 26 / 3281 (284468) |
 
 ## Details
 
@@ -368,3 +369,14 @@ index
 * pass: the XCF keeps guides on the trim and the safe margins ([('horizontal', 35), ('horizontal', 94), ('horizontal', 2457), ('horizontal', 2516), ('vertical', 35), ('vertical', 94), ('vertical', 1725), ('vertical', 1784)])
 * gimp tools: gimp_list_toolsets, gimp_enable_toolsets, gimp_create_image, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_import_layer, gimp_scale_layer, gimp_create_text_layer, gimp_create_text_layer, gimp_preview, gimp_save_image, gimp_export_as, gimp_export_as
 * other tools tried: ToolSearch, ToolSearch
+
+### `sky-replacement`
+
+* pass: the session finished (success)
+* pass: montage.png has the landscape's size ((1200, 800))
+* pass: sky pixels come from the new sky (within 8) (worst 0)
+* pass: foreground pixels change only by a bounded color grade (at most 40, not none) (largest 28, mean 19.2)
+* pass: the horizon transition is narrower than 6 px (no gray halo, no sky on the ground) (gray above at x=[], sky below at x=[])
+* pass: the XCF keeps the new sky as a masked layer over the landscape ([('New Sky', True), ('Background', False)])
+* gimp tools: gimp_status, gimp_list_toolsets, gimp_enable_toolsets, gimp_open_image, gimp_preview, gimp_sample_colors, gimp_import_layer, gimp_inspect_image, gimp_select_by_color, gimp_modify_selection_shape, gimp_modify_selection_shape, gimp_add_layer_mask, gimp_color_balance, gimp_remove_filter, gimp_select_rectangle, gimp_color_balance, gimp_preview, gimp_save_image, gimp_export_image
+* other tools tried: ToolSearch, Bash, ToolSearch
