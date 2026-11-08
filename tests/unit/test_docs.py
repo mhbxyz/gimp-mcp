@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import re
 
+import pytest
+
 from gimp_mcp.setup import ClaudeCode, ClaudeDesktop, Cursor, VSCode, server_entry
 from tests.docs.doctest_blocks import ROOT, blocks, commands
 
@@ -13,7 +15,7 @@ CLIENT_PAGES = ["claude-code", "claude-desktop", "vscode-cursor", "generic"]
 
 
 def test_readme_starts_with_a_quickstart_of_at_most_three_commands():
-    readme = (ROOT / "README.md").read_text()
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
     quickstart = next(b for b in blocks("doctest") if b.name == "quickstart")
     assert quickstart.page.name == "README.md"
     assert 1 <= len(commands(quickstart)) <= 3
@@ -24,13 +26,14 @@ def test_readme_starts_with_a_quickstart_of_at_most_three_commands():
 def test_one_page_per_main_client_with_the_same_steps():
     for name in CLIENT_PAGES:
         page = ROOT / "docs" / "clients" / f"{name}.md"
-        text = page.read_text()
+        text = page.read_text(encoding="utf-8")
         for heading in ("## Install", "## Configure", "## First prompt", "## Check"):
             assert heading in text, (name, heading)
         assert "Flatpak" in text, name  # both GIMP packagings are covered
         assert "troubleshooting.md" in text, name
 
 
+@pytest.mark.linux_paths  # the docs show the Linux locations
 def test_client_snippets_are_what_setup_writes():
     env: dict[str, str] = {"HOME": "/home/u"}
     expected = {
@@ -56,7 +59,7 @@ def test_client_snippets_are_what_setup_writes():
 
 
 def test_install_reference_covers_upgrade_uninstall_and_troubleshooting():
-    install = (ROOT / "docs" / "install.md").read_text()
+    install = (ROOT / "docs" / "install.md").read_text(encoding="utf-8")
     for heading in ("## Upgrade", "## Uninstall", "## Troubleshooting"):
         assert heading in install
     assert "gimp-mcp doctor" in install and "troubleshooting.md" in install
@@ -64,7 +67,9 @@ def test_install_reference_covers_upgrade_uninstall_and_troubleshooting():
 
 def test_documented_links_point_to_existing_files():
     for page in [ROOT / "README.md", *(ROOT / "docs").rglob("*.md")]:
-        for target in re.findall(r"\]\((?!https?://|#|mailto:)([^)#]+)", page.read_text()):
+        for target in re.findall(r"\]\((?!https?://|#|mailto:)([^)#]+)", page.read_text(encoding="utf-8")):
             assert (page.parent / target).exists(), f"{page.relative_to(ROOT)} -> {target}"
-        for target in re.findall(r"\]\(https://github\.com/mhbxyz/gimp-mcp/blob/main/([^)#]+)", page.read_text()):
+        for target in re.findall(
+            r"\]\(https://github\.com/mhbxyz/gimp-mcp/blob/main/([^)#]+)", page.read_text(encoding="utf-8")
+        ):
             assert (ROOT / target).exists(), f"{page.relative_to(ROOT)} -> {target}"

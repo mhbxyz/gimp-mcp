@@ -24,10 +24,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from . import __version__
+from . import __version__, platforms
 from .bridge import FLATPAK_APP, BridgeClient, BridgeEndpoint, parse_version
 from .errors import GimpMcpError
-from .headless import CONSOLE_CANDIDATES, system_path
+from .headless import system_path
 from .installer import PLUGIN_NAME, installed_plugin_dir
 from .versions import Compatibility, check_plugin_version
 
@@ -153,21 +153,9 @@ class Probe:
             return 127, str(exc)
         return proc.returncode, proc.stdout + proc.stderr
 
-    def gimp_processes(self) -> list[tuple[int, str]]:
-        """GIMP main processes of this user (not its plug-ins), from /proc."""
-        found = []
-        for entry in Path("/proc").iterdir():
-            if not entry.name.isdigit():
-                continue
-            try:
-                if entry.stat().st_uid != os.getuid():
-                    continue
-                comm = (entry / "comm").read_text().strip()
-            except OSError:
-                continue
-            if re.fullmatch(r"gimp(-console)?(-\d.*)?", comm):
-                found.append((int(entry.name), comm))
-        return found
+    def gimp_processes(self) -> list[tuple[int, str]] | None:
+        """GIMP main processes of this user (not its plug-ins); None where the OS cannot list them here."""
+        return platforms.gimp_processes()
 
 
 @dataclass
@@ -185,15 +173,13 @@ class Context:
     def active_profile(self) -> Path:
         if self.probe.gimp_dir is not None:
             return self.probe.gimp_dir
-        if self.probe.env.get("GIMP3_DIRECTORY"):
-            return Path(self.probe.env["GIMP3_DIRECTORY"])
-        config = Path(self.probe.env.get("XDG_CONFIG_HOME") or self.home / ".config")
-        return config / "GIMP" / (self.gimp_series or "3.2")
+        env = {**self.probe.env, "HOME": str(self.home)}
+        return Path(platforms.gimp_profile_dir(env, series=self.gimp_series or platforms.GIMP_SERIES))
 
 
 def check_gimp(ctx: Context) -> Result:
     explicit = ctx.probe.env.get("GIMP_MCP_GIMP_CONSOLE")
-    candidates = [explicit] if explicit else list(CONSOLE_CANDIDATES)
+    candidates = [explicit] if explicit else platforms.gimp_console_candidates(ctx.probe.env)
     ctx.console = next((path for name in candidates if (path := ctx.probe.which(name))), None)
     if ctx.console is None:
         flatpak = check_flatpak_gimp(ctx)
@@ -279,8 +265,9 @@ def check_venv_path(ctx: Context) -> Result:
 
 
 def _profiles(ctx: Context) -> list[Path]:
-    config = Path(ctx.probe.env.get("XDG_CONFIG_HOME") or ctx.home / ".config")
-    roots = [config / "GIMP", ctx.home / ".var" / "app" / "org.gimp.GIMP" / "config" / "GIMP"]
+    env = {**ctx.probe.env, "HOME": str(ctx.home)}
+    flatpak = platforms.flatpak_gimp_profile_root(env)
+    roots = [Path(platforms.config_home(env)) / "GIMP", *([Path(flatpak)] if flatpak else [])]
     found = [
         path
         for root in roots
@@ -335,7 +322,7 @@ def check_plugin_version_file(ctx: Context) -> Result:
     if not (directory / f"{PLUGIN_NAME}.py").exists():
         return result("plugin-version", Status.SKIP, "no plug-in installed")
     try:
-        installed = (directory / "VERSION").read_text().strip()
+        installed = (directory / "VERSION").read_text(encoding="utf-8").strip()
     except OSError:
         installed = "unknown"
     verdict = check_plugin_version(__version__, installed)
@@ -397,7 +384,7 @@ async def check_connection(ctx: Context) -> Result:
 
 def _connection_failure(ctx: Context, error: GimpMcpError) -> Result:
     endpoint = ctx.probe.endpoint
-    running = ctx.probe.gimp_processes()
+    running = ctx.probe.gimp_processes() or []
     if error.code == "PLUGIN_VERSION_MISMATCH":
         return result(
             "connection",
@@ -437,6 +424,8 @@ def _connection_failure(ctx: Context, error: GimpMcpError) -> Result:
 
 def check_instances(ctx: Context) -> Result:
     running = ctx.probe.gimp_processes()
+    if running is None:
+        return result("instances", Status.SKIP, "GIMP processes cannot be listed on this OS yet")
     if len(running) > 1:
         pids = ", ".join(f"{pid} ({name})" for pid, name in running)
         return result(

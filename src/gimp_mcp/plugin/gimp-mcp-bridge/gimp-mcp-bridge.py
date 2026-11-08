@@ -34,7 +34,7 @@ PROCEDURE = "extension-gimp-mcp-bridge"
 def _installed_version():
     """Written by `gimp-mcp install-plugin` from the package version."""
     try:
-        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "VERSION")) as handle:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "VERSION"), encoding="utf-8") as handle:
             return handle.read().strip() or "unknown"
     except OSError:
         return "unknown"

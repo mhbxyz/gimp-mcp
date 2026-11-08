@@ -8,7 +8,7 @@ import stat
 from importlib import resources
 from pathlib import Path
 
-from . import __version__
+from . import __version__, platforms
 
 PLUGIN_NAME = "gimp-mcp-bridge"
 DEFAULT_GIMP_SERIES = "3.2"
@@ -21,10 +21,7 @@ def plugin_source_dir() -> Path:
 def default_gimp_config_dir(environ: dict[str, str] | None = None, series: str = DEFAULT_GIMP_SERIES) -> Path:
     """Where GIMP reads its user configuration (``GIMP3_DIRECTORY`` overrides it)."""
     env = os.environ if environ is None else environ
-    if env.get("GIMP3_DIRECTORY"):
-        return Path(env["GIMP3_DIRECTORY"])
-    config_home = env.get("XDG_CONFIG_HOME") or str(Path(env.get("HOME", "~")).expanduser() / ".config")
-    return Path(config_home) / "GIMP" / series
+    return Path(platforms.gimp_profile_dir(env, series=series))
 
 
 def installed_plugin_dir(gimp_config_dir: Path) -> Path:

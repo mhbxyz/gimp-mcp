@@ -18,19 +18,18 @@ import time
 from pathlib import Path
 from typing import Any
 
+from . import platforms
 from .bridge import BridgeEndpoint
 from .errors import GimpMcpError
 from .installer import install_plugin
-
-CONSOLE_CANDIDATES = ("gimp-console-3.2", "gimp-console-3.0", "gimp-console", "gimp-console-3")
 
 
 def find_gimp_console() -> str | None:
     explicit = os.environ.get("GIMP_MCP_GIMP_CONSOLE")
     if explicit:
         return explicit if shutil.which(explicit) else None
-    for name in CONSOLE_CANDIDATES:
-        path = shutil.which(name)
+    for candidate in platforms.gimp_console_candidates(os.environ):
+        path = shutil.which(candidate)  # a name on PATH, or an install location (macOS, Windows)
         if path:
             return path
     return None
@@ -57,11 +56,8 @@ def is_virtualenv_bin(entry: str) -> bool:
 
 
 def _short_base_dir() -> str:
-    # AF_UNIX socket paths are limited to ~107 bytes.
-    runtime = os.environ.get("XDG_RUNTIME_DIR")
-    if runtime and os.path.isdir(runtime) and os.access(runtime, os.W_OK):
-        return runtime
-    return tempfile.gettempdir()
+    # AF_UNIX socket paths are limited to ~104 bytes.
+    return platforms.short_runtime_dir(os.environ) or tempfile.gettempdir()
 
 
 class HeadlessGimp:
@@ -153,7 +149,7 @@ class HeadlessGimp:
 
     def sync_call(self, method: str, params: dict[str, Any] | None = None, timeout: float = 30.0) -> Any:
         """Blocking bridge call (readiness probe and test setup helpers)."""
-        token = self.endpoint.token_path.read_text().strip()
+        token = self.endpoint.token_path.read_text(encoding="utf-8").strip()
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
             sock.settimeout(timeout)
             sock.connect(str(self.socket_path))
@@ -182,7 +178,7 @@ class HeadlessGimp:
 
     def log_tail(self, lines: int = 40) -> str:
         try:
-            text = self.log_path.read_text(errors="replace")
+            text = self.log_path.read_text(encoding="utf-8", errors="replace")
         except OSError:
             return ""
         return "\n".join(text.splitlines()[-lines:])
