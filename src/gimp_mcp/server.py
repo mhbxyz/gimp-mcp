@@ -14,6 +14,7 @@ from .bridge import BridgeClient
 from .toolkit import Toolkit
 from .tools import (
     analysis,
+    animation,
     channels,
     color,
     compose,
@@ -102,6 +103,7 @@ def build_server(
         channels,
         vector,
         typography,
+        animation,
     ):
         module.register(kit)
     return mcp

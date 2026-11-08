@@ -388,6 +388,27 @@ image dirty. Procedure names, arguments and availability depend on the GIMP
 version; check with `gimp_list_callable_procedures` (the committed matrix lists
 422 callable procedures on GIMP 3.2.6).
 
+## Animations (toolset `animation`)
+
+GIMP keeps an animation as layers, played from the **bottom** layer up. A frame's duration and
+disposal are written in its layer name, as GIMP's GIF and WebP exporters read them:
+`Frame 2 (100ms) (replace)`. Disposal tells what happens to a frame when the next one comes:
+`combine` keeps it under the next one, `replace` removes it.
+
+* `gimp_list_frames(image, default_delay=100)`: `frames[]` with `item`, `index` (0 = first),
+  `name`, `duration_ms`, `disposal` (frames without one get `default_delay` / `combine`).
+* `gimp_add_frame(image, index?, duplicate_of?, name?, duration_ms?, disposal?, fill?)`: an empty
+  frame (optionally filled) or a copy of another frame. Reorder frames with `gimp_move_layer`.
+  `gimp_set_frame(item, duration_ms?, disposal?, name?)` rewrites the layer name.
+* `gimp_preview_frame(image, index, max_size)`: the animation as it looks while that frame shows
+  (`frames_shown`: the frames on screen after disposal).
+* `gimp_optimize_animation(image, optimize|optimize-difference|unoptimize)`: a **new** image
+  (GIMP's Animation plug-ins); the original is unchanged.
+* `gimp_export_animation(image, path, loop, default_delay, default_disposal, force, overwrite)`:
+  animated GIF (`.gif`) or lossless WebP (`.webp`); `force` applies the defaults to every frame.
+  GIMP 3.2 has no APNG exporter. Verified frame by frame (count, size, durations, loop) in
+  `tests/e2e/test_animation.py`.
+
 ## Advanced text (toolset `typography`)
 
 * `gimp_set_text_style(item, markup?, outline?, kerning?, hint_style?, indent?, language?,
