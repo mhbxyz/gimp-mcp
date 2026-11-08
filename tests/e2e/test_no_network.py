@@ -51,9 +51,11 @@ def network_sockets(pids: set[int]) -> list[str]:
             f"$ids = @({ids}); "
             "Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue "
             "| Where-Object { $ids -contains $_.OwningProcess } "
-            "| ForEach-Object { 'tcp ' + $_.LocalAddress + ':' + $_.LocalPort + ' ' + $_.State }; "
+            "| ForEach-Object { 'tcp ' + $_.LocalAddress + ':' + $_.LocalPort + ' ' + $_.State + ' pid ' "
+            "+ $_.OwningProcess + ' ' + (Get-Process -Id $_.OwningProcess).Path }; "
             "Get-NetUDPEndpoint -ErrorAction SilentlyContinue | Where-Object { $ids -contains $_.OwningProcess } "
-            "| ForEach-Object { 'udp ' + $_.LocalAddress + ':' + $_.LocalPort }"
+            "| ForEach-Object { 'udp ' + $_.LocalAddress + ':' + $_.LocalPort + ' pid ' + $_.OwningProcess + ' ' "
+            "+ (Get-Process -Id $_.OwningProcess).Path }"
         )
         out = subprocess.run(["powershell", "-NoProfile", "-Command", script], capture_output=True, text=True)
         return [line for line in out.stdout.splitlines() if line.strip()]
@@ -94,4 +96,5 @@ def test_gimp_and_the_bridge_own_no_network_socket(gimp: HeadlessGimp):
     assert gimp.process is not None
     tree = process_tree(gimp.process.pid)
     assert len(tree) >= 2  # GIMP and at least the bridge plug-in
-    assert network_sockets(tree) == []
+    found = network_sockets(tree)
+    assert found == [], "\n".join(found)
