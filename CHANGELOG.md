@@ -6,6 +6,11 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+### Fixed
+
+- `demo/video/record.sh` resolves a relative output directory from the caller's directory, not
+  from `demo/video/`. The README demo is re-recorded with 0.3.0.
+
 ## [0.3.0] - 2026-11-08
 
 ### Added
