@@ -338,3 +338,6 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   a CR in palette names read from a `.gpl` written with CRLF: write `.gpl` files with `\n` only. A
   pluginrc on Windows lists the plug-in with escaped backslashes. The CI e2e suite runs on GIMP 3.2.6
   installed with `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /ALLUSERS`.
+  GIMP for Windows starts `gdbus.exe` (GLib's D-Bus session bus, from GIMP's `bin`), which listens on
+  TCP loopback (`127.0.0.1` and `::1`, a random port): it is GIMP's, not gimp-mcp's, and nothing in
+  GIMP's process tree listens on any other address (`tests/e2e/test_no_network.py`).

@@ -97,4 +97,8 @@ def test_gimp_and_the_bridge_own_no_network_socket(gimp: HeadlessGimp):
     tree = process_tree(gimp.process.pid)
     assert len(tree) >= 2  # GIMP and at least the bridge plug-in
     found = network_sockets(tree)
-    assert found == [], "\n".join(found)
+    # GIMP for Windows starts GLib's D-Bus session bus (gdbus.exe), which listens on loopback only; gimp-mcp
+    # starts no such process (docs/gimp-notes.md). Anything else listening is a failure.
+    gimp_bus = [s for s in found if s.lower().endswith("\\gdbus.exe")]
+    assert [s for s in found if s not in gimp_bus] == [], "\n".join(found)
+    assert all(s.split()[1].rsplit(":", 1)[0] in ("127.0.0.1", "::1") for s in gimp_bus), "\n".join(gimp_bus)
