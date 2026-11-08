@@ -8,6 +8,9 @@ what is covered by the compatibility promise.
 
 ### Added
 
+- Demo: annotate a screenshot and redact private data (#111). `uv run demo/run.py screenshot-annotation`
+  pixelates an e-mail address and an avatar, draws a box, an arrow and numbered callouts, and exports a
+  PNG without metadata, every other pixel identical to the input; its agent version is an evaluation task.
 - Demo: social media kit from one design (#110). `uv run demo/run.py social-media-kit` makes a post, a
   story, a banner and a thumbnail with safe-area guides, the brand colors, the logo and an editable
   headline, checked in the reopened XCFs and in the PNGs; its agent version is an evaluation task.

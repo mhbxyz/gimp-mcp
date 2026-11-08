@@ -92,3 +92,15 @@ def test_a_headline_on_two_lines_is_the_same_editable_headline():
     xcf = b'gimp xcf v020\x00gimp-text-layer\x00(text "Golden Hour\\nSale") (font "Noto Sans Bold")'
     assert xcf_texts(xcf) == ["Golden Hour Sale"]
     assert xcf_texts(b'(text "Golden Hours Sale")') != ["Golden Hour Sale"]
+
+
+def test_the_screenshot_checks_reject_an_unredacted_copy(tmp_path):
+    from demo.scenarios import screenshot_annotation as screenshot
+
+    screenshot.make_screenshot(tmp_path / "screenshot.png")
+    (tmp_path / "tutorial.png").write_bytes((tmp_path / "screenshot.png").read_bytes())
+    failed = {c.description for c in screenshot.verify(tmp_path / "screenshot.png", tmp_path / "tutorial.png", False)
+              if not c.passed}  # fmt: skip
+    assert "the e-mail keeps no detail (no glyph pixel left)" in failed
+    assert "the avatar keeps no detail (flatter, eyes and mouth gone)" in failed
+    assert "the PNG carries no metadata (no text, Exif, time or profile chunk)" in failed  # the planted tEXt
