@@ -39,6 +39,10 @@ what is covered by the compatibility promise.
   create, edit (generated brushes, gradient segments, palette entries), duplicate, rename and delete
   user resources (built-ins are read-only: new error code `READ_ONLY`); import `.gpl` palettes and
   export palettes as gpl, css, text, python, php, java or kpl.
+- Compose toolset (#54): copy/cut and paste through named GIMP buffers (the user's clipboard stays
+  untouched; pastes never leave a floating selection), merge down/group/visible, flatten, new layer
+  from visible, alpha channel and alpha to selection, layer boundary and crop to content, align and
+  distribute layers.
 
 ### Fixed
 

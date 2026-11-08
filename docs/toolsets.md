@@ -55,6 +55,7 @@ Rules of thumb:
 * If your client caps the number of tools (counted across all MCP servers) or warns about too many
   tools, list only what your work needs, e.g. `files,layers,text` (21 tools with `core`). The agent
   can still enable more with `gimp_enable_toolsets` if the client refreshes its tool list.
+* Add `compose` for copy/paste between images, merging, alpha and alignment.
 * Add `resources` to make or pick brushes, gradients and palettes.
 * Add `paths` for precise shapes, outlines, text on curves and SVG.
 * Add `modes` for grayscale/indexed images, 16/32-bit work and ICC profiles.
@@ -126,6 +127,12 @@ Not in the default. Measure pixels, read-only: `gimp_histogram`, `gimp_sample_co
 Not in the default. Color adjustments with photographers' ranges: `gimp_levels`, `gimp_curves`,
 `gimp_color_balance`, `gimp_colorize`, `gimp_desaturate`, `gimp_invert`, `gimp_threshold`,
 `gimp_posterize`, `gimp_exposure`, `gimp_shadows_highlights`, `gimp_auto_adjust`.
+
+### `compose`
+
+Not in the default. Layer composition: `gimp_copy`, `gimp_paste`, `gimp_merge_layers`,
+`gimp_flatten_image`, `gimp_new_layer_from_visible`, `gimp_set_alpha_channel`,
+`gimp_alpha_to_selection`, `gimp_fit_layer`, `gimp_crop_to_content`, `gimp_align_layers`.
 
 ### `resources`
 

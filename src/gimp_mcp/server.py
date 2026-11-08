@@ -15,6 +15,7 @@ from .toolkit import Toolkit
 from .tools import (
     analysis,
     color,
+    compose,
     effects,
     files,
     filters,
@@ -86,6 +87,7 @@ def build_server(
         modes,
         paths,
         resources,
+        compose,
     ):
         module.register(kit)
     return mcp

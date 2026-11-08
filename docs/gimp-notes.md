@@ -187,5 +187,16 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   when GIMP exits normally (SIGTERM loses them). The data folder loads palettes from `.gpl` only;
   `gimp-palette-export-{css,java,php,python,text}` (Script-Fu, context palette, `dirname` +
   file name) and `python-fu-palette-export-as-kpl` export palettes.
+* **Composition** (checked 2026-11-08): `Gimp.edit_copy([drawables])`, `edit_cut`,
+  `edit_copy_visible(image)` use the global clipboard; `edit_named_copy(drawables, name)`,
+  `edit_named_copy_visible`, `edit_named_paste(drawable, name, paste_into)` and
+  `edit_named_paste_as_new_image(name)` use named buffers. A paste creates a floating selection
+  (`image.get_floating_sel()`), named "<layer> copy" (localized), that must be anchored
+  (`Gimp.floating_sel_anchor`) or turned into a layer (`Gimp.floating_sel_to_layer`).
+  `Gimp.Layer.new_from_visible(image, dest, name)`, `image.merge_down(layer, type)`,
+  `image.merge_visible_layers(type)`, `group.merge()`, `image.flatten()`, `layer.flatten()` (drops
+  alpha), `layer.add_alpha()`, `resize_to_image_size()`, `resize(w, h, offx, offy)`,
+  `image.autocrop(None)` and `image.autocrop_selected_layers(layer)` exist; `plug-in-autocrop`
+  does not in 3.2.
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.
