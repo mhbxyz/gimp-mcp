@@ -388,6 +388,30 @@ image dirty. Procedure names, arguments and availability depend on the GIMP
 version; check with `gimp_list_callable_procedures` (the committed matrix lists
 422 callable procedures on GIMP 3.2.6).
 
+## Color adjustments (toolset `color`)
+
+Dedicated tools with the ranges of GIMP's dialogs. **Editable** mode (default, `destructive=false`)
+adds a GIMP filter on the layer (pixels untouched, see `gimp_list_filters`); **destructive** mode
+changes the pixels (plain layers only). Both respect the selection. Every tool returns
+`adjustment`, `operation` (GIMP/GEGL operation used, `null` for GIMP's built-in destructive tools),
+`destructive`, `filter` (editable mode) and `restricted_to_selection`. One undo step each.
+
+| Tool | Parameters (our range → GIMP) | Modes |
+|---|---|---|
+| `gimp_levels` | `channel` (`value` = all color channels, `red`, `green`, `blue`, `alpha`); `input_low` < `input_high`, `output_low`, `output_high`: 0-255 → 0-1; `gamma` 0.1-10 (>1 brightens midtones). `gimp:levels` on **sRGB values** (`trc=non-linear`, like the Levels dialog; the operation's own default is linear light) | both |
+| `gimp_curves` | `channel`; `points` `[[x, y], …]` 0-255, x strictly increasing (spline, `gimp-drawable-curves-spline`) **or** `samples` (outputs for evenly spaced inputs, resampled linearly to 256 values, `gimp-drawable-curves-explicit`) | destructive only: GIMP 3.2 cannot set a curve on an editable filter from a plug-in |
+| `gimp_color_balance` | `range` shadows/midtones/highlights; `cyan_red`, `magenta_green`, `yellow_blue` -100..100 → -1..1; `preserve_luminosity` | both |
+| `gimp_colorize` | `hue` 0-360° → 0-1, `saturation` 0-100 → 0-1, `lightness` -100..100 → -1..1. `gimp:colorize` follows its `color` property, set to HSL(hue, saturation, 50%) | both |
+| `gimp_desaturate` | `mode`: `luminance` (linear light), `luma` (Rec. 709 on sRGB values), `lightness` (HSL), `average`, `value` (HSV) | both |
+| `gimp_invert` | `linear` false: 255 − v on sRGB values (`gegl:invert-gamma`, GIMP's Invert); true: in linear light (`gegl:invert-linear`) | both |
+| `gimp_threshold` | `channel`; `low` ≤ `high`, 0-255 → 0-1: pixels in the range become white, others black | both |
+| `gimp_posterize` | `levels` 2-256 per channel | both |
+| `gimp_exposure` | `exposure` -10..10 EV (+1 doubles the light, linear), `black_level` -0.1..0.1 (`gegl:exposure`) | both |
+| `gimp_shadows_highlights` | `shadows`, `highlights` -100..100, `whitepoint` -10..10, `radius` 0.1-1500, `compress`, `shadows_color_correction`, `highlights_color_correction` 0-100 (GEGL units); unset values keep GIMP's defaults | both |
+| `gimp_auto_adjust` | `method`: `white-balance` (`gimp-drawable-levels-stretch`: stretches each channel, ignoring a tiny share of extreme pixels), `equalize` (`gimp-drawable-equalize`), `stretch-contrast` (`gegl:stretch-contrast`, `keep_colors`) | white-balance, equalize: destructive only (`UNSUPPORTED` with `destructive=false`); stretch-contrast: both, editable by default |
+
+Invalid values are refused before anything changes (`INVALID_ARGUMENT`).
+
 ## Effects: the GEGL filter catalog (toolset `effects`)
 
 GIMP 3.2 offers about 200 GEGL operations as filters. Their parameters are **introspected from

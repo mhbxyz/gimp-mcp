@@ -22,6 +22,10 @@ what is covered by the compatibility promise.
   `gimp_describe_filter_operation`, `gimp_apply_filter` (editable or destructive), and editable-filter
   management: `gimp_inspect_filter`, `gimp_set_filter` (parameters, visibility, opacity, blend mode),
   `gimp_move_filter`, `gimp_merge_filters`. New error code `UNSUPPORTED`.
+- Color toolset (#48): `gimp_levels`, `gimp_curves`, `gimp_color_balance`, `gimp_colorize`,
+  `gimp_desaturate`, `gimp_invert`, `gimp_threshold`, `gimp_posterize`, `gimp_exposure`,
+  `gimp_shadows_highlights` and `gimp_auto_adjust` (white balance, equalize, stretch contrast), with
+  the ranges of GIMP's dialogs, editable or destructive.
 
 ### Fixed
 
