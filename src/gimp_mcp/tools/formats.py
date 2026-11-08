@@ -154,6 +154,7 @@ def register(kit: Toolkit) -> None:
             "RAW files need a RAW plug-in (darktable or RawTherapee) installed with GIMP."
         ),
         annotations=MUTATING,
+        changes_images=True,
     )
     async def gimp_open_with_options(path: str, options: Options = {}, procedure: Procedure = None) -> Opened:  # noqa: B006
         source = str(check_input_file(path))

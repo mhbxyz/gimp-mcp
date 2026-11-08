@@ -8,7 +8,8 @@ MCP client ──stdio (JSON-RPC)──► gimp-mcp serve ──Unix socket (JSO
 | Component | Where | Responsibility |
 |---|---|---|
 | `gimp_mcp.server` / `gimp_mcp.tools.*` | MCP server process | Tool definitions, argument validation, id encoding, result shaping. |
-| `gimp_mcp.toolkit` | MCP server process | Turns `GimpMcpError` into structured tool errors; pins calls to a session. |
+| `gimp_mcp.toolkit` | MCP server process | Turns `GimpMcpError` into structured tool errors; pins calls to a session; progress heartbeats and resource-list notifications. |
+| `gimp_mcp.mcp_resources`, `gimp_mcp.prompts` | MCP server process | `gimp://images…` resources and workflow prompts ([ADR 0007](adr/0007-resources-prompts-progress.md)). |
 | `gimp_mcp.bridge` | MCP server process | Asyncio socket client: discovery, token handshake, version check, timeouts, request serialization. |
 | `plugin/gimp-mcp-bridge/gmb_server.py` | inside GIMP | Socket server, auth, framing, dispatch. Standard library only, tested without GIMP. |
 | `plugin/gimp-mcp-bridge/gmb_ops.py` | inside GIMP | The only code calling the GIMP API. |

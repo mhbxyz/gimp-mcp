@@ -91,6 +91,7 @@ def register(kit: Toolkit) -> None:
             "without unsaved changes and without undo history. Shown in a window when GIMP has a UI."
         ),
         annotations=MUTATING,
+        changes_images=True,
     )
     async def gimp_create_image(
         width: Annotated[int, Field(ge=1, le=MAX_DIMENSION, description="Pixels.")],
@@ -128,6 +129,7 @@ def register(kit: Toolkit) -> None:
             "The path must be absolute (~ allowed)."
         ),
         annotations=MUTATING,
+        changes_images=True,
     )
     async def gimp_open_image(
         path: Annotated[str, Field(description="Absolute path of the file to open.")],
@@ -216,6 +218,7 @@ def register(kit: Toolkit) -> None:
             "discard_changes=true. Its id (and its items' ids) become invalid."
         ),
         annotations=DESTRUCTIVE,
+        changes_images=True,
     )
     async def gimp_close_image(image: ImageId, discard_changes: bool = False) -> CloseResult:
         codec = await kit.codec()

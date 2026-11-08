@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import functools
 import logging
-from collections.abc import Awaitable, Callable, Iterable
+import time
+from collections.abc import Awaitable, Callable, Iterable, Iterator
+from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Any, Generic, TypeVar
 
-from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver import Context, MCPServer
 from mcp_types import CallToolResult, ContentBlock, TextContent, ToolAnnotations
 from pydantic import BaseModel
 
@@ -20,6 +24,47 @@ from .toolsets import DEFAULT_TOOLSETS, check_toolset
 log = logging.getLogger(__name__)
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
+
+# The MCP request being served (set by GimpServer.call_tool), so tools and bridge calls can send
+# notifications without taking a Context argument.
+current_context: ContextVar[Context | None] = ContextVar("gimp_mcp_context", default=None)
+# True inside a batch, which reports its own progress and resource changes: bridge calls then send
+# no heartbeat (the progress values of a request must increase) and nested tools no notification.
+_in_batch: ContextVar[bool] = ContextVar("gimp_mcp_in_batch", default=False)
+HEARTBEAT_SECONDS = 1.0
+
+
+@contextlib.contextmanager
+def inside_batch() -> Iterator[None]:
+    token = _in_batch.set(True)
+    try:
+        yield
+    finally:
+        _in_batch.reset(token)
+
+
+async def notify_resources_changed(ctx: Context) -> None:
+    """Tell the client the resource list changed: subscription stream and legacy notification."""
+    try:
+        await ctx.notify_resources_changed()
+    except Exception as error:  # no subscription bus on this connection
+        log.debug("no listen subscribers: %s", error)
+    try:
+        await ctx.request_context.session.send_resource_list_changed()
+    except Exception as error:  # not a legacy session
+        log.debug("legacy resources/list_changed not sent: %s", error)
+
+
+async def _heartbeat(ctx: Context, method: str, started: float) -> None:
+    """Progress every second while GIMP works (elapsed seconds; GIMP reports no fraction)."""
+    while True:
+        await asyncio.sleep(HEARTBEAT_SECONDS)
+        elapsed = round(time.monotonic() - started, 1)
+        try:
+            await ctx.report_progress(elapsed, None, f"waiting for GIMP ({method}, {elapsed:.0f} s)")
+        except Exception as error:  # the client went away: the call itself reports it
+            log.debug("progress not sent: %s", error)
+            return
 
 
 class ToolResult(Generic[ModelT]):
@@ -87,7 +132,14 @@ class Toolkit:
         payload = dict(params or {})
         if codec is not None:
             payload["_session"] = codec.session_id
-        return await self.bridge.call(method, payload, mutating=mutating, timeout=timeout)
+        ctx = current_context.get()
+        if ctx is None or _in_batch.get():
+            return await self.bridge.call(method, payload, mutating=mutating, timeout=timeout)
+        beat = asyncio.ensure_future(_heartbeat(ctx, method, time.monotonic()))
+        try:
+            return await self.bridge.call(method, payload, mutating=mutating, timeout=timeout)
+        finally:
+            beat.cancel()
 
     def enable(self, toolsets: Iterable[str]) -> list[str]:
         """Enable toolsets; returns the tools that were added to the server's list."""
@@ -109,12 +161,15 @@ class Toolkit:
         description: str,
         annotations: ToolAnnotations,
         toolset: str,
+        changes_images: bool = False,
     ) -> Callable[[Callable[..., Awaitable[Any]]], Callable[..., Awaitable[Any]]]:
         """Register an async tool that returns a pydantic model (or ToolResult).
 
         The tool is listed by the server only while ``toolset`` is enabled.
         ``GimpMcpError`` becomes a structured error result
         (``structuredContent = {"error": {...}}``, ``isError = true``).
+        ``changes_images``: the tool can open or close images; on success the client is told
+        that the resource list (``gimp://images/...``) changed.
         """
         check_toolset(toolset)
 
@@ -126,6 +181,9 @@ class Toolkit:
                 except GimpMcpError as error:
                     log.info("tool %s failed: %s", name, error)
                     return error_result(error)
+                ctx = current_context.get()
+                if changes_images and ctx is not None and not _in_batch.get():
+                    await notify_resources_changed(ctx)
                 if isinstance(value, ToolResult):
                     return success_result(value.data, value.extra_content)
                 return success_result(value)
