@@ -388,6 +388,51 @@ image dirty. Procedure names, arguments and availability depend on the GIMP
 version; check with `gimp_list_callable_procedures` (the committed matrix lists
 422 callable procedures on GIMP 3.2.6).
 
+## Analysis (toolset `analysis`, read-only)
+
+Measure instead of guessing from a downscaled preview. Values are **8-bit sRGB (0-255)**
+whatever the image precision. A *target* is an image id (its visible composite, rendered from a
+temporary flattened copy that is deleted right away) or an item id (the own pixels of a layer, mask
+or channel). Regions are in image coordinates and clipped to the target's pixels
+(`INVALID_ARGUMENT` when they don't overlap; at most 50 million pixels). None of these tools changes
+the image, its undo history, its dirty flag or the list of open images (`tests/e2e/test_analysis.py`).
+
+### `gimp_histogram(target, channels=["red","green","blue","luminance"], region?, selection_only=false, percentiles=[5,25,50,75,95], bins=16)`
+
+Per channel: `pixel_count`, `mean`, `median`, `std_dev`, `min`, `max`, `percentiles` (nearest rank,
+keys `"5"`, `"50"`…) and `histogram` (`bins` equal bins over 0-255; `bins=0` omits it).
+`channels`: `red`, `green`, `blue`, `alpha`, `luminance` (relative luminance with ICC D50
+coefficients, encoded with the sRGB curve: pure red → 130). Every pixel counts once, whatever its
+alpha. `selection_only`: only pixels selected at 50% or more (`EMPTY_SELECTION` when nothing is
+selected). A channel with no pixel returns only `pixel_count: 0`.
+
+### `gimp_sample_colors(target, points, radius=0)`
+
+`points`: up to 64 `[x, y]` (image coordinates, inside the target, else `INVALID_ARGUMENT`).
+Each sample: `hex`, `rgba` (0-255), `pixels_averaged` — the mean over the (2·radius+1)² square
+around the point, clipped to the target.
+
+### `gimp_compare(a, b, threshold=0, preview=false, max_size=512)`
+
+`a`, `b`: image, item or **checkpoint** ids of the same size (`INVALID_ARGUMENT` with both sizes in
+`details` otherwise). A pixel is *changed* when one of its RGBA values differs by more than
+`threshold`. Returns `changed_pixels`, `changed_fraction`, `bounds` (bounding box, `null` when
+nothing changed), `mean_difference` (mean absolute difference over all pixels and channels),
+`max_difference`. `preview=true` adds a PNG image block: changed pixels in red (`#ff0040`) over a
+dimmed grayscale of `b`, downscaled by blocks (a block is red if any of its pixels changed).
+
+### `gimp_dominant_colors(target, region?, count=5)`
+
+Up to `count` (1-16) colors with their share of the **opaque** pixels (alpha ≥ 128), most common
+first. Colors are grouped by 16 levels per channel and averaged within the group. Areas larger
+than 256 pixels per side are examined downscaled (`sampled_scale`).
+
+### `gimp_preview_region(image, x, y, width, height, max_size=1024)`
+
+PNG of a rectangle of the composite (inside the canvas, else `INVALID_ARGUMENT`), at full
+resolution when it fits in `max_size` (`scale` = 1), otherwise scaled to fit. Rendered from a
+temporary cropped copy.
+
 ## History: undo groups and checkpoints
 
 GIMP 3.2 gives plug-ins **no undo/redo procedure** and no way to read the undo

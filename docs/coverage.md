@@ -4,7 +4,7 @@
 
 Inventory: GIMP **3.2.6**, 1030 PDB procedures (722 internal, 3 persistent, 244 plugin, 61 temporary), 200 GEGL operations available to filters.
 
-MCP tools: **54**. PDB procedures relied upon by tools: **117** (11.4% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
+MCP tools: **59**. PDB procedures relied upon by tools: **118** (11.5% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
 
 ## Capabilities
 
@@ -14,6 +14,10 @@ MCP tools: **54**. PDB procedures relied upon by tools: **117** (11.4% of the in
 | Session | Toolsets: list the tool groups, enable more during a session | tested | `gimp_list_toolsets`, `gimp_enable_toolsets` | `tests/unit/test_toolsets.py`, `tests/e2e/test_thumbnail_journey.py` | 3.2 | MCP-side only, no GIMP procedure; see docs/toolsets.md |
 | Inspection | Image properties and ordered layer tree (groups, masks) | tested | `gimp_inspect_image`, `gimp_inspect_item` | `tests/e2e/test_inspect.py` | 3.2 |  |
 | Preview | Composite preview as PNG (max 1024 px) | tested | `gimp_preview` | `tests/e2e/test_preview.py` | 3.2 | 8-bit sRGB rendering of the visible layers; larger renders go through export. |
+| Analysis | Histogram and statistics per channel (region, selection) | tested | `gimp_histogram` | `tests/unit/test_stats.py`, `tests/e2e/test_analysis.py` | 3.2 | 8-bit sRGB values; pixels count unweighted by alpha (alpha is its own channel), selection >= 50%. |
+| Analysis | Color sampling at points, with averaging radius | tested | `gimp_sample_colors` | `tests/e2e/test_analysis.py` | 3.2 |  |
+| Analysis | Compare images, layers or checkpoints (changed pixels, bounds, difference preview) | tested | `gimp_compare` | `tests/unit/test_stats.py`, `tests/e2e/test_analysis.py` | 3.2 |  |
+| Analysis | Dominant colors; full-resolution crop preview | tested | `gimp_dominant_colors`, `gimp_preview_region` | `tests/unit/test_stats.py`, `tests/e2e/test_analysis.py` | 3.2 | Crop previews are rendered from a temporary copy, up to 1024 px per side. |
 | Files | Create, open, save XCF, export PNG/JPEG, close | tested | `gimp_create_image`, `gimp_open_image`, `gimp_save_image`, `gimp_export_image`, `gimp_close_image` | `tests/e2e/test_files.py` | 3.2 | Other export formats (WebP, TIFF, PSD...) are reachable in the PDB but not exposed. |
 | Layers | Create, group, import, duplicate, rename, reorder, delete layers; visibility, opacity, mode, locks | tested | `gimp_create_layer`, `gimp_create_group`, `gimp_import_layer`, `gimp_duplicate_layer`, `gimp_set_layer_properties`, `gimp_move_layer`, `gimp_delete_layer` | `tests/e2e/test_layers.py` | 3.2 |  |
 | Geometry | Scale/resize canvas/crop images; move, scale, rotate, flip layers | tested | `gimp_resize_image`, `gimp_resize_canvas`, `gimp_crop_image`, `gimp_set_layer_offsets`, `gimp_scale_layer`, `gimp_rotate_layer`, `gimp_flip_layer` | `tests/e2e/test_transform.py` | 3.2 | Perspective, shear and arbitrary matrices are not exposed. |
@@ -30,7 +34,7 @@ MCP tools: **54**. PDB procedures relied upon by tools: **117** (11.4% of the in
 
 | Family | Procedures in GIMP | Used by MCP tools |
 |---|---|---|
-| `gimp-image-*` | 137 | 30 |
+| `gimp-image-*` | 137 | 31 |
 | `gimp-context-*` | 121 | 15 |
 | `plug-in-*` | 68 | 0 |
 | `gimp-drawable-*` | 56 | 14 |

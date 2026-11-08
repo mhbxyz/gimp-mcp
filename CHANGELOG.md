@@ -13,6 +13,15 @@ what is covered by the compatibility promise.
   `gimp-mcp serve --toolsets` or `GIMP_MCP_TOOLSETS`; agents list them with `gimp_list_toolsets` and
   add more during a session with `gimp_enable_toolsets` (the client is notified that its tool list
   changed). `gimp-mcp toolsets` prints the catalog and the size of each toolset. See docs/toolsets.md.
+- Analysis toolset (#46, read-only): `gimp_histogram` (per-channel statistics, percentiles and
+  histogram of a composite, layer, region or selection), `gimp_sample_colors` (points, averaging
+  radius), `gimp_compare` (images, layers or checkpoints: changed pixels, bounds, mean/max difference,
+  difference preview), `gimp_dominant_colors`, `gimp_preview_region` (full-resolution crops).
+
+### Fixed
+
+- `gimp-mcp doctor` reported "GIMP is running but its bridge does not answer" for a stale socket
+  when some other GIMP was running; it now says the socket is stale and that another GIMP runs.
 
 ### Changed
 
