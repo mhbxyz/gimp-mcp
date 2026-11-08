@@ -266,3 +266,9 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
 * Vector layers (3.2.6): fill and stroke **patterns** can be read (`get_fill_pattern`,
   `get_stroke_pattern`) but neither libgimp nor the PDB has a setter (no
   `gimp-vector-layer-set-fill-pattern`; `tests/e2e/test_vector_layers.py`), so gimp-mcp sets colors only.
+* PyGObject lazy enum lookup can go wrong late in a long plug-in session: after the whole e2e suite
+  (many drawable filter configs created), the first access to `Gimp.TransferMode` returned the class
+  `GimpDrawableFilterConfig-gegl-hue-chroma` (`AttributeError: ... no attribute 'MIDTONES'`), while
+  the same paint test passed alone or after any single other test file. Enums the bridge needs late
+  are resolved when the plug-in starts (`TRANSFER_MIDTONES`, `DODGE_BURN_TYPES` in `gmb_ops.py`);
+  the full suite then passes.

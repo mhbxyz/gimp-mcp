@@ -3236,6 +3236,11 @@ def image_export_region(params):
 
 # -- brush painting, gradients, bucket fill (#53) ---------------------------------------
 
+# Resolved when the plug-in starts: after a long session (many filter configs created), PyGObject's
+# lazy lookup of Gimp.TransferMode returned a GimpDrawableFilterConfig class (docs/gimp-notes.md).
+TRANSFER_MIDTONES = Gimp.TransferMode.MIDTONES
+DODGE_BURN_TYPES = {"dodge": Gimp.DodgeBurnType.DODGE, "burn": Gimp.DodgeBurnType.BURN}
+
 PAINT_METHODS = {
     "paintbrush": "gimp-paintbrush",
     "pencil": "gimp-pencil",
@@ -3312,8 +3317,8 @@ def paint_stroke(params):
         elif tool == "smudge":
             ok = Gimp.smudge(drawable, float(params.get("pressure", 50.0)), points)
         elif tool in ("dodge", "burn"):
-            kind = Gimp.DodgeBurnType.DODGE if tool == "dodge" else Gimp.DodgeBurnType.BURN
-            ok = Gimp.dodgeburn(drawable, float(params.get("exposure", 50.0)), kind, Gimp.TransferMode.MIDTONES, points)
+            exposure = float(params.get("exposure", 50.0))
+            ok = Gimp.dodgeburn(drawable, exposure, DODGE_BURN_TYPES[tool], TRANSFER_MIDTONES, points)
         elif tool == "clone":
             ok = Gimp.clone(drawable, source, Gimp.CloneType.IMAGE, float(params.get("source_x", 0)),
                             float(params.get("source_y", 0)), points)  # fmt: skip
