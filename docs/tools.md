@@ -41,6 +41,49 @@ Adds the tools of the given toolsets for the rest of the session → `enabled[]`
 (empty when they were already enabled). Notifies the client that its tool list changed.
 `INVALID_ARGUMENT` (nothing enabled) for an unknown name.
 
+## Resources, prompts and progress
+
+Besides tools, the server uses three other parts of MCP (#62). Clients that do not support them
+keep working with the tools alone.
+
+**Resources** (read without a tool call; `tests/e2e/test_protocol.py`):
+
+| URI | Type | Content |
+|---|---|---|
+| `gimp://images` | JSON | The open images, as `gimp_status` lists them |
+| `gimp://images/{image}/layers` | JSON | Details and layer tree, as `gimp_inspect_image` returns them |
+| `gimp://images/{image}/preview` | PNG | The visible image, longest side 512 px |
+
+`resources/list` lists `gimp://images` and the two resources of every open image. Tools that open
+or close images (`gimp_create_image`, `gimp_open_image`, `gimp_open_with_options`,
+`gimp_close_image`, `gimp_paste`, `gimp_optimize_animation`, `gimp_run_batch`) then notify the
+client that the resource list changed (`notifications/resources/list_changed`, and the
+`subscriptions/listen` stream of the 2026 protocol). Images opened in GIMP's own UI show up at the
+next `resources/list`, without a notification. A wrong or stale id is a resource error.
+
+**Prompts** (`prompts/list`, `prompts/get`): `thumbnail(path, size, output)`,
+`remove-background(path, output)`, `photo-touch-up(path, output)`,
+`batch-export(directory, pattern, format, output_directory)`. Each is a step-by-step workflow
+naming the tools (and toolsets) to use; a unit test checks that every tool it names exists.
+
+**Progress** (when the request carries a `progressToken`):
+
+* a GIMP operation that takes more than a second sends a progress notification every second
+  (`progress` = elapsed seconds, no `total`, message `waiting for GIMP (…)`): GIMP gives no
+  fraction of completion to plug-ins' callers, so this is a heartbeat, not a percentage;
+* `gimp_run_batch` reports `0/N` then one step per file (`progress` = files done, `total` = N,
+  message `name: status`).
+
+**Cancellation** (`notifications/cancelled`, sent by clients when the user stops a request):
+
+* the MCP request ends at once; the operation running **inside GIMP is not interrupted** (GIMP
+  has no way to abort a running procedure). The next call waits for GIMP to finish it (up to the
+  request timeout) instead of failing; a mutation that was cancelled is applied
+  (`test_slow_operations_report_progress_and_are_not_cancelled_inside_gimp`);
+* a cancelled `gimp_run_batch` runs no further step or file. The step in progress finishes in
+  GIMP, then the batch closes, without saving, every image it opened, including one whose opening
+  was in flight. Outputs already written stay (`test_cancelling_a_batch_stops_it_and_closes_its_images`).
+
 ## Session
 
 ### `gimp_status`
