@@ -14,6 +14,7 @@ from .bridge import BridgeClient
 from .toolkit import Toolkit
 from .tools import (
     analysis,
+    channels,
     color,
     compose,
     document,
@@ -96,6 +97,7 @@ def build_server(
         formats,
         painting,
         geometry,
+        channels,
     ):
         module.register(kit)
     return mcp

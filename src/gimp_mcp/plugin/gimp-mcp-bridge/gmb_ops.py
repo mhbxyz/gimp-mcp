@@ -199,6 +199,7 @@ def image_details(image):
                 }
                 for p in image.get_paths()
             ],
+            "channels": [channel_info(c) for c in image.get_channels()],
         }
     )
     return data
@@ -3438,6 +3439,199 @@ def bucket_fill(params):
     return {"item": drawable.get_id(), "fill": fill, "mode": "similar colors" if seed is not None else "selection"}
 
 
+# -- advanced selections and channels (#51) ---------------------------------------------
+
+CHANNEL_COMPONENTS = {v.value_nick: v for v in Gimp.ChannelType.__enum_values__.values()}
+
+
+class sample_context:
+    """Explicit sampling settings for color selections; the user's context is restored afterwards."""
+
+    def __init__(self, params):
+        self.params = params
+
+    def __enter__(self):
+        params = self.params
+        criterion = SELECT_CRITERIA.get(params.get("criterion", "composite"))
+        if criterion is None:
+            raise BridgeError("INVALID_ARGUMENT", "unknown criterion", {"allowed": sorted(SELECT_CRITERIA)})
+        Gimp.context_push()
+        Gimp.context_set_sample_threshold(float(params.get("threshold", 15)) / 255.0)
+        Gimp.context_set_sample_criterion(criterion)
+        Gimp.context_set_sample_merged(bool(params.get("sample_merged")))
+        Gimp.context_set_sample_transparent(bool(params.get("select_transparent", True)))
+        Gimp.context_set_diagonal_neighbors(bool(params.get("diagonal")))
+        Gimp.context_set_antialias(bool(params.get("antialias", True)))
+        feather = float(params.get("feather") or 0)
+        Gimp.context_set_feather(feather > 0)
+        Gimp.context_set_feather_radius(feather, feather)
+        return self
+
+    def __exit__(self, *exc):
+        Gimp.context_pop()
+        return False
+
+
+def _drawable_for_selection(params, image):
+    if params.get("item") is None:
+        layers = image.get_layers()
+        if not layers:
+            raise BridgeError("INVALID_ARGUMENT", "the image has no layer to sample")
+        return layers[0]
+    drawable = get_item(params)
+    if not isinstance(drawable, Gimp.Drawable) or drawable.get_image().get_id() != image.get_id():
+        raise BridgeError("WRONG_KIND", "item must be a layer, mask or channel of this image")
+    return drawable
+
+
+@mutation
+def select_by_color(params):
+    image = get_image(params)
+    drawable = _drawable_for_selection(params, image)
+    operation = CHANNEL_OPS[params.get("operation", "replace")]
+    if params.get("point") is not None:
+        x, y = params["point"]
+        if not (0 <= x < image.get_width() and 0 <= y < image.get_height()):
+            raise BridgeError("INVALID_ARGUMENT", "the point must be inside the canvas")
+    with sample_context(params):
+        if params.get("point") is not None:
+            ok = image.select_contiguous_color(operation, drawable, float(x), float(y))
+        else:
+            ok = image.select_color(operation, drawable, color(params["color"]))
+    if not ok:
+        raise BridgeError("GIMP_ERROR", "GIMP could not select by color")
+    return {**selection_state(image), "image": image.get_id()}
+
+
+@mutation
+def select_item_shape(params):
+    item = get_item(params)
+    kind = item_kind(item)
+    if kind not in ("layer", "group", "text", "path", "channel", "mask"):
+        raise BridgeError("WRONG_KIND", "a %s cannot be turned into a selection" % kind)
+    image = item.get_image()
+    with sample_context(params):
+        if not image.select_item(CHANNEL_OPS[params.get("operation", "replace")], item):
+            raise BridgeError("GIMP_ERROR", "GIMP could not select the item")
+    return {**selection_state(image), "image": image.get_id()}
+
+
+@mutation
+def selection_modify_advanced(params):
+    image = get_image(params)
+    action = params["action"]
+    if Gimp.Selection.is_empty(image) and action != "translate":
+        raise BridgeError("EMPTY_SELECTION", "there is no selection to %s" % action)
+    amount = float(params.get("amount", 0))
+    with undo_step(image):
+        if action == "grow":
+            ok = Gimp.Selection.grow(image, int(amount))
+        elif action == "shrink":
+            ok = Gimp.Selection.shrink(image, int(amount))
+        elif action == "border":
+            ok = Gimp.Selection.border(image, int(amount))
+        elif action == "feather":
+            ok = Gimp.Selection.feather(image, amount)
+        elif action == "sharpen":
+            ok = Gimp.Selection.sharpen(image)
+        elif action in ("flood", "remove-holes"):
+            ok = Gimp.Selection.flood(image)
+        elif action == "translate":
+            ok = Gimp.Selection.translate(image, int(params.get("dx", 0)), int(params.get("dy", 0)))
+        else:  # round: Script-Fu's Rounded selection, radius in % of the smaller side
+            procedure = Gimp.get_pdb().lookup_procedure("script-fu-selection-round")
+            if procedure is None:
+                raise BridgeError("UNSUPPORTED", "GIMP's Rounded selection script is not available")
+            config = procedure.create_config()
+            config.set_property("run-mode", Gimp.RunMode.NONINTERACTIVE)
+            config.set_property("image", image)
+            config.set_core_object_array("drawables", image.get_layers()[:1])
+            config.set_property("adjustment", amount)
+            ok = procedure.run(config).index(0) == Gimp.PDBStatusType.SUCCESS
+    if not ok:
+        raise BridgeError("GIMP_ERROR", "GIMP could not %s the selection" % action)
+    return {**selection_state(image), "image": image.get_id()}
+
+
+def channel_info(channel):
+    return {
+        "id": channel.get_id(),
+        "name": channel.get_name(),
+        "visible": bool(channel.get_visible()),
+        "opacity": round(channel.get_opacity(), 4),
+        "color": _hex(channel.get_color()),
+        "show_masked": bool(channel.get_show_masked()),
+    }
+
+
+def get_channel(params, key="channel"):
+    item = get_item(params, key)
+    if item_kind(item) != "channel" or isinstance(item, Gimp.Selection):
+        raise BridgeError("WRONG_KIND", "item %d is a %s, not a channel" % (item.get_id(), item_kind(item)))
+    return item
+
+
+@mutation
+def channel_create(params):
+    image = get_image(params)
+    source = params.get("source", "empty")
+    if source == "selection" and Gimp.Selection.is_empty(image):
+        raise BridgeError("EMPTY_SELECTION", "there is no selection to save")
+    component = CHANNEL_COMPONENTS.get(params.get("component") or "")
+    if source == "component" and component is None:
+        raise BridgeError("INVALID_ARGUMENT", "unknown component", {"allowed": sorted(CHANNEL_COMPONENTS)})
+    name = params.get("name") or "Channel"
+    with undo_step(image):
+        if source == "selection":
+            channel = Gimp.Selection.save(image)
+            channel.set_name(name)
+        elif source == "component":
+            channel = Gimp.Channel.new_from_component(image, component, name)
+            image.insert_channel(channel, None, 0)
+        else:
+            fill = color(params.get("color") or [0, 0, 0, 1])
+            opacity = float(params.get("opacity", 50.0))
+            channel = Gimp.Channel.new(image, name, image.get_width(), image.get_height(), opacity, fill)
+            image.insert_channel(channel, None, 0)
+    return channel_info(channel)
+
+
+@mutation
+def channel_set(params):
+    channel = get_channel(params)
+    with undo_step(channel.get_image()):
+        if params.get("name") is not None:
+            channel.set_name(params["name"])
+        if params.get("color") is not None:
+            channel.set_color(color(params["color"]))
+        if params.get("opacity") is not None:
+            channel.set_opacity(float(params["opacity"]))
+        if params.get("visible") is not None:
+            channel.set_visible(bool(params["visible"]))
+        if params.get("show_masked") is not None:
+            channel.set_show_masked(bool(params["show_masked"]))
+    return channel_info(channel)
+
+
+@mutation
+def channel_combine(params):
+    target = get_channel(params)
+    other = get_channel(params, "other")
+    if target.get_image().get_id() != other.get_image().get_id():
+        raise BridgeError("IMAGE_MISMATCH", "the channels belong to different images")
+    with undo_step(target.get_image()):
+        target.combine_masks(other, CHANNEL_OPS[params.get("operation", "add")], 0, 0)
+    return channel_info(target)
+
+
+@mutation
+def channel_delete(params):
+    channel = get_channel(params)
+    number = channel.get_id()
+    channel.get_image().remove_channel(channel)
+    return {"deleted": number}
+
+
 # -- text --------------------------------------------------------------------------------
 
 JUSTIFICATIONS = {"left": "LEFT", "right": "RIGHT", "center": "CENTER", "fill": "FILL"}
@@ -4114,6 +4308,13 @@ def build_operations():
         "filter.list": filter_list,
         "filter.remove": filter_remove,
         "filter.operations": filter_operations,
+        "select.color": select_by_color,
+        "select.item": select_item_shape,
+        "selection.modify_advanced": selection_modify_advanced,
+        "channel.create": channel_create,
+        "channel.set": channel_set,
+        "channel.combine": channel_combine,
+        "channel.delete": channel_delete,
         "item.transform": item_transform,
         "image.rotate": image_rotate,
         "image.flip": image_flip,

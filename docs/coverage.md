@@ -4,7 +4,7 @@
 
 Inventory: GIMP **3.2.6**, 1030 PDB procedures (722 internal, 3 persistent, 244 plugin, 61 temporary), 200 GEGL operations available to filters.
 
-MCP tools: **136**. PDB procedures relied upon by tools: **248** (24.1% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
+MCP tools: **143**. PDB procedures relied upon by tools: **263** (25.5% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
 
 ## Capabilities
 
@@ -14,6 +14,9 @@ MCP tools: **136**. PDB procedures relied upon by tools: **248** (24.1% of the i
 | Session | Toolsets: list the tool groups, enable more during a session | tested | `gimp_list_toolsets`, `gimp_enable_toolsets` | `tests/unit/test_toolsets.py`, `tests/e2e/test_thumbnail_journey.py` | 3.2 | MCP-side only, no GIMP procedure; see docs/toolsets.md |
 | Inspection | Image properties and ordered layer tree (groups, masks) | tested | `gimp_inspect_image`, `gimp_inspect_item` | `tests/e2e/test_inspect.py` | 3.2 |  |
 | Preview | Composite preview as PNG (max 1024 px) | tested | `gimp_preview` | `tests/e2e/test_preview.py` | 3.2 | 8-bit sRGB rendering of the visible layers; larger renders go through export. |
+| Selections | Select by color, fuzzy select, from alpha / text / path / channel | tested | `gimp_select_by_color`, `gimp_select_item` | `tests/e2e/test_channels.py` | 3.2 |  |
+| Selections | Grow, shrink, border, feather, sharpen, round, remove holes, translate | tested | `gimp_modify_selection_shape` | `tests/e2e/test_channels.py` | 3.2 |  |
+| Selections | Channels: create (empty, selection, component), set, combine, delete; listed in inspection, kept in XCF | tested | `gimp_create_channel`, `gimp_set_channel`, `gimp_combine_channels`, `gimp_delete_channel` | `tests/e2e/test_channels.py` | 3.2 |  |
 | Geometry | Perspective, shear, matrix and rotation around a point on layers, groups, paths, channels and selection | tested | `gimp_transform` | `tests/e2e/test_geometry.py` | 3.2 |  |
 | Geometry | Image rotation by 90/180/270, image flip, canvas resize with layer resize and fill | tested | `gimp_rotate_image`, `gimp_flip_image`, `gimp_resize_canvas` | `tests/e2e/test_geometry.py` | 3.2 |  |
 | Painting | Paint along strokes: paintbrush, pencil, airbrush, ink, eraser, smudge, dodge/burn, clone, heal | tested | `gimp_paint_stroke` | `tests/e2e/test_painting.py` | 3.2 |  |
@@ -63,13 +66,13 @@ MCP tools: **136**. PDB procedures relied upon by tools: **248** (24.1% of the i
 
 | Family | Procedures in GIMP | Used by MCP tools |
 |---|---|---|
-| `gimp-image-*` | 137 | 59 |
+| `gimp-image-*` | 137 | 61 |
 | `gimp-context-*` | 121 | 19 |
 | `plug-in-*` | 68 | 1 |
 | `gimp-drawable-*` | 56 | 32 |
 | `gimp-text-*` | 50 | 14 |
 | `gimp-item-*` | 46 | 11 |
-| `script-fu-*` | 43 | 0 |
+| `script-fu-*` | 43 | 1 |
 | `gimp-layer-*` | 34 | 22 |
 | `gimp-gradient-*` | 28 | 3 |
 | `file-raw-*` | 27 | 0 |
@@ -77,9 +80,9 @@ MCP tools: **136**. PDB procedures relied upon by tools: **248** (24.1% of the i
 | `gimp-path-*` | 22 | 20 |
 | `gimp-brush-*` | 18 | 3 |
 | `gimp-palette-*` | 17 | 5 |
-| `gimp-selection-*` | 14 | 7 |
+| `gimp-selection-*` | 14 | 14 |
 | `gimp-resource-*` | 11 | 3 |
-| `gimp-channel-*` | 10 | 0 |
+| `gimp-channel-*` | 10 | 5 |
 | `gimp-edit-*` | 10 | 7 |
 | `gimp-help-*` | 10 | 0 |
 | `python-fu-*` | 10 | 1 |
