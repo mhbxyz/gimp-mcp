@@ -149,6 +149,7 @@ def register(kit: Toolkit) -> None:
             "optimize-difference, or unoptimize (every frame complete). The original is unchanged."
         ),
         annotations=MUTATING,
+        changes_images=True,
     )
     async def gimp_optimize_animation(
         image: ImageId, mode: Literal["optimize", "optimize-difference", "unoptimize"] = "optimize"

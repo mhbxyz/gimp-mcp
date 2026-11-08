@@ -11,6 +11,7 @@ import re
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
+import anyio
 from mcp.server.mcpserver import Context
 from mcp.server.mcpserver.tools.base import Tool
 from pydantic import BaseModel, Field, ValidationError
@@ -18,7 +19,7 @@ from pydantic import BaseModel, Field, ValidationError
 from ..batch import file_values, invalid, list_inputs, placeholders_in, plan_outputs, substitute
 from ..errors import GimpMcpError
 from ..ids import IdCodec
-from ..toolkit import DESTRUCTIVE, Toolkit
+from ..toolkit import DESTRUCTIVE, Toolkit, inside_batch
 
 # Tools a recipe may not call: the batch itself, toolset changes, and closing (the batch closes images).
 FORBIDDEN = {"gimp_run_batch", "gimp_enable_toolsets", "gimp_close_image"}
@@ -142,6 +143,7 @@ def register(kit: Toolkit) -> None:
             "(step, error) and outputs per file; continue_on_error=false stops at the first failure."
         ),
         annotations=DESTRUCTIVE,
+        changes_images=True,
     )
     async def gimp_run_batch(
         recipe: Annotated[list[RecipeStep], Field(min_length=1, max_length=MAX_STEPS)],
@@ -186,13 +188,17 @@ def register(kit: Toolkit) -> None:
         before = {codec.image(image["id"]) for image in (await kit.call("session.images", codec=codec))["images"]}
         results: list[FileResult] = []
         stop = False
-        for index, (path, out) in enumerate(zip(inputs, outputs, strict=True), start=1):
-            if stop:
-                results.append(FileResult(file=str(path), status="skipped", output=str(out) if out else None))
-                continue
-            result = await run_file(ctx, codec, recipe, used, path, index, out, overwrite, before)
-            results.append(result)
-            stop = result.status == "failed" and not continue_on_error
+        total = len(inputs)
+        with inside_batch():
+            await ctx.report_progress(0, total, f"{total} files")
+            for index, (path, out) in enumerate(zip(inputs, outputs, strict=True), start=1):
+                if stop:
+                    result = FileResult(file=str(path), status="skipped", output=str(out) if out else None)
+                else:
+                    result = await run_file(ctx, codec, recipe, used, path, index, out, overwrite, before)
+                    stop = result.status == "failed" and not continue_on_error
+                results.append(result)
+                await ctx.report_progress(index, total, f"{path.name}: {result.status}")
         return report(False, results)
 
     async def run_file(
@@ -215,6 +221,7 @@ def register(kit: Toolkit) -> None:
                 if image_pattern.match(text) and text not in before and text not in created:
                     created.append(text)
 
+        finished = False
         try:
             data, error = await call_tool(ctx, "gimp_open_image", {"path": str(path)}, None)
             if error is not None:
@@ -236,19 +243,35 @@ def register(kit: Toolkit) -> None:
                 track(data)
             if out is not None and out.exists():
                 result.outputs.append(str(out))
+            finished = True
             return result
         finally:
-            for image in created:
-                try:
-                    await kit.call(
-                        "image.close",
-                        {"image": codec.parse_image(image), "discard_changes": True},
-                        codec=codec,
-                        mutating=True,
-                    )
-                except GimpMcpError:
-                    continue  # already closed
-                result.closed.append(image)
+            # also when the batch is cancelled: the cleanup is shielded from the cancellation
+            with anyio.CancelScope(shield=True):
+                if not finished and result.image is None:
+                    # cancelled while opening: GIMP finishes the open even though the answer is lost
+                    await adopt_opened(codec, path, before, created)
+                for image in created:
+                    try:
+                        await kit.call(
+                            "image.close",
+                            {"image": codec.parse_image(image), "discard_changes": True},
+                            codec=codec,
+                            mutating=True,
+                        )
+                    except GimpMcpError:
+                        continue  # already closed
+                    result.closed.append(image)
+
+    async def adopt_opened(codec: IdCodec, path: Path, before: set[str], created: list[str]) -> None:
+        try:
+            images = (await kit.call("session.images", codec=codec))["images"]
+        except GimpMcpError:
+            return
+        for image in images:
+            image_id = codec.image(image["id"])
+            if image.get("file") == str(path) and image_id not in before and image_id not in created:
+                created.append(image_id)
 
     async def call_tool(
         ctx: Context, name: str, arguments: dict[str, Any], step: int | None

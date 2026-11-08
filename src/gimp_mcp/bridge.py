@@ -18,6 +18,7 @@ import json
 import logging
 import os
 import select
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -112,6 +113,9 @@ class BridgeClient:
         self._writer: asyncio.StreamWriter | None = None
         self._lock = asyncio.Lock()
         self._next_id = 0
+        # When a request was abandoned (cancelled or timed out), GIMP may still be running it and
+        # answers nothing else (not even the next handshake) until it is done.
+        self._abandoned_at: float | None = None
 
     # -- public API ----------------------------------------------------------------
 
@@ -197,7 +201,7 @@ class BridgeClient:
         self._reader, self._writer = reader, writer
         try:
             hello = await self._request(
-                "hello", {"token": token, "protocol": PROTOCOL_VERSION}, self.connect_timeout, False
+                "hello", {"token": token, "protocol": PROTOCOL_VERSION}, self._handshake_timeout(), False
             )
         except GimpMcpError as exc:
             await self.close()
@@ -208,6 +212,7 @@ class BridgeClient:
                     hint=INSTALL_HINT,
                 ) from exc
             raise
+        self._abandoned_at = None  # GIMP answered: whatever was abandoned is finished
         session = SessionInfo.from_wire(hello)
         if session.protocol != PROTOCOL_VERSION:
             await self.close()
@@ -245,6 +250,13 @@ class BridgeClient:
             log.info("GIMP session changed: %s -> %s", self.session.session_id, session.session_id)
         self.session = session
 
+    def _handshake_timeout(self) -> float:
+        """connect_timeout, or longer while an abandoned request may still keep GIMP busy."""
+        if self._abandoned_at is None:
+            return self.connect_timeout
+        remaining = self.request_timeout - (time.monotonic() - self._abandoned_at)
+        return max(self.connect_timeout, remaining)
+
     def _peer_went_away(self) -> bool:
         """Detect a dead idle connection (e.g. GIMP restarted) before sending.
 
@@ -273,9 +285,11 @@ class BridgeClient:
             # The caller gave up (e.g. the MCP request was cancelled). GIMP may
             # still run the operation; its late answer must never be read as
             # the answer to a later request, so drop the connection.
+            self._abandoned_at = time.monotonic()
             await self.close()
             raise
         except TimeoutError as exc:
+            self._abandoned_at = time.monotonic()
             await self.close()
             raise GimpMcpError(
                 "TIMEOUT",

@@ -123,6 +123,26 @@ async def test_cancelled_request_never_leaks_its_late_answer_into_the_next_one()
             await client.close()
 
 
+async def test_after_a_cancelled_request_the_next_call_waits_for_gimp_to_finish_it():
+    """GIMP answers the reconnection handshake only after the abandoned operation: wait for it."""
+    ops = {"slow": slow(1.5), "fast": lambda p: {"echo": p["n"]}}
+    with running_fake_bridge(ops) as bridge:
+        client = client_for(bridge, connect_timeout=0.5, request_timeout=10)
+        try:
+            task = asyncio.create_task(client.call("slow", mutating=True))
+            await asyncio.sleep(0.1)
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+            started = time.monotonic()
+            assert await client.call("fast", {"n": 2}) == {"echo": 2}
+            assert time.monotonic() - started > 1  # it waited for the slow operation
+            # once GIMP answered, a busy-looking bridge fails fast again
+            assert client._handshake_timeout() == 0.5  # pyright: ignore[reportPrivateUsage]
+        finally:
+            await client.close()
+
+
 async def test_bridge_dying_mid_request_reports_disconnected_with_unknown_outcome():
     holder = {}
 

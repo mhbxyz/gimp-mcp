@@ -98,6 +98,7 @@ def register(kit: Toolkit) -> None:
             "Never leaves a floating selection. One undo step."
         ),
         annotations=MUTATING,
+        changes_images=True,
     )
     async def gimp_paste(
         mode: Literal["into-layer", "new-layer", "new-image"],

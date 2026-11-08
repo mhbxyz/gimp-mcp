@@ -75,10 +75,19 @@ what is covered by the compatibility promise.
   failed step and outputs; every image the batch opened is closed; `continue_on_error` and
   `dry_run`. See docs/adr/0006-batch-recipes.md.
 
+- MCP resources, prompts and progress (#62): `gimp://images` and, for every open image, its layer
+  tree and a PNG preview, with list-change notifications when images are opened or closed; prompts
+  for thumbnails, background removal, photo touch-up and batch export; progress heartbeats during
+  slow GIMP operations and per-file progress in batches. Cancellation is documented and tested: the
+  operation running inside GIMP finishes, a cancelled batch stops and closes its images. See
+  docs/adr/0007-resources-prompts-progress.md.
+
 ### Fixed
 
 - `gimp-mcp doctor` reported "GIMP is running but its bridge does not answer" for a stale socket
   when some other GIMP was running; it now says the socket is stale and that another GIMP runs.
+- After a cancelled or timed-out request, the next call waits for GIMP to finish the abandoned
+  operation (up to the request timeout) instead of failing with `BRIDGE_UNAVAILABLE` after 3 s.
 
 ### Changed
 
