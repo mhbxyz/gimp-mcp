@@ -58,7 +58,7 @@ jobs:
         run: uv run pytest tests/e2e -ra
       - name: Last lines of the plug-in trace
         if: failure()
-        run: tail -20 "$RUNNER_TEMP/gimp-mcp-trace.txt" || true
+        run: tail -40 "$RUNNER_TEMP/gimp-mcp-trace.txt" || true
 
   e2e:
     name: End-to-end with GIMP 3.2.6 (pinned Arch snapshot)

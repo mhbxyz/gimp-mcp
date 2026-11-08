@@ -1468,6 +1468,7 @@ def _describe_filter_params(config):
     specs = []
     for pspec in config.list_properties():
         kind = _param_kind(pspec)
+        _trace("  param %s %s" % (pspec.name, kind))
         spec = {"name": pspec.name, "kind": kind, "description": pspec.get_blurb()}
         if kind in ("number", "integer"):
             spec["min"], spec["max"] = pspec.minimum, pspec.maximum
@@ -1476,9 +1477,11 @@ def _describe_filter_params(config):
         elif kind == "choice":
             spec["choices"] = list(Gimp.param_spec_choice_get_choice(pspec).list_nicks())
         elif kind == "enum":
+            _trace("  param %s enum_class" % pspec.name)
             spec["choices"] = [v.value_nick for v in pspec.enum_class.__enum_values__.values()]
         elif kind == "unsupported":
             spec["type"] = pspec.value_type.name
+        _trace("  param %s value" % pspec.name)
         spec["default"] = _config_value(config.get_property(pspec.name)) if kind != "unsupported" else None
         specs.append(spec)
     return specs
@@ -3120,6 +3123,7 @@ def _option_specs(procedure, fixed):
         elif kind == "choice":
             spec["choices"] = list(Gimp.param_spec_choice_get_choice(pspec).list_nicks())
         elif kind == "enum":
+            _trace("  param %s enum_class" % pspec.name)
             spec["choices"] = [v.value_nick for v in pspec.enum_class.__enum_values__.values()]
         elif kind == "unsupported":
             spec["type"] = pspec.value_type.name
