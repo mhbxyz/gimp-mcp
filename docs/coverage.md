@@ -4,7 +4,7 @@
 
 Inventory: GIMP **3.2.6**, 1030 PDB procedures (722 internal, 3 persistent, 244 plugin, 61 temporary), 200 GEGL operations available to filters.
 
-MCP tools: **157**. PDB procedures relied upon by tools: **285** (27.7% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
+MCP tools: **158**. PDB procedures relied upon by tools: **285** (27.7% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
 
 ## Capabilities
 
@@ -15,6 +15,7 @@ MCP tools: **157**. PDB procedures relied upon by tools: **285** (27.7% of the i
 | Inspection | Image properties and ordered layer tree (groups, masks) | tested | `gimp_inspect_image`, `gimp_inspect_item` | `tests/e2e/test_inspect.py` | 3.2 |  |
 | Preview | Composite preview as PNG (max 1024 px) | tested | `gimp_preview` | `tests/e2e/test_preview.py` | 3.2 | 8-bit sRGB rendering of the visible layers; larger renders go through export. |
 | Animation | Frames with duration and disposal, frame previews, optimize/unoptimize, animated GIF and WebP export | tested | `gimp_list_frames`, `gimp_add_frame`, `gimp_set_frame`, `gimp_preview_frame`, `gimp_optimize_animation`, `gimp_export_animation` | `tests/e2e/test_animation.py`, `tests/unit/test_animation_names.py` | 3.2 | No APNG exporter in GIMP 3.2. |
+| Batch processing | A recipe of tool calls run over explicit files or a confined glob, with naming patterns and per-file reports | tested | `gimp_run_batch` | `tests/e2e/test_batch.py`, `tests/unit/test_batch_tools.py` | 3.2 | Server-side: each step is an ordinary call of a listed tool; images are closed without saving. |
 | Text | Rich text markup, outline, kerning, hinting, indent, language, base direction, text box | tested | `gimp_set_text_style`, `gimp_inspect_text_style` | `tests/e2e/test_typography.py`, `tests/unit/test_text_markup.py` | 3.2 | Text along a path: no GIMP 3.2 API (#88). |
 | Vector layers | Vector layers from paths with editable fill and stroke; link layers to external files | tested | `gimp_create_vector_layer`, `gimp_set_vector_layer`, `gimp_inspect_vector_layer`, `gimp_create_link_layer`, `gimp_set_link_layer`, `gimp_inspect_link_layer` | `tests/e2e/test_vector_layers.py` | 3.2 |  |
 | Selections | Select by color, fuzzy select, from alpha / text / path / channel | tested | `gimp_select_by_color`, `gimp_select_item` | `tests/e2e/test_channels.py` | 3.2 |  |

@@ -105,6 +105,14 @@ CAPABILITIES: tuple[Capability, ...] = (
         notes="No APNG exporter in GIMP 3.2.",
     ),
     Capability(
+        "Batch processing",
+        "A recipe of tool calls run over explicit files or a confined glob, with naming patterns and per-file reports",
+        "tested",
+        tools=("gimp_run_batch",),
+        tests=("tests/e2e/test_batch.py", "tests/unit/test_batch_tools.py"),
+        notes="Server-side: each step is an ordinary call of a listed tool; images are closed without saving.",
+    ),
+    Capability(
         "Text",
         "Rich text markup, outline, kerning, hinting, indent, language, base direction, text box",
         "tested",
