@@ -9,3 +9,4 @@ ci-artifacts/
 dist-distro/
 dist-doctests/
 demo/video/out/
+evals/out/

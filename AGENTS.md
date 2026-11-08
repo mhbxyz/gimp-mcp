@@ -13,6 +13,7 @@ verified so far live in `docs/gimp-notes.md` (add to it, don't re-discover).
 - Demos: `uv run demo/run.py <scenario>|--all` (headless GIMP, outputs + report in `demo/out/<scenario>/`; `demo/README.md`); videos: `demo/video/record.sh VERSION [SCENARIO]`
 - Release: `scripts/prepare_release.py X.Y.Z` (opens the release PR; merging it tags and starts release.yml). Dry run: `gh workflow run release.yml -f dry_run=true --ref main`
 - Guided install (writes client configs! use a temporary HOME when testing): `uv run gimp-mcp setup`
+- Agent evaluation (real Claude Code in Docker, costs tokens: one task at a time while developing): `uv run evals/run.py <task>|--all` (`docs/evals/README.md`)
 - Generated docs, never edited by hand:
   - troubleshooting: `uv run gimp-mcp doctor --troubleshooting > docs/troubleshooting.md`
   - coverage matrix: `uv run gimp-mcp coverage --inventory docs/coverage/pdb-inventory.json --output docs/coverage.md`

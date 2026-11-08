@@ -14,6 +14,11 @@ what is covered by the compatibility promise.
   records the agent version of any scenario. The thumbnail demo is the first scenario (same outputs
   and checks, now in `demo/out/thumbnail/`); every scenario runs in the end-to-end suite on Linux,
   macOS and Windows.
+- Agent evaluation suite (#106): 18 typical GIMP tasks given to a real Claude Code session in an isolated
+  container (only the gimp server, default toolsets), with factual checks of the outputs;
+  `uv run evals/run.py <task>|--all` reports success, tool calls, errors, duration and tokens per task
+  and flags regressions against `docs/evals/baseline.json`. `evals.yml` runs it on demand and on
+  release pull requests (secret `CLAUDE_CODE_OAUTH_TOKEN`).
 
 ### Fixed
 

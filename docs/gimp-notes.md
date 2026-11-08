@@ -341,3 +341,7 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   GIMP for Windows starts `gdbus.exe` (GLib's D-Bus session bus, from GIMP's `bin`), which listens on
   TCP loopback (`127.0.0.1` and `::1`, a random port): it is GIMP's, not gimp-mcp's, and nothing in
   GIMP's process tree listens on any other address (`tests/e2e/test_no_network.py`).
+* Linear light (seen by the agent evaluation, #106, GIMP 3.2.6): a Normal layer at 50% opacity
+  composites in linear RGB, so 50% of (220, 30, 30) over (40, 80, 200) is (163, 61, 148), not the
+  sRGB average (130, 55, 115); `gegl:gaussian-blur` also works in linear light, so an 8 px
+  black-and-white checkerboard blurred flat becomes (188, 188, 188), the linear midpoint.
