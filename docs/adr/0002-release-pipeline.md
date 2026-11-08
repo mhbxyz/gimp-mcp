@@ -33,6 +33,9 @@ Facts checked in the official documentation (2026-11-08):
   `v*` tag (or re-run from the tag). Jobs: `build` (once, artifact `dist`) →
   `test` (full suite in the pinned GIMP image) → `github-draft` and
   `publish-testpypi` → `verify-testpypi` → `publish-pypi` → `verify-pypi`.
+  Since #104, `test`, `verify-testpypi` and `verify-pypi` each have a macOS and Windows twin
+  (`test-os`, `verify-testpypi-os`, `verify-pypi-os`, through the reusable `gimp-os-tests.yml`,
+  which only tests): every publishing step waits for the three OSes.
 * Publish jobs run in the GitHub environments `testpypi` and `pypi`, which
   require the maintainer's approval and only accept `v*` tags. No token is
   stored anywhere.
