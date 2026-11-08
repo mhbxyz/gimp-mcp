@@ -55,6 +55,7 @@ async def test_recipe_over_a_folder_converts_and_reports_failures(gimp: Headless
         assert (report["succeeded"], report["failed"], report["skipped"]) == (3, 1, 0)
         broken = report["files"][2]
         assert broken["error"]["step"] is None and broken["error"]["tool"] == "gimp_open_image"
+        assert broken["error"]["code"] == "UNSUPPORTED_FORMAT"  # GIMP's loader gives no image
         assert broken["outputs"] == [] and not (out / "broken-small.webp").exists()
         assert await open_images(client) == already  # every image the batch opened is closed
 
