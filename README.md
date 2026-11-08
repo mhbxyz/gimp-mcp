@@ -89,6 +89,8 @@ and Windows, and an agent version (one plain-language request) in the evaluation
 * **Social media kit**: one design in four formats (post, story, banner, thumbnail) with safe-area
   guides and an editable headline
   ([walk-through](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/demos/social-media-kit.md)).
+* **Tutorial screenshot**: callouts and arrows, private data pixelated beyond recovery, metadata
+  removed ([walk-through](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/demos/screenshot-annotation.md)).
 * **YouTube thumbnail** from one photo, with an editable title
   ([guide](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/guide-thumbnail.md)).
 
