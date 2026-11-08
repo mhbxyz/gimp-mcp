@@ -4,7 +4,8 @@
 
 1. GIMP 3.2 or newer: your distribution's package (Ubuntu 26.04: `sudo apt install gimp python3-gi
    gir1.2-gimp-3.0`; others in [compatibility](../compatibility.md#linux-distributions)) **or** the
-   Flatpak from Flathub (`flatpak install flathub org.gimp.GIMP`).
+   Flatpak from Flathub (`flatpak install flathub org.gimp.GIMP`). macOS and Windows: GIMP from
+   [gimp.org](https://www.gimp.org/downloads/) ([install](../install.md)).
 2. [uv](https://docs.astral.sh/uv/getting-started/installation/) and
    [Claude Code](https://code.claude.com/docs/en/overview).
 

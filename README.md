@@ -25,7 +25,7 @@ filters and exports, step by step, right in front of you.
 
 ## Quickstart
 
-You need Linux, [uv](https://docs.astral.sh/uv/getting-started/installation/) and an MCP client. On Ubuntu 26.04:
+gimp-mcp runs on **Linux, macOS and Windows**. You need GIMP 3.2+, [uv](https://docs.astral.sh/uv/getting-started/installation/) and an MCP client. On Ubuntu 26.04:
 
 <!-- doctest: quickstart -->
 ```sh
@@ -37,6 +37,8 @@ uvx gimp-mcp doctor                                   # after (re)starting GIMP:
 Then ask your assistant: *"Use GIMP to create a 1280×720 image with the title 'Hello' and export it to
 ~/hello.png"*.
 
+* **macOS and Windows**: install GIMP 3.2 from [gimp.org](https://www.gimp.org/downloads/), then run the same
+  `uvx gimp-mcp setup` and `uvx gimp-mcp doctor` ([install](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/install.md)).
 * Arch, Debian 14, Fedora 44, openSUSE Tumbleweed, Alpine 3.24 and GIMP from **Flathub**: see
   [compatibility](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/compatibility.md#linux-distributions).
 * Step by step for [Claude Code](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/clients/claude-code.md),
