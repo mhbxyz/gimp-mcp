@@ -13,7 +13,7 @@ import gimp_mcp
 from gimp_mcp import platforms
 from gimp_mcp.headless import HeadlessGimp, find_gimp_console
 
-from .dist_helpers import ROOT, install_distribution, run
+from .dist_helpers import ROOT, install_distribution, run, venv_python, venv_script
 
 
 def previous_release_ref() -> str | None:
@@ -43,6 +43,7 @@ def build_previous_wheel(tmp_path: Path) -> Path:
     return next(dist.glob("*.whl"))
 
 
+@pytest.mark.skipif(platforms.CURRENT == "windows", reason="setup and uninstall on Windows: #101")
 async def test_upgrade_from_the_previous_release_then_uninstall(tmp_path: Path):
     if find_gimp_console() is None:
         pytest.skip("gimp-console not found")
@@ -50,14 +51,14 @@ async def test_upgrade_from_the_previous_release_then_uninstall(tmp_path: Path):
     installed = install_distribution(tmp_path)  # the new version, in its own venv
     old_venv = tmp_path / "old-venv"
     assert run("uv", "venv", "--quiet", str(old_venv), cwd=installed.work).returncode == 0
-    assert run("uv", "pip", "install", "--quiet", "--python", str(old_venv / "bin/python"), str(previous),
+    assert run("uv", "pip", "install", "--quiet", "--python", str(venv_python(old_venv)), str(previous),
                cwd=installed.work, env=installed.env).returncode == 0  # fmt: skip
     claude = Path(platforms.config_home({"HOME": str(installed.home)})) / "Claude"  # this OS's location
     claude.mkdir(parents=True)
     gimp = HeadlessGimp(install_plugin=False)
     try:
         gimp.config_dir.mkdir(parents=True)
-        old = run(str(old_venv / "bin/gimp-mcp"), "install-plugin", "--gimp-dir", str(gimp.config_dir),
+        old = run(str(venv_script(old_venv, "gimp-mcp")), "install-plugin", "--gimp-dir", str(gimp.config_dir),
                   cwd=installed.work, env=installed.env)  # fmt: skip
         assert old.returncode == 0, old.stderr
         plugin = gimp.config_dir / "plug-ins" / "gimp-mcp-bridge"
@@ -72,7 +73,13 @@ async def test_upgrade_from_the_previous_release_then_uninstall(tmp_path: Path):
 
         gimp.start()
         params = StdioServerParameters(
-            command=str(installed.exe), args=["serve"], env={**installed.env, "GIMP_MCP_SOCKET": str(gimp.socket_path)}
+            command=str(installed.exe),
+            args=["serve"],
+            env={
+                **installed.env,
+                "GIMP_MCP_SOCKET": str(gimp.socket_path),
+                "GIMP_MCP_TOKEN_FILE": str(gimp.token_path),
+            },
         )
         async with Client(params, read_timeout_seconds=60) as client:
             status = await client.call_tool("gimp_status", {})

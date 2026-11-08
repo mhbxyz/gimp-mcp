@@ -5,10 +5,12 @@
 | Component | Supported | Verified by |
 |---|---|---|
 | Operating system | **Linux** (x86_64) | CI (Ubuntu 24.04 runner + Arch Linux container), developer machine (CachyOS) |
+| Operating system | **Windows** (x86_64; verified on Windows Server 2025, the closest GitHub runner to Windows 10/11) | CI job `e2e-windows`: the e2e suite on GitHub's `windows-2025` runner ([ADR 0008](adr/0008-windows-and-macos.md)) |
 | Operating system | **macOS 15** (Apple Silicon, arm64) | CI job `e2e-macos`: the full e2e suite on GitHub's `macos-15` runner ([ADR 0008](adr/0008-windows-and-macos.md)) |
 | GIMP | **3.2.x** (3.2.6 tested) | CI pins GIMP 3.2.6-2 (`ci/Dockerfile`); older versions are refused with `VERSION_INCOMPATIBLE` |
 | GIMP packaging | distribution packages (`/usr/bin/gimp`, system Python with PyGObject) | CI, developer machine |
 | GIMP packaging | **gimp.org's macOS app** (`GIMP.app` from `gimp-3.2.6-arm64.dmg`, SHA-256 verified; its bundled Python runs the plug-in) | CI job `e2e-macos` (`ci/install-gimp-macos.sh`) |
+| GIMP packaging | **gimp.org's Windows installer** (`gimp-3.2.6-setup.exe`, SHA-256 verified, machine-wide in `C:\Program Files\GIMP 3`; its bundled Python runs the plug-in) | CI job `e2e-windows` (`ci/install-gimp-windows.ps1`) |
 | GIMP packaging | **Flatpak from Flathub** (`org.gimp.GIMP`, 3.2.8 tested) | CI job `flatpak` (`ci/Dockerfile.flatpak`, pinned Flathub commit); see [ADR 0003](adr/0003-flatpak-gimp.md) |
 | GIMP's Python (runs the plug-in) | Python 3 with PyGObject ≥ 3.50 and the `Gimp-3.0` typelib | CI (Python 3.14, PyGObject 3.58) |
 | Python for the MCP server | ≥ 3.11 | CI fast job (3.12), e2e (3.14) |
@@ -50,9 +52,17 @@ digest) and drives the distribution's own GIMP over MCP (`ci/run-distro.sh <id>`
   `gegl:gluas` (no Lua), and lossless AVIF export fails in its AOM encoder (lossy AVIF works).
 * x86_64 Macs (`gimp-3.2.6-x86_64.dmg`) are not verified: GitHub no longer offers Intel macOS runners.
 
+## Windows: what differs
+
+* The bridge is a named pipe, `\\.\pipe\gimp-mcp-<user>`: its DACL grants the current user only, remote
+  clients are rejected, and the plug-in refuses a client whose process belongs to another user (the
+  server checks the pipe's owner the same way). The token lives in `%LOCALAPPDATA%\gimp-mcp\`.
+* Skipped there: the Flatpak test (Linux only) and the guided setup test (Windows locations: #101).
+  Unit tests of Unix-socket specifics are skipped and replaced by `tests/unit/test_windows_pipe.py`.
+
 ## Not supported (not verified)
 
-* **Windows** — being added (milestone v0.5.0, ADR 0008); nothing is claimed yet.
+* **Windows 10/11 desktops** and Windows on ARM — not verified directly (CI uses Windows Server 2025, x86_64).
 * **Snap GIMP** — different confinement; untested. (Flatpak is supported, see above.)
 * **GIMP 2.10 / 3.0** — refused at connection time.
 * Remote GIMP over a network — by design the bridge is local only.

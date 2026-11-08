@@ -70,7 +70,7 @@ def by_id(results):
 
 async def test_a_healthy_installation_passes_every_check(tmp_path):
     with running_fake_bridge({}) as bridge:
-        probe = healthy(tmp_path, BridgeEndpoint.for_socket(bridge.socket_path), processes=[(4242, "gimp")])
+        probe = healthy(tmp_path, bridge.endpoint, processes=[(4242, "gimp")])
         results = by_id(await run_checks(probe))
     failing = {k: (r.status, r.message) for k, r in results.items() if r.status is not Status.OK}
     assert failing == {}
@@ -138,6 +138,14 @@ async def test_plugin_not_registered_by_gimp(tmp_path):
     assert result.status is Status.WARN and "restart gimp" in result.fix.lower()
 
 
+async def test_plugin_registered_with_windows_separators(tmp_path):
+    # GIMP for Windows writes the plug-in path with escaped backslashes in pluginrc
+    probe = healthy(tmp_path)
+    pluginrc = Path(probe.env["HOME"]) / ".config/GIMP/3.2/pluginrc"
+    pluginrc.write_text('(plug-in-def "C:\\\\Users\\\\a\\\\gimp-mcp-bridge\\\\gimp-mcp-bridge.py" 1)\n')
+    assert by_id(await run_checks(probe))["plugin-registered"].status is Status.OK
+
+
 async def test_gimp_running_without_the_bridge(tmp_path):
     probe = healthy(tmp_path, processes=[(31337, "gimp")])
     result = by_id(await run_checks(probe))["connection"]
@@ -186,7 +194,7 @@ async def test_token_and_directory_permissions(tmp_path):
     with running_fake_bridge({}) as bridge:
         bridge.token_path.chmod(0o644)
         bridge.socket_path.parent.chmod(0o755)
-        probe = healthy(tmp_path, BridgeEndpoint.for_socket(bridge.socket_path))
+        probe = healthy(tmp_path, bridge.endpoint)
         result = by_id(await run_checks(probe))["socket-permissions"]
         bridge.socket_path.parent.chmod(0o700)
     assert result.status is Status.FAIL
@@ -196,7 +204,7 @@ async def test_token_and_directory_permissions(tmp_path):
 
 async def test_several_gimp_processes_for_one_bridge(tmp_path):
     with running_fake_bridge({}) as bridge:
-        probe = healthy(tmp_path, BridgeEndpoint.for_socket(bridge.socket_path), processes=[(1, "gimp"), (2, "gimp")])
+        probe = healthy(tmp_path, bridge.endpoint, processes=[(1, "gimp"), (2, "gimp")])
         result = by_id(await run_checks(probe))["instances"]
     assert result.status is Status.WARN and "GIMP_MCP_SOCKET" in result.fix
 

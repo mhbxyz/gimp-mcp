@@ -9,12 +9,13 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
+from gimp_mcp import platforms
 from gimp_mcp.headless import HeadlessGimp
 from gimp_mcp.installer import uninstall_plugin
 
 
 def doctor(gimp: HeadlessGimp, home: Path) -> tuple[int, dict]:
-    env = {**os.environ, "HOME": str(home)}
+    env = {**os.environ, "HOME": str(home), "GIMP_MCP_TOKEN_FILE": str(gimp.token_path)}
     env.pop("XDG_CONFIG_HOME", None)
     proc = subprocess.run(
         [sys.executable, "-m", "gimp_mcp", "doctor", "--json", "--socket", str(gimp.socket_path),
@@ -32,7 +33,9 @@ def test_doctor_passes_on_a_working_installation(gimp_factory: Callable[..., Hea
     assert code == 0 and failures == {}
     for key in ("gimp", "gimp-python", "plugin", "plugin-version", "plugin-registered", "socket-permissions",
                 "connection"):  # fmt: skip
-        assert checks[key]["status"] == "ok", (key, checks[key])
+        # a Windows named pipe has no directory permissions to check: its ACL is tested in test_windows_pipe
+        expected = "skip" if key == "socket-permissions" and platforms.CURRENT == "windows" else "ok"
+        assert checks[key]["status"] == expected, (key, checks[key])
 
 
 def test_doctor_explains_a_missing_plugin_and_a_stale_socket(gimp_factory: Callable[..., HeadlessGimp], tmp_path: Path):
@@ -42,4 +45,6 @@ def test_doctor_explains_a_missing_plugin_and_a_stale_socket(gimp_factory: Calla
     code, checks = doctor(gimp, tmp_path)
     assert code == 1
     assert checks["plugin"]["status"] == "fail" and "install-plugin" in checks["plugin"]["fix"]
-    assert checks["connection"]["status"] == "fail" and "stale" in checks["connection"]["message"]
+    # a Unix socket file stays behind after a crash ("stale"); a Windows pipe disappears with its process
+    expected = "not running" if platforms.CURRENT == "windows" else "stale"
+    assert checks["connection"]["status"] == "fail" and expected in checks["connection"]["message"]

@@ -89,6 +89,8 @@ def test_plug_in_and_server_agree_on_the_address():
         (MACOS, "macos"),
         (WINDOWS, "windows"),
         ({**MACOS, "GIMP_MCP_SOCKET": "/s/b.sock"}, "macos"),
+        ({**WINDOWS, "GIMP_MCP_SOCKET": r"\\.\pipe\t", "GIMP_MCP_TOKEN_FILE": r"C:\t\bridge.token"}, "windows"),
+        ({**LINUX, "GIMP_MCP_SOCKET": "/s/b.sock", "GIMP_MCP_TOKEN_FILE": "/s/t"}, "linux"),
     ]
     for env, kind in cases:
         server = platforms.bridge_address(env, kind, uid=7, runtime_exists=lambda _p: True)
@@ -155,3 +157,10 @@ def test_gimp_bundles_its_own_python_on_macos_and_windows():
     win = r"C:\Program Files\GIMP 3\bin\gimp-console-3.2.exe"
     assert platforms.bundled_gimp_python(win, "windows") == r"C:\Program Files\GIMP 3\bin\python.exe"
     assert platforms.bundled_gimp_python("/usr/bin/gimp-console-3.2", "linux") is None
+
+
+def test_the_token_file_can_be_placed_explicitly():
+    win = platforms.bridge_address({**WINDOWS, "GIMP_MCP_TOKEN_FILE": r"C:\tmp\t.token"}, "windows")
+    assert win.token_path == r"C:\tmp\t.token"
+    linux = platforms.bridge_address({**LINUX, "GIMP_MCP_SOCKET": "/s/b.sock", "GIMP_MCP_TOKEN_FILE": "/s/t"}, "linux")
+    assert (linux.path, linux.token_path) == ("/s/b.sock", "/s/t")

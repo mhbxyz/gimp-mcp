@@ -115,7 +115,7 @@ async def test_tools_that_open_or_close_images_notify_resource_list_changes():
 
     images = Images(3)
     with running_fake_bridge(images.ops()) as bridge:
-        server = build_server(BridgeClient(BridgeEndpoint.for_socket(bridge.socket_path)), toolsets="all")
+        server = build_server(BridgeClient(bridge.endpoint), toolsets="all")
         async with Client(server, mode="legacy", message_handler=on_message) as client:
             assert client.session.server_capabilities.resources.list_changed  # type: ignore[union-attr]
             await client.call_tool("gimp_flip_image", {"image": iid(3), "orientation": "vertical"})

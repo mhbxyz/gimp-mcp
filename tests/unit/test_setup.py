@@ -204,7 +204,7 @@ async def test_an_invalid_client_config_is_never_overwritten(tmp_path):
 async def test_live_check_when_gimp_runs(tmp_path):
     world = make_world(tmp_path)
     with running_fake_bridge({"session.images": lambda p: {"images": []}}) as bridge:
-        code = await run_setup(options(world, endpoint=BridgeEndpoint.for_socket(bridge.socket_path)))
+        code = await run_setup(options(world, endpoint=bridge.endpoint))
     assert code == 0 and "GIMP 3.2.6 answers" in world.text
 
 

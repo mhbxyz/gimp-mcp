@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 import gimp_mcp
-from gimp_mcp.bridge import BridgeClient, BridgeEndpoint
+from gimp_mcp.bridge import BridgeClient
 from gimp_mcp.errors import GimpMcpError
 from gimp_mcp.installer import install_plugin
 from gimp_mcp.versions import Compatibility, check_plugin_version
@@ -57,7 +57,7 @@ def test_compatibility_rule(server, plugin, verdict):
 async def test_connecting_to_an_incompatible_plugin_is_an_actionable_error():
     session = {**DEFAULT_SESSION, "bridge_version": "0.0.1"}
     with running_fake_bridge({"x": lambda p: {}}, session=session) as bridge:
-        client = BridgeClient(BridgeEndpoint.for_socket(bridge.socket_path))
+        client = BridgeClient(bridge.endpoint)
         with pytest.raises(GimpMcpError) as excinfo:
             await client.call("x")
         assert bridge.calls == []
@@ -71,7 +71,7 @@ async def test_a_compatible_patch_difference_only_warns(caplog):
     major, minor, _patch = gimp_mcp.__version__.split(".")[:3]
     session = {**DEFAULT_SESSION, "bridge_version": f"{major}.{minor}.999"}
     with running_fake_bridge({"x": lambda p: {"ok": True}}, session=session) as bridge:
-        client = BridgeClient(BridgeEndpoint.for_socket(bridge.socket_path))
+        client = BridgeClient(bridge.endpoint)
         assert await client.call("x") == {"ok": True}
         await client.close()
     assert "plug-in" in caplog.text and "999" in caplog.text

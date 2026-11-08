@@ -328,3 +328,16 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   `gegl:gluas` (no Lua), and its AVIF exporter fails on lossless output ("AOM encoder error: Invalid
   parameter - Only --enable_chroma_deltaq=0 can be used with --lossless=1"); lossy AVIF is not affected. GIMP's own Python is used for plug-ins
   (`Contents/MacOS/python3`, `bin\python.exe`): the system `python3` does not matter there.
+* **Windows named pipes** (checked 2026-11-08 on the `windows-2025` runner, ADR 0008): GIMP's Python
+  serves the pipe with `ctypes` (`CreateNamedPipeW`), every Win32 function needs full `argtypes`/
+  `restype` (handles are 64-bit; `GetCurrentProcess()` is -1), and the handles must be overlapped: a
+  pending synchronous `ReadFile` in the reader thread blocks a `WriteFile` from GIMP's main thread on the
+  same handle. GLib's `idle_add` hands requests to GIMP's main thread. `Path(r"\\.\pipe\x").exists()`
+  opens the pipe (it consumes an instance, or raises WinError 231 when all are busy): never stat a pipe.
+  The runner's user is the built-in Administrator, whose SID an SDDL string writes as `LA`. GIMP keeps
+  a CR in palette names read from a `.gpl` written with CRLF: write `.gpl` files with `\n` only. A
+  pluginrc on Windows lists the plug-in with escaped backslashes. The CI e2e suite runs on GIMP 3.2.6
+  installed with `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /ALLUSERS`.
+  GIMP for Windows starts `gdbus.exe` (GLib's D-Bus session bus, from GIMP's `bin`), which listens on
+  TCP loopback (`127.0.0.1` and `::1`, a random port): it is GIMP's, not gimp-mcp's, and nothing in
+  GIMP's process tree listens on any other address (`tests/e2e/test_no_network.py`).

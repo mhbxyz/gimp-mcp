@@ -5,7 +5,7 @@ from __future__ import annotations
 import gmb_undo  # type: ignore[import-not-found]
 import pytest
 
-from gimp_mcp.bridge import BridgeClient, BridgeEndpoint
+from gimp_mcp.bridge import BridgeClient
 
 from .fake_bridge import running_fake_bridge
 
@@ -76,7 +76,7 @@ async def test_the_bridge_notifies_disconnections():
     seen: list[object] = []
     with running_fake_bridge({"x": lambda p: {}}) as bridge:
         bridge.server.on_disconnect.append(seen.append)
-        client = BridgeClient(BridgeEndpoint.for_socket(bridge.socket_path))
+        client = BridgeClient(bridge.endpoint)
         await client.call("x")
         connection = bridge.server.last_connection_id
         await client.close()

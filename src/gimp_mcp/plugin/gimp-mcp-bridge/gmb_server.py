@@ -89,7 +89,9 @@ def _peer_uid(sock: socket.socket) -> int | None:
 
 
 class Connection:
-    def __init__(self, sock: socket.socket, peer_uid: int | None, connection_id: int = 0):
+    """A client connection; ``sock`` is any transport with sendall/close (a socket, a Windows pipe)."""
+
+    def __init__(self, sock: Any, peer_uid: int | None, connection_id: int = 0):
         self.id = connection_id
         self.sock = sock
         self.peer_uid = peer_uid
@@ -111,13 +113,16 @@ class BridgeServer:
         session_info: dict[str, Any],
         allowed_uid: int | None = None,
         max_request_bytes: int = DEFAULT_MAX_REQUEST_BYTES,
+        token_path: str | None = None,
     ):
         self.socket_path = str(socket_path)
-        self.token_path = self.socket_path + ".token"
+        self.token_path = token_path or self.socket_path + ".token"
         self.token = token
         self.operations = operations
         self.session_info = session_info
-        self.allowed_uid = os.getuid() if allowed_uid is None else allowed_uid
+        # Unix sockets check the peer uid; Windows pipes check the client's user SID (gmb_pipe).
+        self.allowed_uid = getattr(os, "getuid", lambda: -1)() if allowed_uid is None else allowed_uid
+        self.pipe_listener: Any = None
         self.max_request_bytes = max_request_bytes
         self.listener: socket.socket | None = None
         self.connections: dict[int, Connection] = {}
@@ -158,6 +163,16 @@ class BridgeServer:
             os.close(fd)
         log("listening on %s" % self.socket_path)
 
+    def start_pipe(self, schedule: Callable[..., Any]) -> None:
+        """Serve a Windows named pipe (``socket_path`` is its name); ``schedule(fn, *args)`` runs ``fn`` on
+        the thread that owns this server (ADR 0008)."""
+        import gmb_pipe
+
+        sid = gmb_pipe.process_user_sid()
+        self.pipe_listener = gmb_pipe.serve(self, schedule, sid, log)
+        gmb_pipe.write_token(self.token_path, self.token)
+        log("listening on %s" % self.socket_path)
+
     def _refuse_if_live_bridge(self) -> None:
         if not os.path.exists(self.socket_path):
             return
@@ -182,6 +197,13 @@ class BridgeServer:
     def close(self) -> None:
         for conn in list(self.connections.values()):
             self.drop(conn)
+        if self.pipe_listener is not None:
+            self.pipe_listener.close()
+            self.pipe_listener = None
+            try:
+                os.unlink(self.token_path)
+            except OSError:
+                pass
         if self.listener is not None:
             self.listener.close()
             self.listener = None
@@ -207,8 +229,12 @@ class BridgeServer:
             sock.close()
             return None
         sock.setblocking(False)
+        return self.add_connection(sock, uid)
+
+    def add_connection(self, transport: Any, peer_uid: int | None) -> Connection:
+        """Register an accepted, already-verified client (any transport)."""
         self._next_connection_id += 1
-        conn = Connection(sock, uid, self._next_connection_id)
+        conn = Connection(transport, peer_uid, self._next_connection_id)
         self.connections[conn.fileno()] = conn
         return conn
 
@@ -239,6 +265,10 @@ class BridgeServer:
         if not chunk:
             self.drop(conn)
             return False
+        return self.handle_data(conn, chunk)
+
+    def handle_data(self, conn: Connection, chunk: bytes) -> bool:
+        """Process bytes received from a client. Returns False when the connection was closed."""
         conn.buffer += chunk
         while b"\n" in conn.buffer:
             line, conn.buffer = conn.buffer.split(b"\n", 1)

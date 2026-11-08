@@ -89,6 +89,7 @@ def gimp_factory() -> Iterator[Callable[..., HeadlessGimp]]:
 def server_params(gimp: HeadlessGimp, extra_env: dict[str, str] | None = None) -> StdioServerParameters:
     env = {
         "GIMP_MCP_SOCKET": str(gimp.socket_path),
+        "GIMP_MCP_TOKEN_FILE": str(gimp.token_path),
         "PATH": os.environ.get("PATH", ""),
         "HOME": os.environ.get("HOME", ""),
         "GIMP_MCP_TOOLSETS": "all",  # tests reach every tool; test_toolsets.py checks the default selection

@@ -11,14 +11,14 @@ import time
 
 import pytest
 
-from gimp_mcp.bridge import BridgeClient, BridgeEndpoint
+from gimp_mcp.bridge import BridgeClient
 from gimp_mcp.errors import GimpMcpError
 
 from .fake_bridge import running_fake_bridge
 
 
 def client_for(bridge, **kwargs) -> BridgeClient:
-    return BridgeClient(BridgeEndpoint.for_socket(bridge.socket_path), **kwargs)
+    return BridgeClient(bridge.endpoint, **kwargs)
 
 
 # -- access control ---------------------------------------------------------------
