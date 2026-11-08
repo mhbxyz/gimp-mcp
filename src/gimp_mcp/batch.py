@@ -9,11 +9,12 @@ from __future__ import annotations
 import os
 import string
 from collections.abc import Mapping, Sequence
-from pathlib import Path
+from pathlib import Path, PurePath, PureWindowsPath
 from typing import Any
 
+from . import platforms
 from .errors import GimpMcpError
-from .paths import check_input_file, check_output_file
+from .paths import check_input_file, check_output_file, local_absolute
 
 # {image}, {layer} and {output} are only known while running; the others come from the input path.
 FILE_PLACEHOLDERS = ("file", "name", "stem", "ext", "dir", "index")
@@ -87,7 +88,8 @@ def list_inputs(files: Sequence[str] | None, directory: str | None, pattern: str
         raise invalid("give either files or directory (with a pattern), not both")
     if files is not None:
         found = [check_input_file(path) for path in files]
-        if len(set(found)) != len(found):
+        # the file system decides what "the same file" is (case, Unicode form, links)
+        if len({_identity(path) for path in found}) != len(found):
             raise invalid("the same file is listed twice")
     else:
         found = _glob(directory or "", pattern)
@@ -101,21 +103,40 @@ def list_inputs(files: Sequence[str] | None, directory: str | None, pattern: str
     return found
 
 
+def _identity(path: Path) -> tuple[int, int]:
+    info = path.stat()
+    return info.st_dev, info.st_ino
+
+
+def _inside(path: Path, root: os.stat_result) -> bool:
+    """Whether ``path``, links resolved, is in the directory ``root``: compared by file identity, so
+    case, Unicode form, symlinks and junctions are judged by the file system itself."""
+    resolved = path.resolve()
+    for parent in resolved.parents:
+        try:
+            if os.path.samestat(parent.stat(), root):
+                return True
+        except OSError:
+            return False
+    return False
+
+
 def _glob(directory: str, pattern: str) -> list[Path]:
-    root = Path(os.path.expanduser(directory))
-    if not root.is_absolute():
-        raise invalid(f"directory {directory!r} is relative: give an absolute path")
+    try:
+        root = local_absolute(directory)
+    except GimpMcpError as error:
+        raise invalid(f"directory {directory!r}: {error.message}", hint=error.hint) from None
     if not root.is_dir():
         raise GimpMcpError("FILE_NOT_FOUND", f"{root} is not a directory", details={"directory": str(root)})
-    if not pattern or Path(pattern).is_absolute() or ".." in Path(pattern).parts:
+    # no drive, root or '..': a pattern stays under the directory on every OS
+    if not pattern or PurePath(pattern).anchor or PureWindowsPath(pattern).anchor or ".." in PurePath(pattern).parts:
         raise invalid(f"pattern {pattern!r} must be relative to the directory, without '..'")
-    real_root = root.resolve()
+    root_stat = root.stat()
     matches = []
     for path in root.glob(pattern):
-        # symlinks are allowed only when they stay inside the directory
-        if not path.is_file() or not path.resolve().is_relative_to(real_root):
-            continue
-        matches.append(path)
+        # links are followed only when they stay inside the directory
+        if path.is_file() and _inside(path, root_stat):
+            matches.append(path)
     return sorted(matches)
 
 
@@ -128,13 +149,13 @@ def plan_outputs(inputs: Sequence[Path], pattern: str | None, *, overwrite: bool
         check_output_file(substitute(pattern, file_values(path, index)), overwrite=overwrite)
         for index, path in enumerate(inputs, start=1)
     ]
-    if len(set(outputs)) != len(outputs):
+    if any(platforms.same_file_name(str(a), str(b)) for i, a in enumerate(outputs) for b in outputs[i + 1 :]):
         raise invalid(
             f"output pattern {pattern!r} gives the same file for several inputs",
             hint="Use {stem}, {name} or {index} in the output pattern.",
         )
-    resolved_inputs = {path.resolve() for path in inputs}
+    identities = {_identity(path) for path in inputs}
     for output in outputs:
-        if output.resolve() in resolved_inputs:
+        if output.exists() and _identity(output) in identities:
             raise invalid(f"output {output} would replace an input file", output=str(output))
     return list(outputs)
