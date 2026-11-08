@@ -14,6 +14,7 @@ with Pillow), never an aesthetic judgement. It has two versions:
 
 | Scenario | What it does | Toolsets |
 |---|---|---|
+| `old-photo-restoration` | A tilted, dusty, scratched, faded scan straightened, cropped, healed (heal and clone), leveled and denoised; 16-bit TIFF at 300 dpi and a web JPEG ([page](../docs/demos/old-photo-restoration.md)) | files, layers, transform, painting, color, effects, modes, formats, document |
 | `thumbnail` | 1280×720 video thumbnail from one photo: blurred backdrop, vignetted subject, editable title re-typed after a change of mind, a badge added as one undo step then undone and redone with checkpoints; XCF reopened, PNG and JPEG exported | files, layers, transform, selection, paint, filters, text, history |
 
 ## Writing a scenario
@@ -26,6 +27,7 @@ A module in `demo/scenarios/` that defines `SCENARIO = Scenario(...)` (`demo/har
 * `outputs`: the files its scripted version writes;
 * `steps(gimp, report)`: the scripted version, `gimp.call(...)` for each tool call and
   `report.check(description, passed, detail)` for each verification;
-* `prompt` and `agent_output`: the agent version's request and the file it exports into `~/out`.
+* `prompt` and `agent_output`: the agent version's request and the file it exports into `~/out`;
+  its files are in `~/inputs`: the assets, plus what `make_agent_inputs` generates (`demo/run.py --agent-inputs`).
 
 Add a row to the table above (a test checks every scenario is listed).

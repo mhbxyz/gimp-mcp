@@ -8,6 +8,11 @@ what is covered by the compatibility promise.
 
 ### Added
 
+- Demo: restore an old scanned photo (#108). `uv run demo/run.py old-photo-restoration` straightens a
+  tilted scan, crops the scanner bed, heals dust, clones over a scratch, restores contrast, reduces grain
+  and exports a 16-bit TIFF at 300 dpi and a JPEG, each step checked against the clean print it was made
+  from; its agent version is an evaluation task (passed). Agent versions of demos read their files in
+  `~/inputs`; `demo/run.py --publish` copies a report to `docs/demos/`.
 - Demo scenarios (#107): `uv run demo/run.py <scenario>` or `--all` runs typical GIMP jobs through
   MCP only, each declaring its toolsets, licensed assets (`demo/assets/LICENSES.md`), outputs,
   factual checks and the prompt of its agent version; `demo/video/record.sh VERSION [SCENARIO]`

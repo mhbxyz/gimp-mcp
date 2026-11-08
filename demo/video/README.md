@@ -16,7 +16,7 @@ CLAUDE_CODE_OAUTH_TOKEN=... demo/video/record.sh 0.4.0 SCENARIO     # any scenar
   through `--strict-mcp-config`, `dontAsk` permissions: no prompt can block the run,
   `Bash`, file-editing and web tools in `--disallowedTools`; Claude Code 2.1.319 still ran one
   read-only `ls` in the 0.4.0 take), types the
-  scenario's prompt, and records until its export (`--agent-output`) exists in `~/out` and the
+  scenario's prompt (its files are in `~/inputs`, from `demo/run.py --agent-inputs`), and records until its export (`--agent-output`) exists in `~/out` and the
   terminal has been still for 12 s.
   Every 1.5 s it also puts GIMP's window back in its half of the screen and sends
   the "Fit Image in Window" shortcut, so the canvas stays framed. That is the only

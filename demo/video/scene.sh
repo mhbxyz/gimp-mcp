@@ -50,7 +50,7 @@ EOF
 EOF
   cat >"$HOME/claude.sh" <<'EOF'
 #!/usr/bin/env bash
-cd "$HOME" # the assets and the output are inside the working directory: no permission prompt
+cd "$HOME" # the inputs and the output are inside the working directory: no permission prompt
 exec claude --strict-mcp-config --mcp-config "$HOME/mcp.json" \
   --permission-mode dontAsk --allowedTools mcp__gimp Read Glob Grep --disallowedTools Bash Edit Write NotebookEdit WebFetch WebSearch
 EOF

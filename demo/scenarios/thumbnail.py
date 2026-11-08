@@ -235,7 +235,7 @@ SCENARIO = Scenario(
     outputs=("thumbnail.xcf", "thumbnail.png", "thumbnail.jpg"),
     steps=steps,
     prompt=(
-        "Open ~/assets/lake-sunset.png in GIMP and turn it into a 1280x720 YouTube thumbnail: make the colors "
+        "Open ~/inputs/lake-sunset.png in GIMP and turn it into a 1280x720 YouTube thumbnail: make the colors "
         'pop, darken the left third so text reads well, add a big bold title "GOLDEN HOUR" and a smaller '
         'subtitle "5 editing tricks", keep each edit on its own layer, then export ~/out/thumbnail.png.'
     ),

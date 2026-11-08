@@ -1,6 +1,8 @@
 # gimp-mcp agent evaluation
 
-**16/18 tasks passed** — gimp-mcp 0.5.0 (checkout), model claude-sonnet-5-5, 2026-11-08. Default toolsets; the agent enables others itself.
+**17/19 tasks passed** — gimp-mcp 0.5.0 (checkout), model claude-sonnet-5-5, 2026-11-08. Default toolsets; the agent enables others itself.
+
+Updated since: old-photo-restoration on 2026-11-08 (each task's package and date are in the JSON).
 
 | Task | Result | Tool calls | Errors returned | Duration | Tokens in / out (cache read) |
 |---|---|---|---|---|---|
@@ -22,6 +24,7 @@
 | `indexed-4-colors` | pass | 6 | 1 | 29.9 s | 16 / 1042 (123861) |
 | `dominant-color` | pass | 9 | 1 | 21.6 s | 16 / 1147 (123024) |
 | `print-resolution` | pass | 5 | 0 | 20.8 s | 14 / 926 (113082) |
+| `old-photo-restoration` | pass | 31 | 0 | 76.0 s | 48 / 8101 (797084) |
 
 ## Details
 
@@ -224,3 +227,17 @@ target
 * pass: the PNG says 300 dpi ((299.9994, 299.9994))
 * gimp tools: gimp_open_image, gimp_list_toolsets, gimp_enable_toolsets, gimp_set_print_size, gimp_export_image
 * other tools tried: ToolSearch, ToolSearch
+
+### `old-photo-restoration`
+
+* pass: the session finished (success)
+* pass: restored-print.tif is a 16-bit TIFF ((16, 16, 16))
+* pass: the TIFF says 300 dpi ((300.0, 300.0))
+* pass: restored-web.jpg is an image (1181x732)
+* pass: the sky's color bands are level (under 0.5° measured) (-0.17°)
+* pass: no scanner bed remains along the edges (0 white)
+* pass: full contrast again (1%-99%: <=30 and >=225) (22-229)
+* pass: the output is the print, straight (aligned within 12/255) (mean difference 3.7 at offset 8,8)
+* pass: every dust spot has the clean print's color again (within 40) (worst 13/255 over 14)
+* gimp tools: gimp_open_image, gimp_list_toolsets, gimp_enable_toolsets, gimp_preview, gimp_inspect_image, gimp_convert_precision, gimp_rotate_layer, gimp_preview, gimp_crop_image, gimp_preview, gimp_select_by_color, gimp_select_by_color, gimp_modify_selection_shape, gimp_describe_filter_operation, gimp_apply_filter, gimp_modify_selection, gimp_preview, gimp_apply_filter, gimp_histogram, gimp_levels, gimp_preview, gimp_preview_region, gimp_describe_filter_operation, gimp_apply_filter, gimp_preview_region, gimp_set_print_size, gimp_enable_toolsets, gimp_export_as, gimp_export_image, gimp_set_alpha_channel, gimp_export_as
+* other tools tried: Bash, ToolSearch, ToolSearch, ToolSearch, ToolSearch, ToolSearch, ToolSearch
