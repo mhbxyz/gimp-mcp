@@ -8,6 +8,10 @@ what is covered by the compatibility promise.
 
 ### Added
 
+- Windows support (#100): GIMP 3.2 from gimp.org's installer, verified by the end-to-end suite on GitHub's
+  Windows Server 2025 runner. The bridge serves a named pipe that only the current user can open (owner-only
+  DACL, remote clients rejected, first instance only), checks the client's and the server's process owner,
+  and keeps the token handshake; nothing listens on the network (tested).
 - macOS support (#99): GIMP 3.2 from gimp.org on Apple Silicon, verified by the full end-to-end suite
   on GitHub's macOS 15 runner; the bridge's Unix socket checks the peer with `LOCAL_PEERCRED`.
 

@@ -13,7 +13,7 @@ import gimp_mcp
 from gimp_mcp import platforms
 from gimp_mcp.headless import HeadlessGimp, find_gimp_console
 
-from .dist_helpers import ROOT, install_distribution, run
+from .dist_helpers import ROOT, install_distribution, run, venv_script
 
 
 def previous_release_ref() -> str | None:
@@ -57,7 +57,7 @@ async def test_upgrade_from_the_previous_release_then_uninstall(tmp_path: Path):
     gimp = HeadlessGimp(install_plugin=False)
     try:
         gimp.config_dir.mkdir(parents=True)
-        old = run(str(old_venv / "bin/gimp-mcp"), "install-plugin", "--gimp-dir", str(gimp.config_dir),
+        old = run(str(venv_script(old_venv, "gimp-mcp")), "install-plugin", "--gimp-dir", str(gimp.config_dir),
                   cwd=installed.work, env=installed.env)  # fmt: skip
         assert old.returncode == 0, old.stderr
         plugin = gimp.config_dir / "plug-ins" / "gimp-mcp-bridge"
