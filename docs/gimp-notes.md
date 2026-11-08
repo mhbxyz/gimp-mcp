@@ -309,4 +309,22 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   `gimp-console -i --batch-interpreter=python-fu-eval -b <code> --quit` runs Python headless;
   `-b "Gimp.quit()"` fails ("returned no return values") and leaves GIMP running. `XDG_RUNTIME_DIR` is
   unset. The runners' own CPython: macOS has `AF_UNIX`/`LOCAL_PEERCRED`, Windows has neither (named
-  pipes only).
+  pipes only). On macOS a plug-in that walks every filter (`Gimp.DrawableFilter.new(...).get_config()`
+  and its properties) crashes with a segmentation fault after "type name GeglBuffer is not registered"
+  (`gimp_gp_param_to_value`); touching `Gegl.Buffer.__gtype__` first registers the type and the same
+  walk completes (checked by replaying it on the runner). In the bridge itself the crash moved on (the
+  opt-in trace `GIMP_MCP_TRACE=<file>` ended on an ordinary operation): the trigger is earlier, when
+  libgimp deserializes an operation's `GeglParamFormat` (a `gpointer` value: "unsupported deserialization
+  to GValue of type 'gpointer'"), `GeglBuffer`, `GeglNode` or pointer parameter. Linux drops such
+  properties silently. GEGL knows each operation's parameters in-process, but only after `Gegl.init(None)`
+  in the plug-in (0 operations before, 291 after on 3.2.6); 15 GEGL operations have such parameters, and
+  `gegl:checkerboard` is the only one among the 200 GIMP offers as filters. The crash that remained
+  was cumulative, located by replaying the catalog walk three times in one process on the runner:
+  creating 400 filters and reading their configs is fine, but `pspec.enum_class` (PyGObject's enum
+  class of a param spec) crashes the plug-in after about 150 to 190 lookups, with or without
+  `filter.delete()`. Reading a value of the enum and using `type(value).__enum_values__`, once per
+  enum type, does not (three full walks complete). Operations refused by name (internal `gimp:` layer
+  modes, denied, auxiliary) are no longer instantiated at all. The macOS build has no
+  `gegl:gluas` (no Lua), and its AVIF exporter fails on lossless output ("AOM encoder error: Invalid
+  parameter - Only --enable_chroma_deltaq=0 can be used with --lossless=1"); lossy AVIF is not affected. GIMP's own Python is used for plug-ins
+  (`Contents/MacOS/python3`, `bin\python.exe`): the system `python3` does not matter there.

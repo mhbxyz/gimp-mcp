@@ -39,6 +39,24 @@ class InvalidParameter(ValueError):
     pass
 
 
+UNTRANSFERABLE_REASON = "has a parameter of a type the bridge cannot set (use a dedicated tool)"
+
+
+def untransferable_parameters(pspecs):
+    """Parameter types libgimp cannot carry between GIMP and a plug-in, from GEGL's own description
+    of an operation: [(param spec class name, value type name)]. Instantiating such an operation as a
+    filter crashes the plug-in on macOS (docs/gimp-notes.md), so the catalog never does."""
+    found = set()
+    for spec_class, value_type in pspecs:
+        if spec_class == "ParamFormat":
+            found.add("GeglParamFormat")
+        elif spec_class == "ParamSpecPointer" or value_type == "gpointer":
+            found.add("gpointer")
+        elif spec_class == "ParamSpecObject" and value_type in ("GeglBuffer", "GeglNode"):
+            found.add(value_type)
+    return sorted(found)
+
+
 def operation_status(name, categories, kinds):
     """-> (supported, reason or None) for an operation listed by GIMP."""
     if name in DENIED:
@@ -49,7 +67,7 @@ def operation_status(name, categories, kinds):
     if name.startswith("gimp:") and (not lowered or "gimp" in lowered):
         return False, INTERNAL_REASON
     if "unsupported" in kinds:
-        return False, "has a parameter of a type the bridge cannot set (use a dedicated tool)"
+        return False, UNTRANSFERABLE_REASON
     return True, None
 
 

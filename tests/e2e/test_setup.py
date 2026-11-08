@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 from mcp import Client, StdioServerParameters
 
+from gimp_mcp import platforms
 from gimp_mcp.headless import HeadlessGimp, find_gimp_console
 
 from .dist_helpers import install_distribution
@@ -17,7 +18,8 @@ async def test_setup_installs_configures_and_verifies(tmp_path: Path):
     if find_gimp_console() is None:
         pytest.skip("gimp-console not found")
     installed = install_distribution(tmp_path)
-    (installed.home / ".config" / "Claude").mkdir(parents=True)  # Claude Desktop is "installed"
+    # Claude Desktop is "installed" (its configuration folder exists where this OS keeps it)
+    (Path(platforms.config_home({"HOME": str(installed.home)})) / "Claude").mkdir(parents=True)
     (installed.home / ".cursor").mkdir()  # Cursor too
     gimp = HeadlessGimp(install_plugin=False)
     socket = str(gimp.socket_path)
@@ -27,7 +29,8 @@ async def test_setup_installs_configures_and_verifies(tmp_path: Path):
         first = installed.gimp_mcp(*common, "--no-doctor")  # GIMP not running yet
         assert first.returncode == 0, first.stderr
         assert "installed in" in first.stderr and "restart GIMP" in first.stderr
-        desktop = json.loads((installed.home / ".config/Claude/claude_desktop_config.json").read_text())
+        claude = Path(platforms.config_home({"HOME": str(installed.home)})) / "Claude"
+        desktop = json.loads((claude / "claude_desktop_config.json").read_text(encoding="utf-8"))
         entry = desktop["mcpServers"]["gimp"]
         assert entry["command"] == str(installed.exe) and entry["args"] == ["serve"]
         assert json.loads((installed.home / ".cursor/mcp.json").read_text())["mcpServers"]["gimp"] == entry
