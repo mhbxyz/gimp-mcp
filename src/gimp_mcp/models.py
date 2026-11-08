@@ -70,6 +70,7 @@ class ImageDetails(BaseModel):
     base_type: str = Field(description="'rgb', 'gray' or 'indexed'.")
     precision: str
     resolution: Resolution
+    unit: str | None = Field(default=None, description="Display/print unit abbreviation, e.g. 'in', 'mm'.")
     dirty: bool
     layers: list[LayerNode] = Field(description="Layer tree, top-most layer first.")
     paths: list[PathSummary] = Field(default_factory=list, description="Paths (vectors), top first.")

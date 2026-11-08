@@ -187,6 +187,7 @@ def image_details(image):
             "base_type": image.get_base_type().value_nick,
             "precision": image.get_precision().value_nick,
             "resolution": {"x": float(xres), "y": float(yres)},
+            "unit": image.get_unit().get_abbreviation(),
             "layers": [layer_node(layer) for layer in image.get_layers()],
             "paths": [
                 {
@@ -386,13 +387,10 @@ def _run_export(procedure_name, image, path, settings):
         raise BridgeError("WRITE_FAILED", "export to %s failed %s" % (path, message), {"path": path})
 
 
-METADATA_OFF = {
-    "include-exif": False,
-    "include-iptc": False,
-    "include-xmp": False,
-    "include-thumbnail": False,
-    "include-comment": False,
-}
+def _metadata_settings(options):
+    """Nothing is written unless asked: metadata=['exif', 'xmp', 'iptc', 'comment', 'thumbnail']."""
+    keep = set(options.get("metadata") or [])
+    return {"include-%s" % kind: kind in keep for kind in ("exif", "iptc", "xmp", "thumbnail", "comment")}
 
 
 def _embed_profile(image, options):
@@ -407,12 +405,12 @@ def image_export(params):
     image = get_image(params)
     path, kind, options = params["path"], params["format"], params["options"]
     if kind == "png":
-        settings = dict(METADATA_OFF)
+        settings = _metadata_settings(options)
         settings.update({"compression": options["compression"], "interlaced": options["interlaced"], "bkgd": False})
         settings["include-color-profile"] = _embed_profile(image, options)
         _run_export("file-png-export", image, path, settings)
     elif kind == "jpeg":
-        settings = dict(METADATA_OFF)
+        settings = _metadata_settings(options)
         settings.update(
             {
                 "quality": options["quality"] / 100.0,
@@ -2713,6 +2711,182 @@ def layers_align(params):
     return {"layers": [layer_node(layer, recurse=False) for layer in layers]}
 
 
+# -- guides, sample points, metadata, resolution (#60) ----------------------------------
+
+UNITS = {"inch": Gimp.Unit.inch, "mm": Gimp.Unit.mm, "point": Gimp.Unit.point, "pica": Gimp.Unit.pica}
+METADATA_KINDS = ("exif", "xmp", "iptc")
+
+
+def _guides(image):
+    guides = []
+    guide = image.find_next_guide(0)
+    while guide:
+        orientation = image.get_guide_orientation(guide)
+        guides.append(
+            {
+                "id": guide,
+                "orientation": "horizontal" if orientation == Gimp.OrientationType.HORIZONTAL else "vertical",
+                "position": image.get_guide_position(guide),
+            }
+        )
+        guide = image.find_next_guide(guide)
+    return guides
+
+
+def _sample_points(image, with_values):
+    points = []
+    point = image.find_next_sample_point(0)
+    while point:
+        position = image.get_sample_point_position(point)
+        x, y = position[-2], position[-1]  # (x, y)
+        points.append({"id": point, "x": x, "y": y})
+        point = image.find_next_sample_point(point)
+    if with_values and points and image.get_layers():
+        with _Pixels("image", image) as pixels:
+            for entry in points:
+                data = pixels.read((entry["x"], entry["y"], 1, 1))
+                entry["rgba"] = list(data[:4])
+                entry["hex"] = "#%02x%02x%02x" % tuple(data[:3])
+    return points
+
+
+def guides_list(params):
+    image = get_image(params)
+    return {
+        "image": image.get_id(),
+        "guides": _guides(image),
+        "sample_points": _sample_points(image, bool(params.get("values", True))),
+    }
+
+
+@mutation
+def guide_add(params):
+    image = get_image(params)
+    position = int(params["position"])
+    horizontal = params["orientation"] == "horizontal"
+    limit = image.get_height() if horizontal else image.get_width()
+    if not 0 <= position <= limit:
+        raise BridgeError("INVALID_ARGUMENT", "position must be between 0 and %d" % limit)
+    guide = image.add_hguide(position) if horizontal else image.add_vguide(position)
+    return {"guide": guide, **guides_list({"image": image.get_id(), "values": False})}
+
+
+@mutation
+def sample_point_add(params):
+    image = get_image(params)
+    x, y = int(params["x"]), int(params["y"])
+    if not (0 <= x < image.get_width() and 0 <= y < image.get_height()):
+        raise BridgeError("INVALID_ARGUMENT", "the point must be inside the canvas")
+    point = image.add_sample_point(x, y)
+    return {"sample_point": point, **guides_list({"image": image.get_id(), "values": False})}
+
+
+@mutation
+def guide_remove(params):
+    image = get_image(params)
+    kind, number = params["kind"], int(params["id"])
+    existing = [g["id"] for g in _guides(image)] if kind == "guide" else [p["id"] for p in _sample_points(image, False)]
+    if number not in existing:
+        raise BridgeError("NOT_FOUND", "%s %d does not exist in this image" % (kind.replace("_", " "), number))
+    if kind == "guide":
+        image.delete_guide(number)
+    else:
+        image.delete_sample_point(number)
+    return guides_list({"image": image.get_id(), "values": False})
+
+
+def _metadata_tags(metadata):
+    tags = {}
+    for kind, getter in (("exif", "get_exif_tags"), ("xmp", "get_xmp_tags"), ("iptc", "get_iptc_tags")):
+        values = {}
+        for tag in getattr(metadata, getter)() or []:
+            try:
+                values[tag] = metadata.get_tag_interpreted_string(tag)
+            except Exception:
+                values[tag] = None
+        tags[kind] = values
+    return tags
+
+
+def _comment(image):
+    parasite = image.get_parasite("gimp-comment")
+    if parasite is None:
+        return None
+    return bytes(parasite.get_data()).rstrip(b"\0").decode("utf-8", "replace")
+
+
+def metadata_get(params):
+    image = get_image(params)
+    metadata = image.get_metadata()
+    tags = _metadata_tags(metadata) if metadata is not None else {kind: {} for kind in METADATA_KINDS}
+    return {"image": image.get_id(), **tags, "comment": _comment(image)}
+
+
+@mutation
+def metadata_set(params):
+    image = get_image(params)
+    updates = params.get("set") or {}
+    removals = params.get("remove") or []
+    for tag in list(updates) + list(removals):
+        if not tag.startswith(("Exif.", "Xmp.", "Iptc.")):
+            raise BridgeError("INVALID_ARGUMENT", "tag %r must start with Exif., Xmp. or Iptc." % tag)
+    metadata = image.get_metadata() or Gimp.Metadata.new()
+    for tag, value in updates.items():
+        try:
+            ok = metadata.try_set_tag_string(tag, str(value))
+        except Exception as error:
+            raise BridgeError("INVALID_ARGUMENT", "cannot set %s: %s" % (tag, error), {"tag": tag}) from None
+        if not ok:
+            raise BridgeError("INVALID_ARGUMENT", "cannot set %s" % tag, {"tag": tag})
+    for tag in removals:
+        metadata.clear_tag(tag)
+    with undo_step(image):
+        image.set_metadata(metadata)
+        if params.get("comment") is not None:
+            if params["comment"] == "":
+                image.detach_parasite("gimp-comment")
+            else:
+                data = params["comment"].encode("utf-8")  # no NUL: exports copy the bytes as they are
+                image.attach_parasite(Gimp.Parasite.new("gimp-comment", Gimp.PARASITE_PERSISTENT, data))
+    return metadata_get(params)
+
+
+def print_info(image):
+    _ok, xres, yres = image.get_resolution()
+    unit = image.get_unit()
+    factor = unit.get_factor() if unit.get_factor() else 1.0  # units per inch
+    return {
+        "resolution": {"x": float(xres), "y": float(yres)},
+        "unit": unit.get_abbreviation(),
+        "print_size": {
+            "width": round(image.get_width() / xres * factor, 4),
+            "height": round(image.get_height() / yres * factor, 4),
+        },
+    }
+
+
+@mutation
+def image_set_print(params):
+    image = get_image(params)
+    unit = params.get("unit")
+    if unit is not None and unit not in UNITS:
+        raise BridgeError("INVALID_ARGUMENT", "unit must be one of %s" % ", ".join(UNITS))
+    xres, yres = params.get("x_resolution"), params.get("y_resolution")
+    if params.get("width") is not None:
+        factor = UNITS[unit or "inch"]().get_factor()
+        xres = image.get_width() * factor / float(params["width"])
+        yres = image.get_height() * factor / float(params["height"])
+    for value in (xres, yres):
+        if value is not None and not 5.0 <= value <= 65536.0:
+            raise BridgeError("INVALID_ARGUMENT", "resolution must stay between 5 and 65536 ppi (got %.2f)" % value)
+    with undo_step(image):
+        if xres is not None:
+            image.set_resolution(float(xres), float(yres if yres is not None else xres))
+        if unit is not None:
+            image.set_unit(UNITS[unit]())
+    return {"image": image.get_id(), **print_info(image)}
+
+
 # -- text --------------------------------------------------------------------------------
 
 JUSTIFICATIONS = {"left": "LEFT", "right": "RIGHT", "center": "CENTER", "fill": "FILL"}
@@ -3389,6 +3563,13 @@ def build_operations():
         "filter.list": filter_list,
         "filter.remove": filter_remove,
         "filter.operations": filter_operations,
+        "guides.list": guides_list,
+        "guide.add": guide_add,
+        "sample_point.add": sample_point_add,
+        "guide.remove": guide_remove,
+        "metadata.get": metadata_get,
+        "metadata.set": metadata_set,
+        "image.set_print": image_set_print,
         "clipboard.copy": clipboard_copy,
         "clipboard.paste": clipboard_paste,
         "layers.merge": layers_merge,

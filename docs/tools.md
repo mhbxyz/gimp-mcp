@@ -388,6 +388,24 @@ image dirty. Procedure names, arguments and availability depend on the GIMP
 version; check with `gimp_list_callable_procedures` (the committed matrix lists
 422 callable procedures on GIMP 3.2.6).
 
+## Guides, metadata and print size (toolset `document`)
+
+* `gimp_list_guides(image, values=true)`: `guides[]` (`id`, `orientation`, `position`) and
+  `sample_points[]` (`id`, `x`, `y`, with `values` the composite color `rgba`/`hex`, sRGB).
+  `gimp_add_guide(image, orientation, position)` (0..height for horizontal, 0..width for
+  vertical), `gimp_add_sample_point(image, x, y)` (inside the canvas),
+  `gimp_remove_guide(image, id, kind=guide|sample_point)` (`NOT_FOUND` for an unknown id).
+* `gimp_get_metadata(image)`: `exif`, `xmp`, `iptc` (tag → interpreted value) and `comment`.
+  `gimp_set_metadata(image, set={tag: value}, remove=[tags], comment?)`: tags are full Exiv2 keys
+  (`Exif.Image.Artist`, `Xmp.dc.title`, `Iptc.Application2.Keywords`); `comment=""` removes it.
+* **Exports write no metadata unless asked**: `png_options.metadata` / `jpeg_options.metadata`
+  list what to keep (`exif`, `xmp`, `iptc`, `comment`, `thumbnail`); the default `[]` strips
+  everything, so nothing leaks by accident.
+* `gimp_set_print_size(image, x_resolution?, y_resolution?, width?, height?, unit?)`: changes
+  the resolution (pixels per inch) from a resolution or a print size in `unit` (`inch`, `mm`,
+  `point`, `pica`), and/or the image's unit; pixels are unchanged (5-65536 ppi).
+  `gimp_inspect_image` reports `resolution` and `unit`; PNG exports carry the resolution (pHYs).
+
 ## Layer composition (toolset `compose`)
 
 * `gimp_copy(items? | image + visible=true, cut=false, buffer="gimp-mcp")`: copies the layers'
