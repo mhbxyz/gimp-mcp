@@ -149,9 +149,10 @@ def register(kit: Toolkit) -> None:
         name="gimp_open_with_options",
         title="Open with options",
         description=(
-            "Open a file with its load procedure's options: PDF (pages: 0-based list, width/height or resolution), "
-            "SVG (width, height), and any format GIMP reads (see gimp_describe_file_format mode=import). "
-            "RAW files need a RAW plug-in (darktable or RawTherapee) installed with GIMP."
+            "Open a file with its load procedure's options: PDF (pages: page numbers from 1, loaded in that order, "
+            "the last on top; width/height or resolution), SVG (width, height), and any format GIMP reads (see "
+            "gimp_describe_file_format mode=import). RAW files open in darktable's or RawTherapee's window "
+            "(installed with GIMP, GIMP with its interface); the call returns once that window is closed."
         ),
         annotations=MUTATING,
         changes_images=True,
