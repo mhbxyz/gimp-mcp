@@ -172,19 +172,25 @@ class Scenario:
     steps: Steps  # the scripted version: MCP calls and factual checks
     prompt: str  # the agent version: one natural-language request, on files in ~/inputs
     agent_output: str  # the file the agent version exports into ~/out (the recording waits for it)
-    # files the agent version needs in ~/inputs besides the assets (e.g. a generated scan)
+    # the agent version's ~/inputs when it is not simply the assets (e.g. a generated scan: the asset it
+    # comes from would give the answer away)
     make_agent_inputs: Callable[[Path], None] | None = None
+    # the agent version's checks, on ~/out and its final answer, and a correct result made without GIMP
+    # (tests/unit/test_evals.py proves the checks with it); both make it a task of the evaluation suite
+    agent_check: Callable[[Path, str], list[Check]] | None = None
+    agent_reference: Callable[[Path, Path], None] | None = None
 
 
 def agent_inputs(scenario: Scenario, directory: Path) -> list[Path]:
-    """Fill ``directory`` (the agent's ~/inputs) with the scenario's assets and generated inputs."""
+    """Fill ``directory`` (the agent's ~/inputs): the scenario's assets, or what it generates instead."""
     import shutil
 
     directory.mkdir(parents=True, exist_ok=True)
-    for name in scenario.assets:
-        shutil.copyfile(asset(name), directory / name)
     if scenario.make_agent_inputs is not None:
         scenario.make_agent_inputs(directory)
+    else:
+        for name in scenario.assets:
+            shutil.copyfile(asset(name), directory / name)
     return sorted(path for path in directory.rglob("*") if path.is_file())
 
 

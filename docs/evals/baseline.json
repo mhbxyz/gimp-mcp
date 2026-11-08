@@ -2,7 +2,8 @@
   "meta": {
     "package": "0.5.0 (checkout)",
     "model": "claude-sonnet-5-5",
-    "date": "2026-11-08"
+    "date": "2026-11-08",
+    "updated": "old-photo-restoration on 2026-11-08"
   },
   "tasks": {
     "resize-export": {
@@ -975,6 +976,110 @@
       "cache_creation_tokens": 12025,
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50
+    },
+    "old-photo-restoration": {
+      "passed": true,
+      "checks": [
+        {
+          "description": "the session finished",
+          "passed": true,
+          "detail": "success"
+        },
+        {
+          "description": "restored-print.tif is a 16-bit TIFF",
+          "passed": true,
+          "detail": "(16, 16, 16)"
+        },
+        {
+          "description": "the TIFF says 300 dpi",
+          "passed": true,
+          "detail": "(300.0, 300.0)"
+        },
+        {
+          "description": "restored-web.jpg is an image",
+          "passed": true,
+          "detail": "1181x732"
+        },
+        {
+          "description": "the sky's color bands are level (under 0.5\u00b0 measured)",
+          "passed": true,
+          "detail": "-0.17\u00b0"
+        },
+        {
+          "description": "no scanner bed remains along the edges",
+          "passed": true,
+          "detail": "0 white"
+        },
+        {
+          "description": "full contrast again (1%-99%: <=30 and >=225)",
+          "passed": true,
+          "detail": "22-229"
+        },
+        {
+          "description": "the output is the print, straight (aligned within 12/255)",
+          "passed": true,
+          "detail": "mean difference 3.7 at offset 8,8"
+        },
+        {
+          "description": "every dust spot has the clean print's color again (within 40)",
+          "passed": true,
+          "detail": "worst 13/255 over 14"
+        }
+      ],
+      "tool_calls": 31,
+      "tools": [
+        "gimp_open_image",
+        "gimp_list_toolsets",
+        "gimp_enable_toolsets",
+        "gimp_preview",
+        "gimp_inspect_image",
+        "gimp_convert_precision",
+        "gimp_rotate_layer",
+        "gimp_preview",
+        "gimp_crop_image",
+        "gimp_preview",
+        "gimp_select_by_color",
+        "gimp_select_by_color",
+        "gimp_modify_selection_shape",
+        "gimp_describe_filter_operation",
+        "gimp_apply_filter",
+        "gimp_modify_selection",
+        "gimp_preview",
+        "gimp_apply_filter",
+        "gimp_histogram",
+        "gimp_levels",
+        "gimp_preview",
+        "gimp_preview_region",
+        "gimp_describe_filter_operation",
+        "gimp_apply_filter",
+        "gimp_preview_region",
+        "gimp_set_print_size",
+        "gimp_enable_toolsets",
+        "gimp_export_as",
+        "gimp_export_image",
+        "gimp_set_alpha_channel",
+        "gimp_export_as"
+      ],
+      "errors": [],
+      "other_tools": [
+        "Bash",
+        "ToolSearch",
+        "ToolSearch",
+        "ToolSearch",
+        "ToolSearch",
+        "ToolSearch",
+        "ToolSearch"
+      ],
+      "duration_s": 76.0,
+      "turns": 39,
+      "input_tokens": 48,
+      "output_tokens": 8101,
+      "cache_read_tokens": 797084,
+      "cache_creation_tokens": 40591,
+      "model": "claude-sonnet-5-5",
+      "gimp_tools": 50,
+      "date": "2026-11-08",
+      "package": "0.5.0 (checkout)"
     }
   }
 }

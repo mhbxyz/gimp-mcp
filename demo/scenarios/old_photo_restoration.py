@@ -15,9 +15,9 @@ import random
 from dataclasses import dataclass
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageStat
+from PIL import Image, ImageChops, ImageDraw, ImageStat
 
-from demo.harness import Report, Scenario, Session, asset
+from demo.harness import Check, Report, Scenario, Session, asset
 
 PHOTO = (1200, 750)  # the print, before scanning
 BED = (1400, 950)  # the scanner bed (white), the print laid at (100, 100)
@@ -214,6 +214,105 @@ async def steps(gimp: Session, report: Report) -> None:
                  f"row std dev {grain:.1f}, scan {defects.grain:.1f} (x2 after levels without reduction)")  # fmt: skip
 
 
+# The agent version: its crop is its own choice, so its output is first aligned with the clean print.
+
+
+def align(out: Image.Image, clean: Image.Image, scale: int = 4, search: int = 64) -> tuple[float, int, int]:
+    """(mean difference, dx, dy) such that out(x, y) is clean(x + dx, y + dy), searched on a downscaled
+    grayscale (the output lies inside the print, so dx, dy >= 0)."""
+    small_out = out.convert("L").resize((out.width // scale, out.height // scale))
+    small_clean = clean.convert("L").resize((clean.width // scale, clean.height // scale))
+    best = (255.0, 0, 0)
+    for dy in range(search // scale + 1):
+        for dx in range(search // scale + 1):
+            w, h = min(small_out.width, small_clean.width - dx), min(small_out.height, small_clean.height - dy)
+            if w < small_out.width * 0.9 or h < small_out.height * 0.9:
+                continue
+            region = small_clean.crop((dx, dy, dx + w, dy + h))
+            score = ImageStat.Stat(ImageChops.difference(small_out.crop((0, 0, w, h)), region)).mean[0]
+            if score < best[0]:
+                best = (score, dx * scale, dy * scale)
+    return best
+
+
+def agent_check(out: Path, answer: str) -> list[Check]:
+    checks = []
+    try:
+        tiff = Image.open(out / "restored-print.tif")
+        bits, dpi = tiff.tag_v2.get(258), tiff.info.get("dpi")  # type: ignore[attr-defined]
+        checks.append(Check("restored-print.tif is a 16-bit TIFF", tiff.format == "TIFF" and set(bits or ()) == {16},
+                            str(bits)))  # fmt: skip
+        checks.append(Check("the TIFF says 300 dpi", dpi is not None and all(abs(float(v) - 300) < 1 for v in dpi),
+                            str(dpi)))  # fmt: skip
+    except OSError as error:
+        checks.append(Check("restored-print.tif is a 16-bit TIFF", False, str(error)))
+    try:
+        web = Image.open(out / "restored-web.jpg").convert("RGB")
+    except OSError as error:
+        return [*checks, Check("restored-web.jpg is an image", False, str(error))]
+    checks.append(Check("restored-web.jpg is an image", True, f"{web.width}x{web.height}"))
+    w, h = web.size
+    angle = tilt(web, (round(w * 0.02), round(h * 0.03), round(w * 0.4), round(h * 0.3)))
+    checks.append(Check("the sky's color bands are level (under 0.5° measured)", abs(angle) < 0.5, f"{angle:.2f}°"))
+    border = [px(web, (x, y)) for x in range(w) for y in (0, h - 1)] + [
+        px(web, (x, y)) for y in range(h) for x in (0, w - 1)
+    ]
+    white = sum(1 for p in border if min(p) > 245)
+    checks.append(Check("no scanner bed remains along the edges", white <= len(border) * 0.002, f"{white} white"))
+    low, high = percentiles(web)
+    checks.append(Check("full contrast again (1%-99%: <=30 and >=225)", low <= 30 and high >= 225, f"{low}-{high}"))
+    clean = clean_print()
+    score, dx, dy = align(web, clean)
+    checks.append(Check("the output is the print, straight (aligned within 12/255)", score < 12,
+                        f"mean difference {score:.1f} at offset {dx},{dy}"))  # fmt: skip
+    if score < 12:
+        defects = make_scan_defects()
+        spots = [distance(px(web, (x - dx, y - dy)), px(clean, (x, y))) for x, y in defects.dust
+                 if 0 <= x - dx < w and 0 <= y - dy < h]  # fmt: skip
+        worst = max(spots, default=-1)
+        detail = f"worst {worst}/255 over {len(spots)}"
+        checks.append(Check("every dust spot has the clean print's color again (within 40)", 0 <= worst <= 40, detail))
+    return checks
+
+
+def make_scan_defects() -> Defects:
+    """The defects of the scan, without writing it (same seed as make_scan)."""
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as scratch:
+        return make_scan(Path(scratch) / "scan.png")
+
+
+def write_tiff16(path: Path, img: Image.Image, dpi: int) -> None:
+    """A baseline uncompressed 16-bit RGB TIFF (Pillow writes 8-bit RGB only), for the reference."""
+    import struct
+
+    rgb = img.convert("RGB")
+    samples = rgb.tobytes()
+    data = struct.pack(f"<{len(samples)}H", *(v * 257 for v in samples))
+    entries = [(256, 4, 1, rgb.width), (257, 4, 1, rgb.height), (258, 3, 3, 0), (259, 3, 1, 1), (262, 3, 1, 2),
+               (273, 4, 1, 0), (277, 3, 1, 3), (278, 4, 1, rgb.height), (279, 4, 1, len(data)),
+               (282, 5, 1, 0), (283, 5, 1, 0), (296, 3, 1, 2)]  # fmt: skip
+    ifd_offset = 8
+    extra = ifd_offset + 2 + 12 * len(entries) + 4
+    bits_offset, xres_offset, yres_offset, strip_offset = extra, extra + 6, extra + 14, extra + 22
+    values = {258: bits_offset, 273: strip_offset, 282: xres_offset, 283: yres_offset}
+    ifd = struct.pack("<H", len(entries))
+    for tag, kind, count, value in entries:
+        value = values.get(tag, value)
+        ifd += struct.pack("<HHI", tag, kind, count) + (struct.pack("<HH", value, 0) if kind == 3 and count == 1
+                                                         else struct.pack("<I", value))  # fmt: skip
+    payload = struct.pack("<HHH", 16, 16, 16) + struct.pack("<II", dpi, 1) * 2 + data
+    path.write_bytes(b"II*\x00" + struct.pack("<I", ifd_offset) + ifd + struct.pack("<I", 0) + payload)
+
+
+def agent_reference(inputs: Path, out: Path) -> None:
+    """A correct restoration made with Pillow: the clean print, cropped inside its edges."""
+    restored = clean_print().crop((12, 12, 12 + CROP[2], 12 + CROP[3]))
+    restored.save(out / "restored-web.jpg", quality=92)
+    write_tiff16(out / "restored-print.tif", restored, 300)
+
+
 def scan_for_the_agent(directory: Path) -> None:
     make_scan(directory / "scan.png")
 
@@ -234,4 +333,6 @@ SCENARIO = Scenario(
     ),
     agent_output="restored-web.jpg",
     make_agent_inputs=scan_for_the_agent,
+    agent_check=agent_check,
+    agent_reference=agent_reference,
 )

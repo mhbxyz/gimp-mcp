@@ -13,6 +13,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
+from demo.harness import agent_inputs, load, scenario_names
 from evals.harness import Check, Task
 
 Rgb = tuple[int, int, int]
@@ -427,7 +428,7 @@ def _copy_inputs(make: Callable[[Path], None], name: str) -> Callable[[Path], No
     return inputs
 
 
-TASKS: tuple[Task, ...] = (
+BASIC_TASKS: tuple[Task, ...] = (
     Task("resize-export", ("files", "transform"),
          "Resize ~/inputs/photo.png to 600 pixels wide, keeping its proportions, and export it as a JPEG to "
          "~/out/photo-600.jpg.", _resize_inputs, _resize_check, _resize_reference),
@@ -488,6 +489,26 @@ TASKS: tuple[Task, ...] = (
          "Set the print resolution of ~/inputs/photo.png to 300 dpi, without resampling it, and export it to "
          "~/out/print.png.", _resize_inputs, _dpi_check, _dpi_reference),
 )  # fmt: skip
+
+
+def scenario_task(name: str) -> Task:
+    """The agent version of a demo scenario (demo/scenarios/), with the scenario's own agent checks."""
+    scenario = load(name)
+    assert scenario.agent_check is not None and scenario.agent_reference is not None, name
+    agent_check = scenario.agent_check
+
+    def make_inputs(directory: Path) -> None:
+        agent_inputs(scenario, directory)
+
+    def check(out: Path, answer: str) -> list[Check]:
+        return [Check(c.description, c.passed, c.detail) for c in agent_check(out, answer)]
+
+    toolsets = tuple(t for t in scenario.toolsets if t != "core")
+    return Task(name, toolsets, scenario.prompt, make_inputs, check, scenario.agent_reference)
+
+
+SCENARIO_TASKS: tuple[Task, ...] = tuple(scenario_task(n) for n in scenario_names() if load(n).agent_check is not None)
+TASKS: tuple[Task, ...] = BASIC_TASKS + SCENARIO_TASKS
 
 
 def by_name(name: str) -> Task:

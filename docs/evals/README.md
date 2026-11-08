@@ -48,6 +48,12 @@ package as inputs) and on release pull requests (`release/*` branches, opened by
 `scripts/prepare_release.py`). It needs the repository secret `CLAUDE_CODE_OAUTH_TOKEN`; without it,
 the job warns and stops. The report is uploaded as the `agent-evaluation` artifact.
 
+## Demo scenarios as tasks
+
+The agent version of each demo scenario (`demo/scenarios/`, `agent_check` and `agent_reference`) is a
+task too, with the scenario's prompt and inputs: `old-photo-restoration` passed on its first run
+(31 gimp calls, 76 s). `--write-baseline` on some tasks replaces only theirs in the baseline.
+
 ## Adding a task
 
 A `Task` in `evals/tasks.py`: name, the toolsets a solution needs, the prompt (naming every input in
@@ -58,8 +64,8 @@ A failure found by the suite is fixed, or filed as an issue for the API review (
 
 ## Baseline (2026-11-08)
 
-[16 of 18 tasks pass](baseline.md) with gimp-mcp 0.5.0 and Claude Sonnet 5.5. What the run showed,
-each filed for the API review (v0.7.0):
+[16 of the first 18 tasks pass](baseline.md) with gimp-mcp 0.5.0 and Claude Sonnet 5.5. What the run
+showed, each filed for the API review (v0.7.0):
 
 * `lossless-webp` fails: the agent did not look for the `formats` toolset (#148).
 * `darken` fails: `brightness=-30` darkens mid-gray by 7%, not 30% (#149).

@@ -69,3 +69,18 @@ def test_run_lists_the_scenarios_and_prints_prompts():
     assert prompt.stdout.strip() == load("thumbnail").prompt
     unknown = subprocess.run([*run, "nope"], capture_output=True, text=True, timeout=60)
     assert unknown.returncode != 0 and "unknown scenario" in unknown.stderr
+
+
+def test_the_restoration_agent_checks_reject_the_unrestored_scan(tmp_path):
+    from PIL import Image
+
+    from demo.scenarios import old_photo_restoration as restoration
+
+    restoration.make_scan(tmp_path / "scan.png")
+    scan = Image.open(tmp_path / "scan.png")
+    scan.save(tmp_path / "restored-web.jpg")
+    restoration.write_tiff16(tmp_path / "restored-print.tif", scan, 300)
+    failed = {c.description for c in restoration.agent_check(tmp_path, "") if not c.passed}
+    assert "the sky's color bands are level (under 0.5° measured)" in failed
+    assert "no scanner bed remains along the edges" in failed
+    assert "full contrast again (1%-99%: <=30 and >=225)" in failed
