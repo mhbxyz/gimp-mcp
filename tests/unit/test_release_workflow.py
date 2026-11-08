@@ -95,3 +95,15 @@ def test_merging_a_release_pr_tags_it_and_starts_the_release():
     text = str(job["steps"])
     assert "git tag" in text and "gh workflow run release.yml" in text
     assert job["permissions"] == {"contents": "write", "actions": "write"}
+
+
+def test_installing_from_pypi_waits_for_the_index_to_serve_the_release():
+    # PyPI's JSON API can list a release before its simple index (behind a CDN) serves it: v0.4.0's
+    # install test failed that way right after upload. The install waits for the index first.
+    steps = workflow()["jobs"]["verify-pypi"]["steps"]
+    names = [step.get("name", "") for step in steps]
+    wait = next(i for i, name in enumerate(names) if "index serves" in name)
+    install = next(i for i, name in enumerate(names) if "installed from PyPI" in name)
+    assert wait < install
+    script = steps[wait]["run"]
+    assert "--no-cache-dir" in script and "sleep" in script and "exit 1" in script
