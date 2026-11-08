@@ -33,8 +33,9 @@ def test_a_scenario_declares_what_it_needs_and_what_an_agent_is_asked(name):
 @pytest.mark.parametrize("name", NAMES)
 def test_the_agent_finds_every_input_its_prompt_names(name, tmp_path):
     scenario = load(name)
-    files = {path.name for path in agent_inputs(scenario, tmp_path)}
-    named = set(re.findall(r"~/inputs/([\w.-]+)", scenario.prompt))
+    paths = [path.relative_to(tmp_path) for path in agent_inputs(scenario, tmp_path)]
+    files = {str(p) for p in paths} | {str(p.parent) for p in paths}  # a prompt may name a folder
+    named = {n.rstrip("/") for n in re.findall(r"~/inputs/([\w./-]+)", scenario.prompt)}
     assert named and named <= files, (named, files)
 
 

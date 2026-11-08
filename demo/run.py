@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 import sys
 from pathlib import Path
 
@@ -43,6 +44,7 @@ async def run_all(names: list[str], out: Path, socket: str | None, token: str | 
         else:
             from gimp_mcp.headless import HeadlessGimp
 
+            os.environ["LANG"] = os.environ["LC_ALL"] = "C.UTF-8"  # reports and metadata in English
             with HeadlessGimp() as gimp:  # a fresh GIMP per scenario: no state leaks between them
                 params = server_parameters(str(gimp.socket_path), str(gimp.token_path))
                 report = await run_scenario(scenario, out / name, params)
@@ -60,6 +62,7 @@ def main() -> int:
     parser.add_argument("--list", action="store_true", help="list the scenarios")
     parser.add_argument("--prompt", metavar="SCENARIO", help="print the agent version's prompt")
     parser.add_argument("--agent-output", metavar="SCENARIO", help="print the file the agent version exports")
+    parser.add_argument("--agent-out-dirs", metavar="SCENARIO", help="print the folders it writes into in ~/out")
     parser.add_argument(
         "--agent-inputs", nargs=2, metavar=("SCENARIO", "DIR"), help="write the agent version's ~/inputs"
     )
@@ -78,6 +81,9 @@ def main() -> int:
     if args.agent_inputs:
         for path in agent_inputs(load(args.agent_inputs[0]), Path(args.agent_inputs[1])):
             print(path)
+        return 0
+    if args.agent_out_dirs:
+        print(" ".join(load(args.agent_out_dirs).agent_out_dirs))
         return 0
     if args.agent_output:
         print(load(args.agent_output).agent_output)
