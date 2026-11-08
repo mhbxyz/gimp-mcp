@@ -7,6 +7,9 @@ gi.require_version("Gimp", "3.0")
 from gi.repository import Gimp
 sys.path.insert(0, os.environ["PLUGIN_DIR"])
 import gmb_ops
+if os.environ.get("REGISTER_GEGL_TYPES"):
+    from gi.repository import Gegl
+    Gegl.Buffer.__gtype__  # registers the GType before libgimp deserializes param specs using it
 log = open(os.environ["PROBE_OUT"], "w")
 def say(text):
     log.write(text + "\n"); log.flush(); os.fsync(log.fileno())
