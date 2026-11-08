@@ -707,8 +707,14 @@ language: list them rather than hard-coding them.
   rgb/hsv-ccw/hsv-cw, optional increasing end positions). `gimp_edit_palette(name, entries?, columns?)`
   replaces the entries.
 * `gimp_import_palette(file)`: a GIMP palette (`.gpl`) is copied into the profile's `palettes`
-  folder and loaded. Other formats (`.aco`, `.act`, `.ase`, `.pal`) are `UNSUPPORTED_FORMAT`:
-  GIMP 3.2 reads them only through its Palettes dialog (#81).
+  folder and loaded. GIMP 3.2 reads other formats only through its Palettes dialog, so gimp-mcp
+  reads them itself and writes `<file name>.gpl` (palette named after the file): Adobe Color Table
+  (`.act`, the color count of 772-byte files is honored), Photoshop swatches (`.aco`, names from the
+  version 2 section), Adobe Swatch Exchange (`.ase`, groups flattened) and `.pal` (Microsoft RIFF or
+  Paint Shop Pro / JASC). The formats carry no color space: colors are taken as sRGB, as GIMP does.
+  RGB, HSB and grayscale colors are imported; a file with CMYK or Lab colors is refused
+  (`UNSUPPORTED_FORMAT`, `details.color_models`) rather than converted without a profile. Damaged
+  files and other extensions are `UNSUPPORTED_FORMAT`; nothing is written to the profile then.
 * `gimp_export_palette(name, file, format="gpl", overwrite)`: `gpl`, or GIMP's own palette exports
   `css`, `text`, `python`, `php`, `java`, and `kpl` (Krita).
 
