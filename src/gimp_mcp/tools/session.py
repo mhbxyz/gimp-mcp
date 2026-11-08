@@ -30,6 +30,7 @@ class StatusOutput(BaseModel):
 
 def register(kit: Toolkit) -> None:
     @kit.tool(
+        toolset="core",
         name="gimp_status",
         title="GIMP status",
         description=(

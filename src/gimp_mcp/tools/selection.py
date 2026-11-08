@@ -41,6 +41,7 @@ def register(kit: Toolkit) -> None:
         return SelectionState(image=image, **data)
 
     @kit.tool(
+        toolset="selection",
         name="gimp_select_rectangle",
         title="Select rectangle",
         description=(
@@ -63,6 +64,7 @@ def register(kit: Toolkit) -> None:
         )
 
     @kit.tool(
+        toolset="selection",
         name="gimp_select_ellipse",
         title="Select ellipse",
         description=(
@@ -85,6 +87,7 @@ def register(kit: Toolkit) -> None:
         )
 
     @kit.tool(
+        toolset="selection",
         name="gimp_modify_selection",
         title="Select all / none / invert",
         description="'all' selects the whole canvas, 'none' clears the selection, 'invert' inverts it.",
@@ -94,6 +97,7 @@ def register(kit: Toolkit) -> None:
         return await selection_call("selection.modify", image, action=action)
 
     @kit.tool(
+        toolset="selection",
         name="gimp_get_selection",
         title="Get selection",
         description="Whether the image has a selection, its bounds, and optionally whether a point is selected.",
@@ -110,6 +114,7 @@ def register(kit: Toolkit) -> None:
         return SelectionState(image=image, **data)
 
     @kit.tool(
+        toolset="selection",
         name="gimp_add_layer_mask",
         title="Add layer mask",
         description=(
@@ -132,6 +137,7 @@ def register(kit: Toolkit) -> None:
         return encode_layer(codec, data)
 
     @kit.tool(
+        toolset="selection",
         name="gimp_set_layer_mask",
         title="Configure layer mask",
         description=(
@@ -153,6 +159,7 @@ def register(kit: Toolkit) -> None:
         return encode_layer(codec, data)
 
     @kit.tool(
+        toolset="selection",
         name="gimp_remove_layer_mask",
         title="Remove layer mask",
         description=(

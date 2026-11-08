@@ -29,11 +29,26 @@ def _configure_logging(verbose: bool) -> None:
 
 def cmd_serve(args: argparse.Namespace) -> int:
     from .server import build_server
+    from .toolsets import ToolsetError
 
     endpoint = BridgeEndpoint.for_socket(Path(args.socket)) if args.socket else BridgeEndpoint.default()
-    server = build_server(BridgeClient(endpoint, request_timeout=args.timeout))
+    try:
+        server = build_server(BridgeClient(endpoint, request_timeout=args.timeout), toolsets=args.toolsets)
+    except ToolsetError as error:
+        print(f"gimp-mcp serve: {error}", file=sys.stderr)
+        return 2
     _configure_logging(args.verbose)
     server.run("stdio")
+    return 0
+
+
+def cmd_toolsets(args: argparse.Namespace) -> int:
+    from .toolsets import render_report, toolset_report
+
+    entries = toolset_report()
+    print(render_report(entries))
+    for entry in entries:
+        print(f"\n{entry.name}: {entry.description}\n  " + ", ".join(entry.tools))
     return 0
 
 
@@ -187,7 +202,15 @@ def build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--socket", help="bridge socket path (default: $GIMP_MCP_SOCKET or runtime dir)")
     serve.add_argument("--timeout", type=float, default=60.0, help="per-request timeout in seconds")
     serve.add_argument("-v", "--verbose", action="store_true", help="debug logs on stderr")
+    serve.add_argument(
+        "--toolsets",
+        help="comma-separated toolsets to list (default: $GIMP_MCP_TOOLSETS or 'default'; "
+        "'all' for everything; see `gimp-mcp toolsets`)",
+    )
     serve.set_defaults(func=cmd_serve)
+
+    toolsets = sub.add_parser("toolsets", help="list the toolsets, their tools and the size of their definitions")
+    toolsets.set_defaults(func=cmd_toolsets)
 
     for name, func, text in (
         ("install-plugin", cmd_install, "install the bridge plug-in into GIMP's config directory"),

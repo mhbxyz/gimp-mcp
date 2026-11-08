@@ -32,6 +32,7 @@ class CallResult(BaseModel):
 
 def register(kit: Toolkit) -> None:
     @kit.tool(
+        toolset="procedures",
         name="gimp_list_callable_procedures",
         title="List callable GIMP procedures",
         description=(
@@ -48,6 +49,7 @@ def register(kit: Toolkit) -> None:
         return CallableList(**await kit.call("pdb.callable", {"query": query, "limit": limit}))
 
     @kit.tool(
+        toolset="procedures",
         name="gimp_call_procedure",
         title="Call a GIMP procedure",
         description=(

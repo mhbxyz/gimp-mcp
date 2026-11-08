@@ -6,6 +6,20 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+### Added
+
+- Toolsets (#45): tools are grouped (`core`, `files`, `layers`, `transform`, `selection`, `paint`,
+  `filters`, `text`, `history`, `procedures`); the server lists only the enabled ones. Choose them with
+  `gimp-mcp serve --toolsets` or `GIMP_MCP_TOOLSETS`; agents list them with `gimp_list_toolsets` and
+  add more during a session with `gimp_enable_toolsets` (the client is notified that its tool list
+  changed). `gimp-mcp toolsets` prints the catalog and the size of each toolset. See docs/toolsets.md.
+
+### Changed
+
+- The default tool list no longer includes the `procedures` toolset (`gimp_search_procedures`,
+  `gimp_describe_procedure`, `gimp_list_callable_procedures`, `gimp_call_procedure`): add it with
+  `--toolsets default,procedures` or `gimp_enable_toolsets`.
+
 ### Documentation
 
 - The README now opens with a demo: a real Claude Code session driving GIMP through gimp-mcp
