@@ -83,6 +83,9 @@ and Windows, and an agent version (one plain-language request) in the evaluation
 * **Restore an old scanned photo**: straighten, crop the scanner bed, heal dust and scratches, restore
   contrast, reduce grain, 16-bit TIFF for print
   ([walk-through](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/demos/old-photo-restoration.md)).
+* **Product photo for an online store**: cut out without losing pixels, soft shadow on pure white,
+  centered square, JPEG and WebP in three sizes with an sRGB profile
+  ([walk-through](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/demos/product-cutout.md)).
 * **YouTube thumbnail** from one photo, with an editable title
   ([guide](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/guide-thumbnail.md)).
 
