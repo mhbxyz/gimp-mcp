@@ -55,9 +55,33 @@ def old_photo_restoration(out: Path, report: Report) -> None:
         assert max(border) < 250  # type: ignore[type-var]  # no white scanner bed
 
 
+def product_cutout(out: Path, report: Report) -> None:
+    import io
+
+    from PIL import ImageCms
+
+    assert (out / "product.xcf").read_bytes().startswith(b"gimp xcf")
+    for size in (2000, 800, 400):
+        for ext, fmt in (("jpg", "JPEG"), ("webp", "WEBP")):
+            with Image.open(out / f"product-{size}.{ext}") as img:
+                assert img.format == fmt and img.size == (size, size)
+                profile = ImageCms.ImageCmsProfile(io.BytesIO(img.info["icc_profile"]))
+                assert "sRGB" in ImageCms.getProfileDescription(profile)
+    with Image.open(out / "product-2000.webp") as webp:
+        rgb = webp.convert("RGB")
+        corners = [rgb.getpixel(xy) for xy in ((0, 0), (1999, 0), (0, 1999), (1999, 1999), (1000, 5), (5, 1000))]
+        assert set(corners) == {(255, 255, 255)}
+        saturated = rgb.convert("HSV").split()[1].point([255 if v > 90 else 0 for v in range(256)]).getbbox()
+        assert saturated is not None
+        x0, y0, x1, y1 = saturated
+        assert abs((x0 + x1) / 2 - 1000) <= 20 and abs((y0 + y1) / 2 - 1000) <= 20
+        assert abs(max(x1 - x0, y1 - y0) - 1800) <= 24
+
+
 INDEPENDENT: dict[str, Callable[[Path, Report], None]] = {
     "thumbnail": thumbnail,
     "old-photo-restoration": old_photo_restoration,
+    "product-cutout": product_cutout,
 }
 
 

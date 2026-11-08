@@ -350,3 +350,8 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   (within 10/255); at hardness 0.6 the soft edge keeps part of the spot. Along a scratch, each heal dab's
   edge lies on the scratch, so heal carries it back in (still visible); `clone` along the stroke with the
   same offset removes it, except where the source offset crosses an edge of the picture.
+* Built-in sRGB is "no profile" (seen building the product cut-out demo, #109, GIMP 3.2.6): after
+  `set_color_profile` with the built-in sRGB, `get_color_profile()` is still `None`, so an export that
+  embeds "the assigned profile" embeds nothing: a lossless WebP comes out as a plain `VP8L` file without
+  `ICCP` chunk. Assigning a non-built-in profile (an sRGB ICC file, or sRGB linear) makes
+  `file-webp-export` (`include-color-profile`) write a `VP8X` file with an `ICCP` chunk (#158).

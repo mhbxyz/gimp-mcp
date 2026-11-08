@@ -112,7 +112,9 @@ class Session:
         duration = (time.monotonic() - started) * 1000
         data = result.structured_content or {}
         if result.is_error:
-            error = data.get("error", {})
+            # a structured gimp-mcp error, or the client's text (unknown tool, invalid arguments)
+            text = " ".join(getattr(block, "text", "") for block in result.content)[:300]
+            error = data.get("error") or {"code": "ERROR", "message": text}
             self.report.calls.append(
                 CallRecord(tool, arguments, duration, False, f"{error.get('code')}: {error.get('message')}")
             )

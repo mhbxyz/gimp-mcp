@@ -52,7 +52,8 @@ the job warns and stops. The report is uploaded as the `agent-evaluation` artifa
 
 The agent version of each demo scenario (`demo/scenarios/`, `agent_check` and `agent_reference`) is a
 task too, with the scenario's prompt and inputs: `old-photo-restoration` passed on its first run
-(31 gimp calls, 76 s). `--write-baseline` on some tasks replaces only theirs in the baseline.
+(31 gimp calls, 76 s); `product-cutout` did everything but the sRGB profile (assigning GIMP's built-in
+sRGB embeds nothing, #158). `--write-baseline` on some tasks replaces only theirs in the baseline.
 
 ## Adding a task
 

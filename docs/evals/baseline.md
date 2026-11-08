@@ -1,8 +1,8 @@
 # gimp-mcp agent evaluation
 
-**17/19 tasks passed** — gimp-mcp 0.5.0 (checkout), model claude-sonnet-5-5, 2026-11-08. Default toolsets; the agent enables others itself.
+**17/20 tasks passed** — gimp-mcp 0.5.0 (checkout), model claude-sonnet-5-5, 2026-11-08. Default toolsets; the agent enables others itself.
 
-Updated since: old-photo-restoration on 2026-11-08 (each task's package and date are in the JSON).
+Updated since: old-photo-restoration on 2026-11-08; product-cutout on 2026-11-08 (each task's package and date are in the JSON).
 
 | Task | Result | Tool calls | Errors returned | Duration | Tokens in / out (cache read) |
 |---|---|---|---|---|---|
@@ -25,6 +25,7 @@ Updated since: old-photo-restoration on 2026-11-08 (each task's package and date
 | `dominant-color` | pass | 9 | 1 | 21.6 s | 16 / 1147 (123024) |
 | `print-resolution` | pass | 5 | 0 | 20.8 s | 14 / 926 (113082) |
 | `old-photo-restoration` | pass | 31 | 0 | 76.0 s | 48 / 8101 (797084) |
+| `product-cutout` | **FAIL** | 52 | 6 | 89.0 s | 60 / 9789 (890864) |
 
 ## Details
 
@@ -241,3 +242,36 @@ target
 * pass: every dust spot has the clean print's color again (within 40) (worst 13/255 over 14)
 * gimp tools: gimp_open_image, gimp_list_toolsets, gimp_enable_toolsets, gimp_preview, gimp_inspect_image, gimp_convert_precision, gimp_rotate_layer, gimp_preview, gimp_crop_image, gimp_preview, gimp_select_by_color, gimp_select_by_color, gimp_modify_selection_shape, gimp_describe_filter_operation, gimp_apply_filter, gimp_modify_selection, gimp_preview, gimp_apply_filter, gimp_histogram, gimp_levels, gimp_preview, gimp_preview_region, gimp_describe_filter_operation, gimp_apply_filter, gimp_preview_region, gimp_set_print_size, gimp_enable_toolsets, gimp_export_as, gimp_export_image, gimp_set_alpha_channel, gimp_export_as
 * other tools tried: Bash, ToolSearch, ToolSearch, ToolSearch, ToolSearch, ToolSearch, ToolSearch
+
+### `product-cutout`
+
+* pass: the session finished (success)
+* **FAIL**: product-2000.jpg is 2000x2000 with an sRGB profile ((2000, 2000), profile none)
+* **FAIL**: product-2000.webp is 2000x2000 with an sRGB profile ((2000, 2000), profile none)
+* **FAIL**: product-800.jpg is 800x800 with an sRGB profile ((800, 800), profile none)
+* **FAIL**: product-800.webp is 800x800 with an sRGB profile ((800, 800), profile none)
+* **FAIL**: product-400.jpg is 400x400 with an sRGB profile ((400, 400), profile none)
+* **FAIL**: product-400.webp is 400x400 with an sRGB profile ((400, 400), profile none)
+* pass: the product is centered with a 5% margin (box (641, 103, 1360, 1899), center 1000,1001, largest side 1796 (target 1800))
+* pass: outside the product and its shadow, pixels are exactly white (0 other pixels)
+* pass: a soft shadow lies below the product, none visible above it (darkest below 162, above 254)
+* error returned: `gimp_modify_selection: Error executing tool gimp_modify_selection: 1 validation error for gimp_modify_selectionArguments
+action
+  Field required [type=missing, input_value={'image': 'image:1@f1087c..., 'operation': 'invert'`
+* error returned: `gimp_add_layer_mask: Error executing tool gimp_add_layer_mask: 1 validation error for gimp_add_layer_maskArguments
+item
+  Field required [type=missing, input_value={'image': 'image:1@f1087cb2'}, input_type=dict]
+    For f`
+* error returned: `gimp_alpha_to_selection: WRONG_KIND: item 7 is a mask, not a layer`
+* error returned: `gimp_move_layer: Error executing tool gimp_move_layer: 1 validation error for gimp_move_layerArguments
+parent
+  Field required [type=missing, input_value={'item': 'item:8@f1087cb2', 'position': 2}, input_type=dict]
+  `
+* error returned: `gimp_gaussian_blur: Error executing tool gimp_gaussian_blur: 1 validation error for gimp_gaussian_blurArguments
+radius
+  Field required [type=missing, input_value={'item': 'item:9@f1087cb2...'18', 'std_dev_y': '12'}, inp`
+* error returned: `gimp_restore_checkpoint: Error executing tool gimp_restore_checkpoint: 1 validation error for gimp_restore_checkpointArguments
+image
+  Field required [type=missing, input_value={'checkpoint': 'checkpoint:1@f1087cb2'}, input_t`
+* gimp tools: gimp_open_image, gimp_list_toolsets, gimp_enable_toolsets, gimp_preview, gimp_sample_colors, gimp_select_by_color, gimp_get_selection, gimp_modify_selection, gimp_modify_selection, gimp_inspect_image, gimp_add_layer_mask, gimp_add_layer_mask, gimp_modify_selection, gimp_scale_layer, gimp_resize_canvas, gimp_set_layer_offsets, gimp_alpha_to_selection, gimp_select_item, gimp_modify_selection, gimp_create_layer, gimp_create_layer, gimp_move_layer, gimp_select_ellipse, gimp_move_layer, gimp_fill, gimp_modify_selection, gimp_move_layer, gimp_gaussian_blur, gimp_set_layer_properties, gimp_gaussian_blur, gimp_inspect_image, gimp_preview, gimp_set_layer_offsets, gimp_set_layer_properties, gimp_preview_region, gimp_set_color_profile, gimp_describe_file_format, gimp_describe_file_format, gimp_create_checkpoint, gimp_export_as, gimp_export_as, gimp_resize_image, gimp_export_as, gimp_export_as, gimp_restore_checkpoint, gimp_restore_checkpoint, gimp_resize_image, gimp_export_as, gimp_export_as, gimp_open_image, gimp_get_color_profile, gimp_sample_colors
+* other tools tried: ToolSearch, ToolSearch

@@ -116,7 +116,9 @@ def report(out: Path, results: list | None, args: argparse.Namespace) -> int:
         # the tasks of this run replace theirs in the baseline; the others keep their earlier results
         merged = {"meta": data["meta"], "tasks": {**(baseline or {}).get("tasks", {}), **data["tasks"]}}
         if baseline and len(data["tasks"]) < len(merged["tasks"]):
-            merged["meta"] = {**baseline["meta"], "updated": f"{', '.join(data['tasks'])} on {meta['date']}"}
+            note = f"{', '.join(data['tasks'])} on {meta['date']}"
+            earlier = baseline["meta"].get("updated")
+            merged["meta"] = {**baseline["meta"], "updated": f"{earlier}; {note}" if earlier else note}
         BASELINE.parent.mkdir(parents=True, exist_ok=True)
         BASELINE.write_text(json.dumps(merged, indent=2) + "\n", encoding="utf-8")
         BASELINE.with_suffix(".md").write_text(report_markdown(merged), encoding="utf-8")

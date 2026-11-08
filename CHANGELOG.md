@@ -8,6 +8,10 @@ what is covered by the compatibility promise.
 
 ### Added
 
+- Demo: product photo cut-out for an online store (#109). `uv run demo/run.py product-cutout` cuts a
+  bottle out of its backdrop with a layer mask, adds a contact shadow on pure white, centers it on a
+  2000×2000 square and exports JPEG and WebP at three sizes with an sRGB profile; its agent version is an
+  evaluation task.
 - Demo: restore an old scanned photo (#108). `uv run demo/run.py old-photo-restoration` straightens a
   tilted scan, crops the scanner bed, heals dust, clones over a scratch, restores contrast, reduces grain
   and exports a 16-bit TIFF at 300 dpi and a JPEG, each step checked against the clean print it was made
