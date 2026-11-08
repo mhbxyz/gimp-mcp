@@ -38,6 +38,7 @@ from .tools import (
     session,
     text,
     transform,
+    vector,
 )
 from .tools import toolsets as toolset_tools
 from .toolsets import toolsets_from
@@ -98,6 +99,7 @@ def build_server(
         painting,
         geometry,
         channels,
+        vector,
     ):
         module.register(kit)
     return mcp
