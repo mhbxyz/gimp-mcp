@@ -23,6 +23,7 @@ from .tools import (
     layers,
     modes,
     paint,
+    paths,
     pdb,
     preview,
     procedures,
@@ -82,6 +83,7 @@ def build_server(
         color,
         effects,
         modes,
+        paths,
     ):
         module.register(kit)
     return mcp

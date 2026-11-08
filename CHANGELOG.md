@@ -31,6 +31,10 @@ what is covered by the compatibility promise.
   `gimp_get_color_profile` and `gimp_set_color_profile` (assign, convert with rendering intent and
   black point compensation, remove; built-in or ICC file). PNG and JPEG exports take
   `color_profile` (default: embed only a profile the image has; GIMP's own default never embeds).
+- Paths toolset (#50): create paths from polylines, Bézier segments, ellipses or a text layer's
+  outline; inspect, rename, show, duplicate, delete; edit strokes; length and point at distance;
+  path ↔ selection; stroke (line or brush) and fill; SVG import and export. `gimp_inspect_image`
+  lists the image's paths.
 
 ### Fixed
 
