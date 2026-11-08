@@ -28,6 +28,10 @@ what is covered by the compatibility promise.
 
 ### Changed
 
+- Releases are tested and verified on Linux, macOS and Windows (#104): the full suite runs with a real
+  GIMP on each OS before anything is published (the built wheel is the one installed), and the
+  packages on TestPyPI and PyPI are installed and drive GIMP on each OS before PyPI, the public
+  GitHub release and the MCP registry.
 - The README demo is re-recorded with 0.4.0.
 - OS-specific locations (GIMP profile, client configuration folders, bridge address, headless GIMP)
   come from one platform layer that knows Linux, macOS and Windows (#98, ADR 0008). Linux behaves as

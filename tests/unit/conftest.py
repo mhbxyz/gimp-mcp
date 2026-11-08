@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import inspect
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -48,7 +49,11 @@ def _pinned_platform(request, monkeypatch):
 def pytest_collection_modifyitems(config, items):
     if sys.platform != "win32":
         return
+    unit = Path(__file__).parent
     for item in items:
+        # this hook sees every collected test: leave tests/e2e alone when both suites run together
+        if not item.path.is_relative_to(unit):
+            continue
         name = item.module.__name__.rsplit(".", 1)[-1]
         if item.get_closest_marker("linux_paths"):
             item.add_marker(pytest.mark.skip(reason="Linux paths cannot be written on Windows"))

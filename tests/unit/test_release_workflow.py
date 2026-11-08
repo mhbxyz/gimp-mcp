@@ -107,3 +107,56 @@ def test_installing_from_pypi_waits_for_the_index_to_serve_the_release():
     assert wait < install
     script = steps[wait]["run"]
     assert "--no-cache-dir" in script and "sleep" in script and "exit 1" in script
+
+
+# Release on every supported OS (#104): nothing is published before the full suite passed with a real
+# GIMP on Linux, macOS and Windows, and the published package is installed and driven on each of them.
+OS_WORKFLOW = ROOT / ".github" / "workflows" / "gimp-os-tests.yml"
+OS_RUNNERS = {"macos-15", "windows-2025"}
+
+
+def os_jobs(index: str) -> dict[str, Any]:
+    """Jobs of the release that call the per-OS test workflow for ``index`` ('' = the built artifacts)."""
+    return {
+        name: job
+        for name, job in workflow()["jobs"].items()
+        if job.get("uses") == "./.github/workflows/gimp-os-tests.yml" and job["with"].get("index", "") == index
+    }
+
+
+def runners(job: dict[str, Any]) -> set[str]:
+    return set(job["strategy"]["matrix"]["os"])
+
+
+def test_the_full_suite_passes_on_every_os_before_anything_is_published():
+    jobs = workflow()["jobs"]
+    (name, job), *others = os_jobs("").items()
+    assert others == [] and runners(job) == OS_RUNNERS and job["strategy"]["fail-fast"] is False
+    assert job["with"]["tests"].split() == ["tests/unit", "tests/e2e"]  # the whole suite, built wheel included
+    assert job["needs"] == "build" or "build" in job["needs"]
+    for publishing in ("attest", "github-draft", "publish-testpypi"):
+        assert {"test", name} <= set(jobs[publishing]["needs"]), publishing
+
+
+def test_the_published_package_drives_gimp_on_every_os():
+    jobs = workflow()["jobs"]
+    for index, after, gates in (("testpypi", "publish-testpypi", ["publish-pypi"]),
+                                ("pypi", "publish-pypi", ["finalize", "publish-mcp-registry"])):  # fmt: skip
+        (name, job), *others = os_jobs(index).items()
+        assert others == [] and runners(job) == OS_RUNNERS, index
+        assert job["with"]["tests"] == "tests/e2e/test_distribution.py"
+        assert after in job["needs"]
+        for gated in gates:
+            assert name in jobs[gated]["needs"], (gated, name)
+
+
+def test_the_per_os_workflow_installs_pinned_gimp_and_never_publishes():
+    os_workflow = yaml.safe_load(OS_WORKFLOW.read_text())
+    assert set(os_workflow[True]) == {"workflow_call"}
+    text = OS_WORKFLOW.read_text()
+    assert "ci/install-gimp-macos.sh" in text and "ci/install-gimp-windows.ps1" in text  # SHA-256 verified
+    assert "GIMP_MCP_REQUIRE_GIMP" in text  # a missing GIMP fails instead of skipping
+    assert PUBLISH_ACTION not in text and "id-token" not in text
+    # packages from TestPyPI are installed only after their SHA-256 matched the built artifacts
+    assert "verify_published.py testpypi" in text and "--download" in text
+    assert "index serves" in text  # PyPI's CDN lag (see the Linux job)
