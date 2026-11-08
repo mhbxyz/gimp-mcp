@@ -6,6 +6,8 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-08
+
 ### Added
 
 - Windows support (#100): GIMP 3.2 from gimp.org's installer, verified by the end-to-end suite on GitHub's
@@ -275,6 +277,7 @@ First usable release. Linux only, GIMP 3.2+.
 - Demo (`demo/thumbnail.py`) building a 1280×720 thumbnail through MCP only.
 - CI with a real GIMP 3.2.6 pinned through an Arch Linux Archive snapshot.
 
+[0.5.0]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v0.5.0
 [0.4.0]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v0.4.0
 [0.3.0]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v0.3.0
 [0.2.0]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v0.2.0
