@@ -40,16 +40,16 @@ jobs:
             -b "exec(open('$PWD/ci/explore/probe.py').read())" --quit || echo "exit $?"
           cat probe.json || true
           ls -la "$HOME/Library/Application Support/GIMP" || true
-      - name: Walk the filter catalog (as is, then with Gegl types registered first)
-        timeout-minutes: 12
+      - name: Walk the filter catalog in several ways
+        timeout-minutes: 25
         continue-on-error: true
         run: |
-          for register in "" 1; do
-            export PROBE_OUT="$PWD/filters$register.txt" PLUGIN_DIR="$PWD/src/gimp_mcp/plugin/gimp-mcp-bridge" REGISTER_GEGL_TYPES=$register
+          for mode in x3 x3-delete init x1; do
+            export PROBE_OUT="$PWD/filters-$mode.txt" PLUGIN_DIR="$PWD/src/gimp_mcp/plugin/gimp-mcp-bridge" MODE=$mode
             /Applications/GIMP.app/Contents/MacOS/gimp-console-3.2 -i -n --no-splash --batch-interpreter=python-fu-eval \
               -b "exec(open('$PWD/ci/explore/filters_probe.py').read())" --quit >/dev/null 2>&1 &
             pid=$!
-            for i in $(seq 1 120); do kill -0 $pid 2>/dev/null || break; sleep 2; done
+            for i in $(seq 1 150); do kill -0 $pid 2>/dev/null || break; sleep 2; done
             kill $pid 2>/dev/null || true
-            echo "=== register=$register lines: $(wc -l < "$PROBE_OUT")"; tail -4 "$PROBE_OUT"
+            echo "=== $mode lines: $(wc -l < "$PROBE_OUT") last: $(tail -1 "$PROBE_OUT")"
           done

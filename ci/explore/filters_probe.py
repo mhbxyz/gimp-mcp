@@ -1,39 +1,30 @@
-# Runs inside GIMP (python-fu-eval): replays gmb_ops._describe_filter_params for every operation, logging
-# each step (fsync) before doing it, so the last line names what crashes.
+# Runs inside GIMP (python-fu-eval): walks the filter catalog like the bridge does, several times, to see
+# what makes DrawableFilter.new crash on macOS. Logs every step (fsync).
 import os
 import sys
 import gi
 gi.require_version("Gimp", "3.0")
-from gi.repository import Gimp
+from gi.repository import Gimp, Gegl
+Gegl.Buffer.__gtype__
 sys.path.insert(0, os.environ["PLUGIN_DIR"])
 import gmb_ops
-if os.environ.get("REGISTER_GEGL_TYPES"):
-    from gi.repository import Gegl
-    Gegl.Buffer.__gtype__  # registers the GType before libgimp deserializes param specs using it
 log = open(os.environ["PROBE_OUT"], "w")
 def say(text):
     log.write(text + "\n"); log.flush(); os.fsync(log.fileno())
+mode = os.environ["MODE"]
+if "init" in mode:
+    Gegl.init(None)
 image = Gimp.Image.new(8, 8, Gimp.ImageBaseType.RGB)
 layer = Gimp.Layer.new(image, "l", 8, 8, Gimp.ImageType.RGBA_IMAGE, 100.0, Gimp.LayerMode.NORMAL)
 image.insert_layer(layer, None, 0)
-for name in Gimp.DrawableFilter.operation_get_available():
-    say("op %s details" % name)
-    Gimp.DrawableFilter.operation_get_details(name)
-    say("op %s new" % name)
-    try:
-        config = Gimp.DrawableFilter.new(layer, name, "probe").get_config()
-    except Exception as error:
-        say("op %s error %r" % (name, error)); continue
-    for pspec in config.list_properties():
-        kind = gmb_ops._param_kind(pspec)
-        say("op %s prop %s kind %s blurb" % (name, pspec.name, kind))
-        pspec.get_blurb()
-        if kind in ("number", "integer"):
-            say("op %s prop %s minmax" % (name, pspec.name)); pspec.minimum, pspec.maximum
-        elif kind == "choice":
-            say("op %s prop %s choice" % (name, pspec.name)); list(Gimp.param_spec_choice_get_choice(pspec).list_nicks())
-        elif kind == "enum":
-            say("op %s prop %s enum" % (name, pspec.name)); [v.value_nick for v in pspec.enum_class.__enum_values__.values()]
-        if kind != "unsupported":
-            say("op %s prop %s value" % (name, pspec.name)); gmb_ops._config_value(config.get_property(pspec.name))
+skip = {"gegl:checkerboard"}
+for walk in range(3 if "x3" in mode else 1):
+    for name in Gimp.DrawableFilter.operation_get_available():
+        if name in skip:
+            continue
+        say("walk %d op %s new" % (walk, name))
+        drawable_filter = Gimp.DrawableFilter.new(layer, name, "probe")
+        gmb_ops._describe_filter_params(drawable_filter.get_config())
+        if "delete" in mode:
+            drawable_filter.delete()
 say("done")
