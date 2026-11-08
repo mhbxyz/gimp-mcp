@@ -306,8 +306,8 @@ Errors: `FONT_NOT_FOUND` (with `details.suggestions`, nothing changed),
 
 Limits: fonts depend on the fonts installed on the machine running GIMP;
 rendering of a given font name may differ between machines. Rich text
-(markup), outlines, kerning, language, base direction and text on paths are not
-exposed; whether a box is fixed cannot be read back through libgimp, so
+(markup), outlines, kerning, language and base direction are in the `typography` toolset and
+text along a path in `paths` (`gimp_text_along_path`); whether a box is fixed cannot be read back through libgimp, so
 `gimp_inspect_text` reports the layer's actual size.
 
 ## Corrections and filters
@@ -519,8 +519,7 @@ Verified on a generated folder with a corrupt file, outputs read back with Pillo
 * `gimp_inspect_text_style(item)`: markup (null when the text has no per-run style), outline,
   kerning, hinting, indent, language, direction and size. Every property survives an XCF round
   trip (`tests/e2e/test_typography.py`).
-* Text to path: `gimp_path_from_text` (toolset `paths`). Text along a path has no GIMP 3.2 API
-  for plug-ins (#88).
+* Text to path: `gimp_path_from_text`; text along a path: `gimp_text_along_path` (toolset `paths`).
 
 ## Vector and link layers (toolset `vector`, GIMP 3.2)
 
@@ -740,6 +739,16 @@ pixels; paths may extend beyond the canvas. Every change is one undo step.
   (no control: line; `control1` only: quadratic; both: cubic) or
   `{"type": "ellipse", "center": [x, y], "radius_x", "radius_y", "angle"}`.
   `gimp_path_from_text(item)` outlines a text layer's glyphs.
+* **Text along a path**: `gimp_text_along_path(item, path, name?)` creates a new path: the text layer's
+  glyph outlines warped along `path` the way GIMP's Text along Path does (GIMP 3.2 has no procedure
+  for it; gimp-mcp runs the same algorithm). Each control point's x becomes a distance along the path
+  (stroke after stroke, from the first stroke's start) and its height an offset along the path's
+  normal, measured from the text's middle line (half the layer's height): on a straight path the
+  outline is only moved, on a circle the text follows the circle in the ring the text box covers.
+  Text longer than the path continues along its last direction (and before the start, along its
+  first). Fill or stroke the new path, or make a vector layer from it; the text layer and the path
+  are unchanged. `IMAGE_MISMATCH` when they belong to different images, `WRONG_KIND` for a layer that
+  is not text, `INVALID_ARGUMENT` for a path without length. One undo step.
 * **Inspect**: `gimp_inspect_path(path, points=false)` → `strokes[]` with `id`, `closed`,
   `length` (pixels), `anchors`, `bounds` of the control points, and with `points=true`
   `control_points` (in-handle, anchor, out-handle per anchor). At most 200 strokes are detailed;

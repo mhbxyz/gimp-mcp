@@ -11,6 +11,8 @@ what is covered by the compatibility promise.
 - `gimp_import_palette` imports Adobe Color Tables (`.act`), Photoshop swatches (`.aco`), Adobe Swatch
   Exchange (`.ase`) and RIFF or Paint Shop Pro palettes (`.pal`) by converting them to `.gpl` (#81).
   Their RGB, HSB and grayscale colors are imported; CMYK and Lab colors are refused.
+- `gimp_text_along_path` (toolset `paths`) lays a text layer's glyph outlines along a path as a new,
+  editable path, with GIMP's Text along Path algorithm (#88): GIMP 3.2 has no procedure for it.
 
 ### Changed
 

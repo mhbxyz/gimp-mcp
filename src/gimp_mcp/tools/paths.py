@@ -162,6 +162,24 @@ def register(kit: Toolkit) -> None:
 
     @kit.tool(
         toolset="paths",
+        name="gimp_text_along_path",
+        title="Text along a path",
+        description=(
+            "Lay a text layer's glyph outlines along a path, as GIMP's Text along Path: the text's middle line "
+            "follows the path from its start (stroke after stroke); text longer than the path continues straight. "
+            "Creates a new path (fill or stroke it, or make a vector layer from it); the text layer and the path "
+            "are unchanged. One undo step."
+        ),
+        annotations=MUTATING,
+    )
+    async def gimp_text_along_path(item: ItemId, path: PathId, name: str | None = None) -> PathInfo:
+        data, codec = await path_call(
+            "path.text_along", lambda c: {"item": c.parse_item(item), "path": c.parse_item(path), "name": name}
+        )
+        return info(codec, data)
+
+    @kit.tool(
+        toolset="paths",
         name="gimp_inspect_path",
         title="Inspect path",
         description="Name, visibility and strokes (closed, length, anchors, bounds; control points on request).",
