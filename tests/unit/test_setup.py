@@ -315,3 +315,13 @@ async def test_without_gimp_running_setup_says_what_to_do_instead_of_failing_che
     assert code == 0
     assert "[FAIL]" not in world.text
     assert "then run `gimp-mcp doctor`" in world.text
+
+
+def test_setup_output_degrades_to_what_the_console_can_print():
+    from gimp_mcp.cli import printable
+
+    line = "✓ GIMP 3.2.6 — ✗ Cursor → see • notes…"
+    # a Windows console redirected to a file or pipe writes cp1252: ✓ ✗ → are not in it
+    assert printable(line, "cp1252") == "+ GIMP 3.2.6 — x Cursor -> see • notes…"
+    assert printable(line, "utf-8") == line
+    assert printable(line, "ascii") == "+ GIMP 3.2.6 ? x Cursor -> see ? notes?"

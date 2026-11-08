@@ -45,33 +45,58 @@ class Status(enum.Enum):
 class CheckSpec:
     id: str
     title: str
-    fix: str
+    fix: str | dict[platforms.OsKind, str]  # one text, or one per OS (shown on that OS only)
 
 
 CHECKS: tuple[CheckSpec, ...] = (
     CheckSpec(
         "gimp",
         "GIMP 3.2 or newer is installed",
-        "Install GIMP 3.2 or newer from your distribution (e.g. `sudo pacman -S gimp`); gimp-mcp needs "
-        "`gimp-console` on PATH or GIMP_MCP_GIMP_CONSOLE pointing to it.",
+        {
+            "linux": "Install GIMP 3.2 or newer from your distribution (e.g. `sudo pacman -S gimp`) or Flathub "
+            "(`flatpak install flathub org.gimp.GIMP`); gimp-mcp needs `gimp-console` on PATH or "
+            "GIMP_MCP_GIMP_CONSOLE pointing to it.",
+            "macos": "Install GIMP 3.2 or newer from gimp.org and drag it to Applications (gimp-mcp looks for "
+            "/Applications/GIMP.app and ~/Applications/GIMP.app); elsewhere, set GIMP_MCP_GIMP_CONSOLE to "
+            "GIMP.app/Contents/MacOS/gimp-console-3.2.",
+            "windows": "Install GIMP 3.2 or newer with the installer from gimp.org (gimp-mcp looks in "
+            "`%ProgramFiles%\\GIMP 3` and `%LOCALAPPDATA%\\Programs\\GIMP 3`); elsewhere, set "
+            "GIMP_MCP_GIMP_CONSOLE to its `bin\\gimp-console-3.2.exe`.",
+        },
     ),
     CheckSpec(
         "gimp-python",
         "GIMP's Python can load PyGObject and the GIMP typelib",
-        "Install PyGObject for the system Python and GIMP's introspection data (Arch: `python-gobject`; "
-        "Debian/Ubuntu: `python3-gi gir1.2-gimp-3.0`; Fedora: `python3-gobject`).",
+        {
+            "linux": "Install PyGObject for the system Python and GIMP's introspection data (Arch: "
+            "`python-gobject`; Debian/Ubuntu: `python3-gi gir1.2-gimp-3.0`; Fedora: `python3-gobject`).",
+            "macos": "Reinstall GIMP 3.2 from gimp.org: GIMP runs plug-ins with the Python inside GIMP.app, "
+            "which must import `gi`.",
+            "windows": "Reinstall GIMP 3.2 from gimp.org: GIMP runs plug-ins with the Python of its own "
+            "installation (`bin\\python.exe`), which must import `gi`.",
+        },
     ),
     CheckSpec(
         "venv-path",
-        "No virtualenv shadows the system python3",
-        "Start GIMP from your desktop or from a shell without the virtualenv (`deactivate`): GIMP runs "
-        "Python plug-ins with the first `python3` on PATH.",
+        "No virtualenv shadows the Python GIMP runs plug-ins with",
+        {
+            "linux": "Start GIMP from your desktop or from a shell without the virtualenv (`deactivate`): GIMP "
+            "runs Python plug-ins with the first `python3` on PATH.",
+            "macos": "Nothing to do: GIMP runs plug-ins with the Python inside GIMP.app, whatever PATH says.",
+            "windows": "Nothing to do: GIMP runs plug-ins with the Python of its own installation, whatever PATH says.",
+        },
     ),
     CheckSpec(
         "profiles",
         "The plug-in is installed in the GIMP profile actually used",
-        "Run `gimp-mcp install-plugin --gimp-dir <profile used by GIMP>` (default ~/.config/GIMP/3.2, or "
-        "$GIMP3_DIRECTORY).",
+        {
+            "linux": "Run `gimp-mcp install-plugin --gimp-dir <profile used by GIMP>` (default "
+            "~/.config/GIMP/3.2, or $GIMP3_DIRECTORY).",
+            "macos": "Run `gimp-mcp install-plugin --gimp-dir <profile used by GIMP>` (default "
+            "~/Library/Application Support/GIMP/3.2, or $GIMP3_DIRECTORY).",
+            "windows": "Run `gimp-mcp install-plugin --gimp-dir <profile used by GIMP>` (default "
+            "`%APPDATA%\\GIMP\\3.2`, or `%GIMP3_DIRECTORY%`).",
+        },
     ),
     CheckSpec(
         "plugin",
@@ -92,22 +117,41 @@ CHECKS: tuple[CheckSpec, ...] = (
     CheckSpec(
         "socket-permissions",
         "The bridge socket directory and token are private",
-        "Restart GIMP to recreate them, or fix them: `chmod 700 <socket dir>` and `chmod 600 <token file>` "
-        "(they must belong to you).",
+        {
+            "linux": "Restart GIMP to recreate them, or fix them: `chmod 700 <socket dir>` and "
+            "`chmod 600 <token file>` (they must belong to you).",
+            "macos": "Restart GIMP to recreate them, or fix them: `chmod 700 <socket dir>` and "
+            "`chmod 600 <token file>` (they must belong to you).",
+            "windows": "Nothing to fix by hand: the bridge's named pipe admits only your user (its ACL is set "
+            "when GIMP starts). Restart GIMP if the connection check fails.",
+        },
     ),
     CheckSpec(
         "connection",
-        "A running GIMP answers on the bridge socket",
+        "A running GIMP answers on the bridge",
         "Start GIMP (after `gimp-mcp install-plugin`). If GIMP is already running, restart it so it loads the plug-in.",
     ),
     CheckSpec(
         "instances",
-        "Only one GIMP instance competes for the bridge socket",
-        "Close the extra GIMP instances, or give each one its own socket with GIMP_MCP_SOCKET (set it for "
-        "GIMP and for `gimp-mcp serve`).",
+        "Only one GIMP instance competes for the bridge",
+        {
+            "linux": "Close the extra GIMP instances, or give each one its own socket with GIMP_MCP_SOCKET (set "
+            "it for GIMP and for `gimp-mcp serve`).",
+            "macos": "Close the extra GIMP instances, or give each one its own socket with GIMP_MCP_SOCKET (set "
+            "it for GIMP and for `gimp-mcp serve`).",
+            "windows": "Close the extra GIMP instances, or give each one its own pipe with GIMP_MCP_SOCKET "
+            "(`\\\\.\\pipe\\<name>`, set for GIMP and for `gimp-mcp serve`).",
+        },
     ),
 )
 SPECS = {spec.id: spec for spec in CHECKS}
+OS_LABELS: dict[platforms.OsKind, str] = {"linux": "Linux", "macos": "macOS", "windows": "Windows"}
+
+
+def fix_for(check: str, kind: platforms.OsKind | None = None) -> str:
+    """The fix of ``check`` as written for this OS."""
+    fix = SPECS[check].fix
+    return fix if isinstance(fix, str) else fix[kind or platforms.CURRENT]
 
 
 @dataclass
@@ -132,7 +176,7 @@ class Result:
 
 
 def result(check: str, status: Status, message: str, fix: str | None = None) -> Result:
-    return Result(check, status, message, fix if fix is not None else SPECS[check].fix)
+    return Result(check, status, message, fix if fix is not None else fix_for(check))
 
 
 @dataclass
@@ -168,13 +212,12 @@ class Context:
 
     @property
     def home(self) -> Path:
-        return Path(self.probe.env.get("HOME") or Path.home())
+        return Path(platforms.home(self.probe.env))
 
     def active_profile(self) -> Path:
         if self.probe.gimp_dir is not None:
             return self.probe.gimp_dir
-        env = {**self.probe.env, "HOME": str(self.home)}
-        return Path(platforms.gimp_profile_dir(env, series=self.gimp_series or platforms.GIMP_SERIES))
+        return Path(platforms.gimp_profile_dir(self.probe.env, series=self.gimp_series or platforms.GIMP_SERIES))
 
 
 def check_gimp(ctx: Context) -> Result:
@@ -234,13 +277,14 @@ def check_gimp_python(ctx: Context) -> Result:
     env["PATH"] = system_path(env.get("PATH", ""))
     for name in ("VIRTUAL_ENV", "PYTHONPATH", "PYTHONHOME"):
         env.pop(name, None)
+    if ctx.console is None and platforms.CURRENT != "linux":
+        return result("gimp-python", Status.SKIP, "GIMP was not found: its bundled Python cannot be checked")
     bundled = platforms.bundled_gimp_python(ctx.console) if ctx.console else None
     if bundled:  # macOS and Windows: GIMP runs plug-ins with the Python of its own bundle
         code, output = ctx.probe.run([bundled, "-c", GI_PROBE], env=env)
         if code != 0:
             last = output.strip().splitlines()[-1] if output.strip() else f"exit code {code}"
-            return result("gimp-python", Status.FAIL, f"GIMP's bundled Python ({bundled}) cannot import gi: {last}",
-                          "Reinstall GIMP 3.2 from gimp.org.")  # fmt: skip
+            return result("gimp-python", Status.FAIL, f"GIMP's bundled Python ({bundled}) cannot import gi: {last}")
         return result("gimp-python", Status.OK, f"GIMP's bundled Python ({bundled}) imports gi and Gimp 3.0")
     code, output = ctx.probe.run(["/usr/bin/env", "python3", "-c", GI_PROBE], env=env)
     if code != 0:
@@ -252,7 +296,7 @@ def check_gimp_python(ctx: Context) -> Result:
 def check_venv_path(ctx: Context) -> Result:
     if ctx.flatpak:
         return result("venv-path", Status.OK, "Flatpak GIMP uses its own Python: not affected by PATH")
-    if ctx.console and platforms.bundled_gimp_python(ctx.console):
+    if platforms.CURRENT != "linux":
         return result("venv-path", Status.OK, "GIMP uses the Python of its own bundle: not affected by PATH")
     # Ignore the environment running gimp-mcp itself: `uvx`/`uv run` put it first on
     # PATH for this process only; it is not the user's shell.
@@ -275,8 +319,8 @@ def check_venv_path(ctx: Context) -> Result:
 
 
 def _profiles(ctx: Context) -> list[Path]:
-    env = {**ctx.probe.env, "HOME": str(ctx.home)}
-    flatpak = platforms.flatpak_gimp_profile_root(env)
+    env = ctx.probe.env
+    flatpak = platforms.flatpak_gimp_profile_root(env) if platforms.CURRENT == "linux" else None
     roots = [Path(platforms.config_home(env)) / "GIMP", *([Path(flatpak)] if flatpak else [])]
     found = [
         path
@@ -317,7 +361,7 @@ def check_plugin(ctx: Context) -> Result:
     entry = directory / f"{PLUGIN_NAME}.py"
     if not entry.exists():
         return result("plugin", Status.FAIL, f"the bridge plug-in is not installed in {directory}")
-    if not os.access(entry, os.X_OK):
+    if platforms.CURRENT != "windows" and not os.access(entry, os.X_OK):  # Windows has no execute bit
         return result(
             "plugin",
             Status.FAIL,
@@ -404,7 +448,7 @@ def _connection_failure(ctx: Context, error: GimpMcpError) -> Result:
             Status.FAIL,
             f"GIMP answers but its plug-in is {error.details.get('plugin_version')} (server "
             f"{error.details.get('server_version')}): incompatible",
-            SPECS["plugin-version"].fix,
+            fix_for("plugin-version"),
         )
     pids = ", ".join(str(pid) for pid, _ in running)
     # (a Unix socket file can stay behind; a Windows pipe cannot, and statting it would connect to it)
@@ -425,7 +469,8 @@ def _connection_failure(ctx: Context, error: GimpMcpError) -> Result:
             "use the same GIMP_MCP_SOCKET.",
         )
     if error.code == "GIMP_NOT_RUNNING":
-        return result("connection", Status.FAIL, f"GIMP is not running (no socket at {endpoint.socket_path})")
+        kind = "bridge pipe" if endpoint.is_pipe else "socket"
+        return result("connection", Status.FAIL, f"GIMP is not running (no {kind} at {endpoint.socket_path})")
     if error.code == "UNAUTHORIZED":
         return result(
             "connection",
@@ -433,7 +478,7 @@ def _connection_failure(ctx: Context, error: GimpMcpError) -> Result:
             "the token file does not match the running bridge",
             "Restart GIMP to regenerate the socket and the token.",
         )
-    return result("connection", Status.FAIL, f"{error.code}: {error.message}", error.hint or SPECS["connection"].fix)
+    return result("connection", Status.FAIL, f"{error.code}: {error.message}", error.hint or fix_for("connection"))
 
 
 def check_instances(ctx: Context) -> Result:
@@ -513,7 +558,12 @@ def render_troubleshooting() -> str:
         "| Check | What it verifies | Fix when it fails |",
         "|---|---|---|",
     ]
-    lines += [f"| `{spec.id}` | {spec.title} | {spec.fix} |" for spec in CHECKS]
+    for spec in CHECKS:
+        if isinstance(spec.fix, str):
+            fix = spec.fix
+        else:
+            fix = "<br>".join(f"**{OS_LABELS[kind]}:** {text}" for kind, text in spec.fix.items())
+        lines.append(f"| `{spec.id}` | {spec.title} | {fix} |")
     lines.append("")
     return "\n".join(lines)
 

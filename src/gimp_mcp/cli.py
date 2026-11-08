@@ -143,6 +143,20 @@ def cmd_coverage(args: argparse.Namespace) -> int:
     return 0
 
 
+_ASCII_SYMBOLS = str.maketrans({"\u2713": "+", "\u2717": "x", "\u2192": "->"})
+
+
+def printable(text: str, encoding: str | None) -> str:
+    """``text`` as the stream can print it: setup's symbols become ASCII where the encoding lacks them
+    (a redirected Windows console is cp1252), and anything else unprintable becomes ``?``."""
+    encoding = encoding or "utf-8"
+    try:
+        text.encode(encoding)
+        return text
+    except UnicodeEncodeError:
+        return text.translate(_ASCII_SYMBOLS).encode(encoding, errors="replace").decode(encoding)
+
+
 def cmd_setup(args: argparse.Namespace) -> int:
     import os
 
@@ -172,7 +186,7 @@ def cmd_setup(args: argparse.Namespace) -> int:
             return False
 
     def say(text: str) -> None:
-        print(text, file=sys.stderr)
+        print(printable(text, sys.stderr.encoding), file=sys.stderr)
 
     options = SetupOptions(
         env=dict(os.environ),
@@ -200,7 +214,7 @@ def cmd_uninstall_all(args: argparse.Namespace) -> int:
             return False
 
     def say(text: str) -> None:
-        print(text, file=sys.stderr)
+        print(printable(text, sys.stderr.encoding), file=sys.stderr)
 
     options = SetupOptions(
         env=dict(os.environ),

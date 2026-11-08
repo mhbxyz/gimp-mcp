@@ -1,20 +1,40 @@
-# Installation (Linux)
+# Installation (Linux, macOS, Windows)
 
 ## Prerequisites
 
 | Requirement | Version | Check |
 |---|---|---|
-| Linux | any recent distribution | — |
+| Linux, macOS or Windows | see [compatibility](compatibility.md) for what is verified | — |
 | GIMP | **3.2 or newer** (verified: 3.2.6) | `gimp --version` |
-| GIMP Python support (PyGObject for the system Python) | the one GIMP is built with | `/usr/bin/python3 -c "import gi; gi.require_version('Gimp', '3.0')"` |
-| Python for the MCP server | 3.11+ | `python3 --version` |
+| GIMP Python support | Linux: PyGObject for the system Python; macOS and Windows: bundled with GIMP | `gimp-mcp doctor` (check `gimp-python`) |
+| Python for the MCP server | 3.11+ | `python3 --version` (Windows: `py --version`) |
 | [uv](https://docs.astral.sh/uv/) (recommended) | 0.9+ | `uv --version` |
+
+### Linux
 
 On Arch: `pacman -S gimp python-gobject`. GIMP from Flathub
 (`flatpak install flathub org.gimp.GIMP`) works too, with nothing more to
 install: it brings its own Python, and `setup`/`doctor` detect it. On Debian/Ubuntu make sure the
 distribution ships GIMP ≥ 3.2 (older 3.0 builds are refused with
-`VERSION_INCOMPATIBLE`). 
+`VERSION_INCOMPATIBLE`).
+
+### macOS
+
+Install GIMP 3.2 from [gimp.org](https://www.gimp.org/downloads/) (the `.dmg` for Apple Silicon or
+Intel) and drag `GIMP.app` to Applications (`/Applications` or `~/Applications`): gimp-mcp finds
+`GIMP.app/Contents/MacOS/gimp-console-3.2` there, and GIMP runs the plug-in with the Python inside
+its bundle, so nothing else is needed. Elsewhere, set `GIMP_MCP_GIMP_CONSOLE` to that file. The
+bridge socket is `~/Library/Application Support/gimp-mcp/bridge.sock`.
+
+### Windows
+
+Install GIMP 3.2 with the installer from [gimp.org](https://www.gimp.org/downloads/), for all users
+(`%ProgramFiles%\GIMP 3`) or just you (`%LOCALAPPDATA%\Programs\GIMP 3`): gimp-mcp finds
+`bin\gimp-console-3.2.exe` there, and GIMP runs the plug-in with its own bundled Python. Elsewhere,
+set `GIMP_MCP_GIMP_CONSOLE` to that file. Install uv with
+`powershell -c "irm https://astral.sh/uv/install.ps1 | iex"` (or `winget install astral-sh.uv`). The
+bridge is the named pipe `\\.\pipe\gimp-mcp-<user>`, its token in `%LOCALAPPDATA%\gimp-mcp\`.
+Where the plug-in and each client's configuration go on each OS: [clients.md](clients.md).
 
 ## Install
 
@@ -47,8 +67,8 @@ After upgrading gimp-mcp, run `gimp-mcp install-plugin` again and restart GIMP
 
 This procedure is verified from a clean environment by
 `tests/e2e/test_distribution.py` (fresh virtualenv, installed wheel, plug-in
-installed by the packaged CLI, `doctor`, MCP calls, uninstall) in the CI's
-pinned GIMP container.
+installed by the packaged CLI, `doctor`, MCP calls, uninstall) on Linux (pinned
+GIMP container), macOS and Windows (CI jobs `e2e-macos`, `e2e-windows`).
 
 ## One-command setup
 

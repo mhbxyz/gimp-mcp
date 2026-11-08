@@ -3,8 +3,8 @@
 * Tests of Linux behaviour (Flatpak, the Linux paths written by setup and doctor, the documented
   snippets) run with the platform layer pinned to Linux, so they check the same thing on every runner.
 * On Windows the bridge is a named pipe (#100): tests of Unix-socket specifics (raw AF_UNIX
-  clients, POSIX permissions) are skipped there, and setup/doctor until their Windows locations
-  exist (#101, #103). pytest -ra lists every skip with its reason.
+  clients, POSIX permissions) are skipped there; setup and doctor are tested on each
+  OS's own locations (test_setup, test_doctor_os). pytest -ra lists every skip with its reason.
 """
 
 from __future__ import annotations
@@ -22,7 +22,6 @@ WINDOWS_PENDING_TESTS = {
     "test_a_second_bridge_cannot_take_the_pipe_name",
 }
 WINDOWS_PENDING = {
-    "test_doctor": "doctor on Windows: #103",
     "test_flatpak": "Flatpak is Linux only",
 }
 UNIX_ONLY_MARKERS = (
