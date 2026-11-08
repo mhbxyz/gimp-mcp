@@ -105,5 +105,20 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   shared with the host's `$XDG_RUNTIME_DIR/app/org.gimp.GIMP`. `FLATPAK_ID` and
   `/.flatpak-info` exist. Installing the app needs no privilege, running it in
   Docker needs `--privileged` (bubblewrap).
+* **Reading pixels** (checked 2026-11-08): `drawable.get_buffer().get(Gegl.Rectangle, scale,
+  format, Gegl.AbyssPolicy.CLAMP)` returns Python `bytes` in the requested babl format
+  (`"R'G'B'A u8"`, `"Y' u8"`, `"RGBA float"`…), in drawable-local coordinates; with `scale` < 1
+  the rectangle is in scaled coordinates. 6 Mpx in `R'G'B'A u8`: ≈20 ms. The selection is a channel
+  (`image.get_selection()`, image-sized) readable the same way in `"Y u8"`.
+* babl `"Y'"` is relative luminance with **ICC D50** coefficients (red 0.2225) encoded with the
+  sRGB curve: pure red reads 130, not 127 (Rec. 709 coefficients) nor 54 (luma).
+* Composite at full resolution: `image.duplicate()` then
+  `merge_visible_layers(Gimp.MergeType.CLIP_TO_IMAGE)` on the copy, then `copy.delete()`. The
+  original stays clean and the copy never appears in `Gimp.get_images()` once deleted.
+* `gimp-drawable-histogram` weights pixels by alpha and by the selection and answers one channel
+  and one intensity range per call; the analysis tools compute their own statistics instead
+  (every pixel once, selection ≥ 50%).
+* `Gimp.Image.pick_color(image, drawables, x, y, sample_merged, sample_average, radius)` exists
+  (PDB `gimp-image-pick-color`) and returns `(ok, GeglColor)`.
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.

@@ -406,8 +406,16 @@ def _connection_failure(ctx: Context, error: GimpMcpError) -> Result:
             f"{error.details.get('server_version')}): incompatible",
             SPECS["plugin-version"].fix,
         )
+    pids = ", ".join(str(pid) for pid, _ in running)
+    if error.code == "GIMP_NOT_RUNNING" and endpoint.socket_path.exists():
+        # nothing listens on this socket: the GIMP that created it exited, whatever else runs
+        message = f"stale socket {endpoint.socket_path}: the GIMP that created it exited"
+        fix = "Start GIMP."
+        if running:
+            message += f" (another GIMP is running, pid {pids}: it may use another socket)"
+            fix = "Restart GIMP, or point the server at the socket of the running GIMP (GIMP_MCP_SOCKET)."
+        return result("connection", Status.FAIL, message, fix)
     if error.code == "GIMP_NOT_RUNNING" and running:
-        pids = ", ".join(str(pid) for pid, _ in running)
         return result(
             "connection",
             Status.FAIL,
@@ -415,8 +423,6 @@ def _connection_failure(ctx: Context, error: GimpMcpError) -> Result:
             "Install the plug-in (`gimp-mcp install-plugin`) and restart GIMP; check that GIMP and the server "
             "use the same GIMP_MCP_SOCKET.",
         )
-    if error.code == "GIMP_NOT_RUNNING" and endpoint.socket_path.exists():
-        return result("connection", Status.FAIL, f"stale socket {endpoint.socket_path}: GIMP exited", "Start GIMP.")
     if error.code == "GIMP_NOT_RUNNING":
         return result("connection", Status.FAIL, f"GIMP is not running (no socket at {endpoint.socket_path})")
     if error.code == "UNAUTHORIZED":

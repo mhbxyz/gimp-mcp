@@ -32,3 +32,19 @@ def test_filter_ids_round_trip():
     assert codec.parse_filter(codec.filter(4)) == 4
     with pytest.raises(GimpMcpError):
         codec.parse_filter("item:4@a1b2c3d4")
+
+
+def test_any_of_several_kinds_is_parsed_with_its_kind():
+    import pytest as _pytest
+
+    from gimp_mcp.errors import GimpMcpError as _Error
+
+    codec = IdCodec("s1")
+    assert codec.parse_any("checkpoint:4@s1", ("image", "item", "checkpoint")) == ("checkpoint", 4)
+    assert codec.parse_any("item:9@s1", ("image", "item")) == ("item", 9)
+    with _pytest.raises(_Error) as error:
+        codec.parse_any("filter:1@s1", ("image", "item"))
+    assert error.value.code == "INVALID_ID"
+    with _pytest.raises(_Error) as error:
+        codec.parse_any("image:1@old", ("image",))
+    assert error.value.code == "SESSION_CHANGED"

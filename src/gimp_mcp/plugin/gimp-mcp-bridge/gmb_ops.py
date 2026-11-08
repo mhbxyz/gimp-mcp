@@ -12,6 +12,7 @@ import gi
 
 gi.require_version("Babl", "0.1")
 import gmb_policy  # noqa: E402
+import gmb_stats  # noqa: E402
 import gmb_undo  # noqa: E402
 from gi.repository import Babl, Gegl, Gimp, Gio  # noqa: E402
 from gmb_server import BridgeError  # noqa: E402
@@ -1715,6 +1716,241 @@ def checkpoint_delete(params):
     return {"checkpoint": number}
 
 
+# -- analysis (read-only) ------------------------------------------------------------------
+
+MAX_ANALYSIS_PIXELS = 50_000_000
+RGBA_U8 = "R'G'B'A u8"
+LUMA_U8 = "Y' u8"
+
+
+def _source(params, key):
+    """{"kind": "image"|"item"|"checkpoint", "id": n} -> ("image", image) or ("drawable", drawable)."""
+    ref = params.get(key)
+    if not isinstance(ref, dict) or ref.get("kind") not in ("image", "item", "checkpoint"):
+        raise BridgeError("INVALID_ARGUMENT", "%s must be an image, item or checkpoint reference" % key)
+    if ref["kind"] == "image":
+        return "image", get_image({"image": ref.get("id")})
+    if ref["kind"] == "checkpoint":
+        _number, entry = _get_checkpoint({"checkpoint": ref.get("id")})
+        return "image", entry["copy"]
+    item = get_item({"item": ref.get("id")})
+    if not isinstance(item, Gimp.Drawable):
+        raise BridgeError(
+            "WRONG_KIND",
+            "item %d is a %s, which has no pixels" % (item.get_id(), item_kind(item)),
+            {"id": item.get_id(), "kind": item_kind(item)},
+        )
+    return "drawable", item
+
+
+class _Pixels:
+    """Pixels of an image composite (a temporary flattened copy) or of a drawable.
+
+    The analysed image is never changed: the composite comes from a duplicate
+    that is deleted on exit.
+    """
+
+    def __init__(self, kind, target):
+        self.kind = kind
+        self.target = target
+        self.copy = None
+
+    def __enter__(self):
+        if self.kind == "image":
+            image = self.target
+            if not image.get_layers():
+                raise BridgeError("INVALID_ARGUMENT", "the image has no layers")
+            self.copy = image.duplicate()
+            self.copy.undo_disable()
+            merged = self.copy.merge_visible_layers(Gimp.MergeType.CLIP_TO_IMAGE)
+            if merged is None:
+                self.copy.delete()
+                raise BridgeError("INVALID_ARGUMENT", "the image has no visible layer")
+            merged.resize_to_image_size()
+            self.drawable = merged
+            self.offset = (0, 0)
+            self.image = image
+        else:
+            self.drawable = self.target
+            _ok, ox, oy = self.drawable.get_offsets()
+            self.offset = (ox, oy)
+            self.image = self.drawable.get_image()
+        self.width = self.drawable.get_width()
+        self.height = self.drawable.get_height()
+        return self
+
+    def __exit__(self, *exc):
+        if self.copy is not None:
+            self.copy.delete()
+        return False
+
+    def bounds(self):
+        """Area in image coordinates."""
+        return self.offset[0], self.offset[1], self.width, self.height
+
+    def region(self, region):
+        """Requested region (image coordinates) clipped to the pixels; refused when empty or too large."""
+        bx, by, bw, bh = self.bounds()
+        if region is None:
+            x, y, w, h = bx, by, bw, bh
+        else:
+            x, y, w, h = (int(region[k]) for k in ("x", "y", "width", "height"))
+        x0, y0 = max(x, bx), max(y, by)
+        x1, y1 = min(x + w, bx + bw), min(y + h, by + bh)
+        if x1 <= x0 or y1 <= y0:
+            raise BridgeError(
+                "INVALID_ARGUMENT",
+                "the region does not overlap the pixels (%d,%d %dx%d)" % (bx, by, bw, bh),
+                {"bounds": {"x": bx, "y": by, "width": bw, "height": bh}},
+            )
+        if (x1 - x0) * (y1 - y0) > MAX_ANALYSIS_PIXELS:
+            raise BridgeError("INVALID_ARGUMENT", "region too large: at most %d pixels" % MAX_ANALYSIS_PIXELS)
+        return x0, y0, x1 - x0, y1 - y0
+
+    def read(self, area, fmt=RGBA_U8, scale=1.0):
+        x, y, w, h = area
+        rect = Gegl.Rectangle.new(
+            int((x - self.offset[0]) * scale),
+            int((y - self.offset[1]) * scale),
+            max(1, int(w * scale)),
+            max(1, int(h * scale)),
+        )
+        return bytes(self.drawable.get_buffer().get(rect, scale, fmt, Gegl.AbyssPolicy.CLAMP))
+
+
+def _area_dict(area):
+    return {"x": area[0], "y": area[1], "width": area[2], "height": area[3]}
+
+
+def analysis_histogram(params):
+    kind, target = _source(params, "target")
+    channels = params.get("channels") or ["red", "green", "blue", "luminance"]
+    with _Pixels(kind, target) as pixels:
+        area = pixels.region(params.get("region"))
+        mask = None
+        if params.get("selection_only"):
+            image = pixels.image
+            if Gimp.Selection.is_empty(image):
+                raise BridgeError("EMPTY_SELECTION", "selection_only is set but nothing is selected")
+            selection = image.get_selection()
+            x, y, w, h = area
+            mask = bytes(selection.get_buffer().get(Gegl.Rectangle.new(x, y, w, h), 1.0, "Y u8", Gegl.AbyssPolicy.NONE))
+        data = pixels.read(area)
+        luminance = pixels.read(area, LUMA_U8) if "luminance" in channels else None
+    stats = gmb_stats.channel_stats(
+        data,
+        channels,
+        percentiles=params.get("percentiles", (5, 25, 50, 75, 95)),
+        bins=int(params.get("bins", 16)),
+        mask=mask,
+        luminance=luminance,
+    )
+    return {"region": _area_dict(area), "selection_only": bool(params.get("selection_only")), "channels": stats}
+
+
+def analysis_sample(params):
+    kind, target = _source(params, "target")
+    radius = int(params.get("radius", 0))
+    points = params.get("points") or []
+    with _Pixels(kind, target) as pixels:
+        bx, by, bw, bh = pixels.bounds()
+        for x, y in points:
+            if not (bx <= x < bx + bw and by <= y < by + bh):
+                raise BridgeError(
+                    "INVALID_ARGUMENT",
+                    "point (%d, %d) is outside the pixels (%d,%d %dx%d)" % (x, y, bx, by, bw, bh),
+                    {"point": [x, y]},
+                )
+        samples = []
+        for x, y in points:
+            area = pixels.region({"x": x - radius, "y": y - radius, "width": 2 * radius + 1, "height": 2 * radius + 1})
+            data = pixels.read(area)
+            n = len(data) // 4
+            rgba = [round(sum(data[c::4]) / n) for c in range(4)]
+            samples.append(
+                {
+                    "x": x,
+                    "y": y,
+                    "hex": "#%02x%02x%02x" % tuple(rgba[:3]),
+                    "rgba": rgba,
+                    "pixels_averaged": n,
+                }
+            )
+    return {"samples": samples}
+
+
+def analysis_compare(params):
+    import base64
+
+    sides = []
+    for key in ("a", "b"):
+        kind, target = _source(params, key)
+        with _Pixels(kind, target) as pixels:
+            sides.append((pixels.width, pixels.height, pixels.read(pixels.region(None))))
+    (wa, ha, a), (wb, hb, b) = sides
+    if (wa, ha) != (wb, hb):
+        raise BridgeError(
+            "INVALID_ARGUMENT",
+            "sizes differ: %dx%d and %dx%d" % (wa, ha, wb, hb),
+            {"a": [wa, ha], "b": [wb, hb]},
+        )
+    threshold = int(params.get("threshold", 0))
+    result = gmb_stats.compare(a, b, wa, ha, threshold)
+    if params.get("preview"):
+        png, pw, ph = gmb_stats.difference_png(a, b, wa, ha, threshold, int(params.get("max_size", 512)))
+        result["preview"] = {"png_base64": base64.b64encode(png).decode("ascii"), "width": pw, "height": ph}
+    return result
+
+
+def analysis_dominant(params):
+    kind, target = _source(params, "target")
+    with _Pixels(kind, target) as pixels:
+        area = pixels.region(params.get("region"))
+        scale = min(1.0, 256.0 / max(area[2], area[3]))
+        data = pixels.read(area, scale=scale)
+    return {
+        "region": _area_dict(area),
+        "sampled_scale": scale,
+        "colors": gmb_stats.dominant_colors(data, int(params.get("count", 5))),
+    }
+
+
+def image_preview_region(params):
+    """Full-resolution crop of the composite, rendered from a temporary copy."""
+    import base64
+
+    kind, image = _source(params, "target")
+    if kind != "image":
+        raise BridgeError("WRONG_KIND", "target must be an image or a checkpoint")
+    region = params["region"]
+    x, y, w, h = (int(region[k]) for k in ("x", "y", "width", "height"))
+    if x < 0 or y < 0 or w < 1 or h < 1 or x + w > image.get_width() or y + h > image.get_height():
+        raise BridgeError(
+            "INVALID_ARGUMENT",
+            "the region must lie inside the %dx%d canvas" % (image.get_width(), image.get_height()),
+        )
+    max_size = int(params.get("max_size", 1024))
+    copy = image.duplicate()
+    try:
+        copy.undo_disable()
+        copy.crop(w, h, x, y)
+        pw, ph = _fit(w, h, max_size)
+        pixbuf = copy.get_thumbnail(pw, ph, Gimp.PixbufTransparency.KEEP_ALPHA)
+        if pixbuf is None:
+            raise BridgeError("GIMP_ERROR", "GIMP could not render a %dx%d preview" % (pw, ph))
+        ok, data = pixbuf.save_to_bufferv("png", [], [])
+        if not ok:
+            raise BridgeError("GIMP_ERROR", "PNG encoding of the preview failed")
+    finally:
+        copy.delete()
+    return {
+        "png_base64": base64.b64encode(bytes(data)).decode("ascii"),
+        "width": pixbuf.get_width(),
+        "height": pixbuf.get_height(),
+        "region": {"x": x, "y": y, "width": w, "height": h},
+    }
+
+
 def build_operations():
     return {
         "undo.begin": undo_begin,
@@ -1765,6 +2001,11 @@ def build_operations():
         "image.export": image_export,
         "image.close": image_close,
         "image.preview": image_preview,
+        "image.preview_region": image_preview_region,
+        "analysis.histogram": analysis_histogram,
+        "analysis.sample": analysis_sample,
+        "analysis.compare": analysis_compare,
+        "analysis.dominant": analysis_dominant,
         "session.images": session_images,
         "image.inspect": image_inspect,
         "item.inspect": item_inspect,

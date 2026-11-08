@@ -44,6 +44,18 @@ class IdCodec:
     def parse_item(self, value: str) -> int:
         return self._parse(value, "item")
 
+    def parse_any(self, value: str, kinds: tuple[str, ...]) -> tuple[str, int]:
+        """Parse an id of any of ``kinds`` -> (kind, number)."""
+        match = _ID_RE.match(value or "")
+        kind = match.group(1) if match else ""
+        if kind not in kinds:
+            raise GimpMcpError(
+                "INVALID_ID",
+                f"{value!r} is not a valid {' or '.join(kinds)} id",
+                hint="Use the ids returned by gimp_status, gimp_inspect_image or gimp_create_checkpoint.",
+            )
+        return kind, self._parse(value, kind)
+
     def _parse(self, value: str, kind: str) -> int:
         match = _ID_RE.match(value or "")
         if match is None or match.group(1) != kind:

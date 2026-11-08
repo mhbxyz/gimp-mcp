@@ -25,6 +25,8 @@ TOOLSETS: dict[str, str] = {
     "filters": "Color corrections and blur, destructive or as editable filters; list and remove filters.",
     "text": "Editable text layers and fonts.",
     "history": "Undo groups and checkpoints (undo/redo for agents).",
+    "analysis": "Measure pixels: histograms and statistics, color sampling, image comparison, dominant colors, "
+    "full-resolution crops.",
     "procedures": "Search, describe and call allowlisted GIMP procedures (advanced).",
 }
 
