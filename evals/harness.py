@@ -117,6 +117,8 @@ def parse_transcript(lines: list[str]) -> Metrics:
             metrics.answer = str(event.get("result", ""))
             metrics.finished = event.get("subtype") == "success" and not event.get("is_error", False)
             metrics.stop_reason = str(event.get("subtype", ""))
+            if event.get("is_error"):  # e.g. the account's usage limit: the reason is the result text
+                metrics.stop_reason += f" with an error: {str(event.get('result', ''))[:160]}"
     return metrics
 
 
