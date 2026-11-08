@@ -154,6 +154,17 @@ def print_flyer(out: Path, report: Report) -> None:
     assert (out / "flyer.xcf").read_bytes().startswith(b"gimp xcf")
 
 
+def sky_replacement(out: Path, report: Report) -> None:
+    from demo.scenarios.sky_replacement import horizon
+
+    with Image.open(out / "montage.png") as montage, Image.open(out / "sky.png") as sky:
+        a, b = montage.convert("RGB"), sky.convert("RGB")
+        for x in range(0, 1200, 97):
+            assert a.getpixel((x, horizon(x) - 20)) == b.getpixel((x, horizon(x) - 20)), x  # the new sky
+            assert a.getpixel((x, horizon(x) + 20)) != b.getpixel((x, horizon(x) + 20)), x  # the fields
+    assert (out / "montage.xcf").read_bytes().startswith(b"gimp xcf")
+
+
 INDEPENDENT: dict[str, Callable[[Path, Report], None]] = {
     "thumbnail": thumbnail,
     "old-photo-restoration": old_photo_restoration,
@@ -163,6 +174,7 @@ INDEPENDENT: dict[str, Callable[[Path, Report], None]] = {
     "web-photo-batch": web_photo_batch,
     "animated-sticker": animated_sticker,
     "print-flyer": print_flyer,
+    "sky-replacement": sky_replacement,
 }
 
 
