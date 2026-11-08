@@ -3,7 +3,7 @@
     "package": "0.5.0 (checkout)",
     "model": "claude-sonnet-5-5",
     "date": "2026-11-08",
-    "updated": "old-photo-restoration on 2026-11-08; product-cutout on 2026-11-08"
+    "updated": "old-photo-restoration, product-cutout and social-media-kit on 2026-11-08"
   },
   "tasks": {
     "resize-export": {
@@ -1208,6 +1208,188 @@
       "output_tokens": 9789,
       "cache_read_tokens": 890864,
       "cache_creation_tokens": 35250,
+      "model": "claude-sonnet-5-5",
+      "gimp_tools": 50,
+      "date": "2026-11-08",
+      "package": "0.5.0 (checkout)"
+    },
+    "social-media-kit": {
+      "passed": true,
+      "checks": [
+        {
+          "description": "the session finished",
+          "passed": true,
+          "detail": "success"
+        },
+        {
+          "description": "social-post.png is 1080x1080",
+          "passed": true,
+          "detail": "1080x1080"
+        },
+        {
+          "description": "post: the brand colors are there (navy band, cream text, red accent)",
+          "passed": true,
+          "detail": "navy 13.0%, cream 1.96%, red 0.74%"
+        },
+        {
+          "description": "post: the logo lies inside the safe area",
+          "passed": true,
+          "detail": "logo (64, 64, 244, 244), safe 64,64-1016,1016"
+        },
+        {
+          "description": "social-post.xcf keeps the headline as an editable text layer",
+          "passed": true,
+          "detail": "419764 bytes"
+        },
+        {
+          "description": "social-story.png is 1080x1920",
+          "passed": true,
+          "detail": "1080x1920"
+        },
+        {
+          "description": "story: the brand colors are there (navy band, cream text, red accent)",
+          "passed": true,
+          "detail": "navy 18.3%, cream 2.64%, red 0.52%"
+        },
+        {
+          "description": "story: the logo lies inside the safe area",
+          "passed": true,
+          "detail": "logo (64, 250, 284, 470), safe 64,250-1016,1670"
+        },
+        {
+          "description": "social-story.xcf keeps the headline as an editable text layer",
+          "passed": true,
+          "detail": "926186 bytes"
+        },
+        {
+          "description": "social-banner.png is 1500x500",
+          "passed": true,
+          "detail": "1500x500"
+        },
+        {
+          "description": "banner: the brand colors are there (navy band, cream text, red accent)",
+          "passed": true,
+          "detail": "navy 30.3%, cream 3.57%, red 1.60%"
+        },
+        {
+          "description": "banner: the logo lies inside the safe area",
+          "passed": true,
+          "detail": "logo (1300, 180, 1440, 320), safe 60,60-1440,440"
+        },
+        {
+          "description": "social-banner.xcf keeps the headline as an editable text layer",
+          "passed": true,
+          "detail": "350391 bytes"
+        },
+        {
+          "description": "social-thumbnail.png is 1280x720",
+          "passed": true,
+          "detail": "1280x720"
+        },
+        {
+          "description": "thumbnail: the brand colors are there (navy band, cream text, red accent)",
+          "passed": true,
+          "detail": "navy 19.2%, cream 2.82%, red 1.11%"
+        },
+        {
+          "description": "thumbnail: the logo lies inside the safe area",
+          "passed": true,
+          "detail": "logo (64, 64, 184, 184), safe 64,64-1216,656"
+        },
+        {
+          "description": "social-thumbnail.xcf keeps the headline as an editable text layer",
+          "passed": true,
+          "detail": "285650 bytes"
+        }
+      ],
+      "tool_calls": 74,
+      "tools": [
+        "gimp_status",
+        "gimp_list_toolsets",
+        "gimp_list_fonts",
+        "gimp_open_image",
+        "gimp_open_image",
+        "gimp_enable_toolsets",
+        "gimp_preview",
+        "gimp_preview",
+        "gimp_create_image",
+        "gimp_import_layer",
+        "gimp_scale_layer",
+        "gimp_create_layer",
+        "gimp_create_layer",
+        "gimp_import_layer",
+        "gimp_create_text_layer",
+        "gimp_scale_layer",
+        "gimp_set_layer_offsets",
+        "gimp_set_layer_offsets",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_preview",
+        "gimp_save_image",
+        "gimp_export_image",
+        "gimp_create_image",
+        "gimp_import_layer",
+        "gimp_scale_layer",
+        "gimp_create_layer",
+        "gimp_create_layer",
+        "gimp_import_layer",
+        "gimp_create_text_layer",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_set_layer_offsets",
+        "gimp_set_layer_offsets",
+        "gimp_scale_layer",
+        "gimp_preview",
+        "gimp_save_image",
+        "gimp_export_image",
+        "gimp_create_image",
+        "gimp_create_image",
+        "gimp_import_layer",
+        "gimp_import_layer",
+        "gimp_scale_layer",
+        "gimp_scale_layer",
+        "gimp_set_layer_offsets",
+        "gimp_set_layer_offsets",
+        "gimp_create_layer",
+        "gimp_create_layer",
+        "gimp_import_layer",
+        "gimp_create_text_layer",
+        "gimp_create_layer",
+        "gimp_create_layer",
+        "gimp_import_layer",
+        "gimp_create_text_layer",
+        "gimp_scale_layer",
+        "gimp_scale_layer",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_preview",
+        "gimp_preview",
+        "gimp_save_image",
+        "gimp_export_image",
+        "gimp_save_image",
+        "gimp_export_image"
+      ],
+      "errors": [],
+      "other_tools": [
+        "ToolSearch",
+        "ToolSearch"
+      ],
+      "duration_s": 88.4,
+      "turns": 77,
+      "input_tokens": 40,
+      "output_tokens": 12850,
+      "cache_read_tokens": 663588,
+      "cache_creation_tokens": 37993,
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-08",

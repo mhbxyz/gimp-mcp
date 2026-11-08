@@ -1,8 +1,8 @@
 # gimp-mcp agent evaluation
 
-**17/20 tasks passed** — gimp-mcp 0.5.0 (checkout), model claude-sonnet-5-5, 2026-11-08. Default toolsets; the agent enables others itself.
+**18/21 tasks passed** — gimp-mcp 0.5.0 (checkout), model claude-sonnet-5-5, 2026-11-08. Default toolsets; the agent enables others itself.
 
-Updated since: old-photo-restoration on 2026-11-08; product-cutout on 2026-11-08 (each task's package and date are in the JSON).
+Updated since: old-photo-restoration, product-cutout and social-media-kit on 2026-11-08 (each task's package and date are in the JSON).
 
 | Task | Result | Tool calls | Errors returned | Duration | Tokens in / out (cache read) |
 |---|---|---|---|---|---|
@@ -26,6 +26,7 @@ Updated since: old-photo-restoration on 2026-11-08; product-cutout on 2026-11-08
 | `print-resolution` | pass | 5 | 0 | 20.8 s | 14 / 926 (113082) |
 | `old-photo-restoration` | pass | 31 | 0 | 76.0 s | 48 / 8101 (797084) |
 | `product-cutout` | **FAIL** | 52 | 6 | 89.0 s | 60 / 9789 (890864) |
+| `social-media-kit` | pass | 74 | 0 | 88.4 s | 40 / 12850 (663588) |
 
 ## Details
 
@@ -274,4 +275,26 @@ radius
 image
   Field required [type=missing, input_value={'checkpoint': 'checkpoint:1@f1087cb2'}, input_t`
 * gimp tools: gimp_open_image, gimp_list_toolsets, gimp_enable_toolsets, gimp_preview, gimp_sample_colors, gimp_select_by_color, gimp_get_selection, gimp_modify_selection, gimp_modify_selection, gimp_inspect_image, gimp_add_layer_mask, gimp_add_layer_mask, gimp_modify_selection, gimp_scale_layer, gimp_resize_canvas, gimp_set_layer_offsets, gimp_alpha_to_selection, gimp_select_item, gimp_modify_selection, gimp_create_layer, gimp_create_layer, gimp_move_layer, gimp_select_ellipse, gimp_move_layer, gimp_fill, gimp_modify_selection, gimp_move_layer, gimp_gaussian_blur, gimp_set_layer_properties, gimp_gaussian_blur, gimp_inspect_image, gimp_preview, gimp_set_layer_offsets, gimp_set_layer_properties, gimp_preview_region, gimp_set_color_profile, gimp_describe_file_format, gimp_describe_file_format, gimp_create_checkpoint, gimp_export_as, gimp_export_as, gimp_resize_image, gimp_export_as, gimp_export_as, gimp_restore_checkpoint, gimp_restore_checkpoint, gimp_resize_image, gimp_export_as, gimp_export_as, gimp_open_image, gimp_get_color_profile, gimp_sample_colors
+* other tools tried: ToolSearch, ToolSearch
+
+### `social-media-kit`
+
+* pass: the session finished (success)
+* pass: social-post.png is 1080x1080 (1080x1080)
+* pass: post: the brand colors are there (navy band, cream text, red accent) (navy 13.0%, cream 1.96%, red 0.74%)
+* pass: post: the logo lies inside the safe area (logo (64, 64, 244, 244), safe 64,64-1016,1016)
+* pass: social-post.xcf keeps the headline as an editable text layer (419764 bytes)
+* pass: social-story.png is 1080x1920 (1080x1920)
+* pass: story: the brand colors are there (navy band, cream text, red accent) (navy 18.3%, cream 2.64%, red 0.52%)
+* pass: story: the logo lies inside the safe area (logo (64, 250, 284, 470), safe 64,250-1016,1670)
+* pass: social-story.xcf keeps the headline as an editable text layer (926186 bytes)
+* pass: social-banner.png is 1500x500 (1500x500)
+* pass: banner: the brand colors are there (navy band, cream text, red accent) (navy 30.3%, cream 3.57%, red 1.60%)
+* pass: banner: the logo lies inside the safe area (logo (1300, 180, 1440, 320), safe 60,60-1440,440)
+* pass: social-banner.xcf keeps the headline as an editable text layer (350391 bytes)
+* pass: social-thumbnail.png is 1280x720 (1280x720)
+* pass: thumbnail: the brand colors are there (navy band, cream text, red accent) (navy 19.2%, cream 2.82%, red 1.11%)
+* pass: thumbnail: the logo lies inside the safe area (logo (64, 64, 184, 184), safe 64,64-1216,656)
+* pass: social-thumbnail.xcf keeps the headline as an editable text layer (285650 bytes)
+* gimp tools: gimp_status, gimp_list_toolsets, gimp_list_fonts, gimp_open_image, gimp_open_image, gimp_enable_toolsets, gimp_preview, gimp_preview, gimp_create_image, gimp_import_layer, gimp_scale_layer, gimp_create_layer, gimp_create_layer, gimp_import_layer, gimp_create_text_layer, gimp_scale_layer, gimp_set_layer_offsets, gimp_set_layer_offsets, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_preview, gimp_save_image, gimp_export_image, gimp_create_image, gimp_import_layer, gimp_scale_layer, gimp_create_layer, gimp_create_layer, gimp_import_layer, gimp_create_text_layer, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_set_layer_offsets, gimp_set_layer_offsets, gimp_scale_layer, gimp_preview, gimp_save_image, gimp_export_image, gimp_create_image, gimp_create_image, gimp_import_layer, gimp_import_layer, gimp_scale_layer, gimp_scale_layer, gimp_set_layer_offsets, gimp_set_layer_offsets, gimp_create_layer, gimp_create_layer, gimp_import_layer, gimp_create_text_layer, gimp_create_layer, gimp_create_layer, gimp_import_layer, gimp_create_text_layer, gimp_scale_layer, gimp_scale_layer, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_preview, gimp_preview, gimp_save_image, gimp_export_image, gimp_save_image, gimp_export_image
 * other tools tried: ToolSearch, ToolSearch

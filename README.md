@@ -86,6 +86,9 @@ and Windows, and an agent version (one plain-language request) in the evaluation
 * **Product photo for an online store**: cut out without losing pixels, soft shadow on pure white,
   centered square, JPEG and WebP in three sizes with an sRGB profile
   ([walk-through](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/demos/product-cutout.md)).
+* **Social media kit**: one design in four formats (post, story, banner, thumbnail) with safe-area
+  guides and an editable headline
+  ([walk-through](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/demos/social-media-kit.md)).
 * **YouTube thumbnail** from one photo, with an editable title
   ([guide](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/guide-thumbnail.md)).
 

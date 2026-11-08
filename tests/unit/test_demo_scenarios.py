@@ -84,3 +84,11 @@ def test_the_restoration_agent_checks_reject_the_unrestored_scan(tmp_path):
     assert "the sky's color bands are level (under 0.5° measured)" in failed
     assert "no scanner bed remains along the edges" in failed
     assert "full contrast again (1%-99%: <=30 and >=225)" in failed
+
+
+def test_a_headline_on_two_lines_is_the_same_editable_headline():
+    from demo.scenarios.social_media_kit import xcf_texts
+
+    xcf = b'gimp xcf v020\x00gimp-text-layer\x00(text "Golden Hour\\nSale") (font "Noto Sans Bold")'
+    assert xcf_texts(xcf) == ["Golden Hour Sale"]
+    assert xcf_texts(b'(text "Golden Hours Sale")') != ["Golden Hour Sale"]
