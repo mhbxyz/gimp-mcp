@@ -1,8 +1,8 @@
 # gimp-mcp agent evaluation
 
-**18/21 tasks passed** — gimp-mcp 0.5.0 (checkout), model claude-sonnet-5-5, 2026-11-08. Default toolsets; the agent enables others itself.
+**18/22 tasks passed** — gimp-mcp 0.5.0 (checkout), model claude-sonnet-5-5, 2026-11-08. Default toolsets; the agent enables others itself.
 
-Updated since: old-photo-restoration, product-cutout and social-media-kit on 2026-11-08 (each task's package and date are in the JSON).
+Updated since: old-photo-restoration, product-cutout and social-media-kit on 2026-11-08; screenshot-annotation on 2026-11-08 (each task's package and date are in the JSON).
 
 | Task | Result | Tool calls | Errors returned | Duration | Tokens in / out (cache read) |
 |---|---|---|---|---|---|
@@ -27,6 +27,7 @@ Updated since: old-photo-restoration, product-cutout and social-media-kit on 202
 | `old-photo-restoration` | pass | 31 | 0 | 76.0 s | 48 / 8101 (797084) |
 | `product-cutout` | **FAIL** | 52 | 6 | 89.0 s | 60 / 9789 (890864) |
 | `social-media-kit` | pass | 74 | 0 | 88.4 s | 40 / 12850 (663588) |
+| `screenshot-annotation` | **FAIL** | 36 | 0 | 76.3 s | 38 / 8628 (492658) |
 
 ## Details
 
@@ -298,3 +299,15 @@ image
 * pass: social-thumbnail.xcf keeps the headline as an editable text layer (285650 bytes)
 * gimp tools: gimp_status, gimp_list_toolsets, gimp_list_fonts, gimp_open_image, gimp_open_image, gimp_enable_toolsets, gimp_preview, gimp_preview, gimp_create_image, gimp_import_layer, gimp_scale_layer, gimp_create_layer, gimp_create_layer, gimp_import_layer, gimp_create_text_layer, gimp_scale_layer, gimp_set_layer_offsets, gimp_set_layer_offsets, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_preview, gimp_save_image, gimp_export_image, gimp_create_image, gimp_import_layer, gimp_scale_layer, gimp_create_layer, gimp_create_layer, gimp_import_layer, gimp_create_text_layer, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_set_layer_offsets, gimp_set_layer_offsets, gimp_scale_layer, gimp_preview, gimp_save_image, gimp_export_image, gimp_create_image, gimp_create_image, gimp_import_layer, gimp_import_layer, gimp_scale_layer, gimp_scale_layer, gimp_set_layer_offsets, gimp_set_layer_offsets, gimp_create_layer, gimp_create_layer, gimp_import_layer, gimp_create_text_layer, gimp_create_layer, gimp_create_layer, gimp_import_layer, gimp_create_text_layer, gimp_scale_layer, gimp_scale_layer, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_add_guide, gimp_preview, gimp_preview, gimp_save_image, gimp_export_image, gimp_save_image, gimp_export_image
 * other tools tried: ToolSearch, ToolSearch
+
+### `screenshot-annotation`
+
+* pass: the session finished (success)
+* pass: tutorial.png is a lossless PNG of the same size (PNG (1280, 800))
+* pass: the e-mail keeps no detail (no glyph pixel left) (dark pixels 0 (were 229))
+* pass: the avatar keeps no detail (flatter, eyes and mouth gone) (std dev 39.3 (was 71.4), features still visible at [])
+* pass: outside the annotations and redactions, pixels are identical to the screenshot (0 other changed pixels)
+* pass: red annotations at the Save button, the E-mail field, the Name and Phone fields (red pixels: save 2236, e-mail 608, name 636, phone 608)
+* **FAIL**: the PNG carries no metadata (no text, Exif, time or profile chunk) (chunks ['IHDR', 'sRGB', 'gAMA', 'cHRM', 'pHYs', 'tIME', 'IDAT', 'IDAT', 'IDAT', 'IEND'])
+* gimp tools: gimp_open_image, gimp_preview, gimp_list_toolsets, gimp_enable_toolsets, gimp_describe_filter_operation, gimp_inspect_image, gimp_select_rectangle, gimp_apply_filter, gimp_select_rectangle, gimp_apply_filter, gimp_select_rectangle, gimp_create_layer, gimp_draw_shape, gimp_draw_shape, gimp_draw_shape, gimp_draw_shape, gimp_draw_path, gimp_draw_path, gimp_create_text_layer, gimp_create_text_layer, gimp_create_text_layer, gimp_create_text_layer, gimp_set_layer_offsets, gimp_set_layer_offsets, gimp_set_layer_offsets, gimp_set_layer_offsets, gimp_preview, gimp_select_rectangle, gimp_draw_path, gimp_draw_path, gimp_draw_path, gimp_draw_path, gimp_draw_path, gimp_draw_path, gimp_preview, gimp_export_image
+* other tools tried: ToolSearch, Bash, ToolSearch, ToolSearch

@@ -107,6 +107,12 @@ async def steps(gimp: Session, report: Report) -> None:
         report.check(check.description, check.passed, check.detail)
 
 
+def px(img: Image.Image, xy: tuple[int, int]) -> tuple[int, ...]:
+    value = img.getpixel(xy)
+    assert isinstance(value, tuple), value
+    return value
+
+
 def rgb_of(hex_color: str) -> tuple[int, int, int]:
     return tuple(int(hex_color[i : i + 2], 16) for i in (1, 3, 5))  # type: ignore[return-value]
 
@@ -126,15 +132,21 @@ def verify(source: Path, target: Path, exact_zones: bool) -> list[Check]:
     checks = [Check("tutorial.png is a lossless PNG of the same size", out.format == "PNG" and out.size == SIZE,
                     f"{out.format} {out.size}")]  # fmt: skip
     out = out.convert("RGB")
-    for name, (x0, y0, x1, y1) in (("e-mail", EMAIL), ("avatar", AVATAR)):
-        # no detail left: the region is flat blocks, and none of its dark pixels (glyphs, eyes) remains
-        region_before = original.crop((x0, y0, x1, y1)).convert("L")
-        region_after = out.crop((x0 + 4, y0 + 4, x1 - 4, y1 - 4)).convert("L")
-        before, after = ImageStat.Stat(region_before).stddev[0], ImageStat.Stat(region_after).stddev[0]
-        dark_before, dark_after = sum(region_before.histogram()[:100]), sum(region_after.histogram()[:100])
-        detail = f"std dev {after:.1f} (was {before:.1f}), dark pixels {dark_after} (were {dark_before})"
-        flat = after < before * 0.35 and dark_before > 50 and dark_after == 0
-        checks.append(Check(f"the {name} keeps no detail (flat blocks, its dark details gone)", flat, detail))
+    # the e-mail: no dark glyph pixel left in its text area (the field is white around it)
+    x0, y0, x1, y1 = EMAIL
+    region_before, region_after = original.crop(EMAIL).convert("L"), out.crop(EMAIL).convert("L")
+    dark_before, dark_after = sum(region_before.histogram()[:100]), sum(region_after.histogram()[:100])
+    checks.append(Check("the e-mail keeps no detail (no glyph pixel left)", dark_before > 50 and dark_after == 0,
+                        f"dark pixels {dark_after} (were {dark_before})"))  # fmt: skip
+    # the avatar: flat blocks, and its features (eyes, mouth) are not there any more
+    before = ImageStat.Stat(original.crop(AVATAR).convert("L")).stddev[0]
+    after = ImageStat.Stat(out.crop(AVATAR).convert("L")).stddev[0]
+    features = [(1152, 57), (1187, 57), (1170, 99)]  # eye centers and the mouth's lowest point
+    kept = [xy for xy in features if near(px(out, xy), "#282828", 40) or near(px(out, xy), "#962828", 40)]
+    # (the box's corners show the dark header next to the skin: blocks keep that edge, hence 0.75)
+    flat = after < before * 0.75 and not kept
+    detail = f"std dev {after:.1f} (was {before:.1f}), features still visible at {kept}"
+    checks.append(Check("the avatar keeps no detail (flatter, eyes and mouth gone)", flat, detail))
     if exact_zones:  # the scripted version knows where it drew
         top = (BOX[0] + 60, BOX[1] + 1)
         checks.append(Check("a red box around the Save button", near(out.getpixel(top), RED), str(out.getpixel(top))))  # type: ignore[arg-type]
@@ -154,8 +166,9 @@ def verify(source: Path, target: Path, exact_zones: bool) -> list[Check]:
                                   b.point([255 if v < 120 else 0 for v in range(256)]))  # fmt: skip
     allowed = reddish.filter(ImageFilter.MaxFilter(25))
     draw = ImageDraw.Draw(allowed)
+    room = 8 if exact_zones else 20  # an agent chooses its own rectangle around the e-mail and the avatar
     for x0, y0, x1, y1 in (EMAIL, AVATAR):
-        draw.rectangle((x0 - 8, y0 - 8, x1 + 8, y1 + 8), fill=255)
+        draw.rectangle((x0 - room, y0 - room, x1 + room, y1 + room), fill=255)
     changed = ImageChops.difference(out, original).convert("L").point([0] + [255] * 255)
     stray = ImageChops.subtract(changed, allowed).histogram()[255]
     checks.append(Check("outside the annotations and redactions, pixels are identical to the screenshot",
