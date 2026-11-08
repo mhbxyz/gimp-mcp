@@ -55,6 +55,7 @@ Rules of thumb:
 * If your client caps the number of tools (counted across all MCP servers) or warns about too many
   tools, list only what your work needs, e.g. `files,layers,text` (21 tools with `core`). The agent
   can still enable more with `gimp_enable_toolsets` if the client refreshes its tool list.
+* Add `channels` for magic wand, select by color, selection modifiers and saved selections.
 * Add `geometry` for perspective, shear, matrices and whole-image rotation.
 * Add `painting` for brush strokes, retouching (clone, heal, dodge/burn), gradients and bucket fills.
 * Add `formats` for WebP, AVIF, TIFF, PDF, PSD… and layer or slice exports.
@@ -131,6 +132,12 @@ Not in the default. Measure pixels, read-only: `gimp_histogram`, `gimp_sample_co
 Not in the default. Color adjustments with photographers' ranges: `gimp_levels`, `gimp_curves`,
 `gimp_color_balance`, `gimp_colorize`, `gimp_desaturate`, `gimp_invert`, `gimp_threshold`,
 `gimp_posterize`, `gimp_exposure`, `gimp_shadows_highlights`, `gimp_auto_adjust`.
+
+### `channels`
+
+Not in the default. Advanced selections and channels: `gimp_select_by_color`, `gimp_select_item`,
+`gimp_modify_selection_shape`, `gimp_create_channel`, `gimp_set_channel`, `gimp_combine_channels`,
+`gimp_delete_channel`.
 
 ### `geometry`
 

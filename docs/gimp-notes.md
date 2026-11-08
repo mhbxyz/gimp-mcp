@@ -233,5 +233,13 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   selection (`image.get_selection()`), and return the transformed item. Interpolation softens a
   transformed selection's edge by one pixel. `Gimp.TransformResize` nicks: `adjust`, `clip`, `crop`,
   `crop-with-aspect`. `image.rotate(Gimp.RotationType.DEGREES90)`, `image.flip(orientation)`.
+* **Selections and channels** (checked 2026-11-08): `image.select_color(op, drawable, color)` and
+  `select_contiguous_color(op, drawable, x, y)` use the context's sample threshold (0-1), criterion,
+  sample merged/transparent, diagonal neighbours, antialias and feather. `image.select_item(op,
+  item)` takes layers (alpha), text layers, paths, channels. `Gimp.Selection.grow/shrink/border/
+  feather/sharpen/flood/translate(image, …)`; "Remove holes" is `flood`. Rounding is Script-Fu
+  `script-fu-selection-round` (`drawables` through `config.set_core_object_array`, `adjustment` %).
+  `Gimp.Selection.save(image)` stores the selection as a channel; `Gimp.Channel.new_from_component`
+  must be inserted by hand; `channel.combine_masks(other, op, dx, dy)`. Channels survive XCF.
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.

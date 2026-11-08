@@ -388,6 +388,29 @@ image dirty. Procedure names, arguments and availability depend on the GIMP
 version; check with `gimp_list_callable_procedures` (the committed matrix lists
 422 callable procedures on GIMP 3.2.6).
 
+## Advanced selections and channels (toolset `channels`)
+
+* `gimp_select_by_color(image, color | point, item?, threshold, criterion, sample_merged,
+  diagonal, antialias, feather, operation)`: with `color`, every similar pixel; with `point`, the
+  contiguous area around it (fuzzy select). `criterion`: `composite`, `red`, `green`, `blue`,
+  `alpha`, `hsv-hue`, `hsv-saturation`, `hsv-value`, `lch-*`. Samples `item`, the top layer by
+  default, or every visible layer with `sample_merged`.
+* `gimp_select_item(item, operation, antialias, feather)`: from a layer's alpha, a text layer's
+  glyphs, a path's enclosed area, a channel or a mask.
+* `gimp_modify_selection_shape(image, action, amount, dx, dy)`: `grow`, `shrink`, `border`
+  (pixels), `feather` (radius), `sharpen` (partial → full or none), `round` (corner radius in % of
+  the smaller side, GIMP's Rounded selection script), `remove-holes` (GIMP's flood), `translate`.
+* Channels: `gimp_create_channel(image, name, source=empty|selection|component, component?,
+  color, opacity)`, `gimp_set_channel` (name, color, opacity, visible, show_masked),
+  `gimp_combine_channels(channel_id, other, operation)`, `gimp_delete_channel`. They are listed in
+  `gimp_inspect_image`'s `channels` and kept in XCF; `gimp_select_item` loads one as the selection.
+
+**Antialiasing and feathering, measured** (`tests/e2e/test_channels.py`, the selection filled with
+black on white): without antialiasing an ellipse's edge pixels are fully in or out (0 or 255);
+with antialiasing some are partly selected (in between). A 10 px feather on a 20 px square leaves
+its center almost fully selected (< 60), its edge half selected (40-215) and pixels 9 px outside
+nearly unselected (> 235); `sharpen` brings every pixel back to 0 or 255.
+
 ## Advanced transforms (toolset `geometry`)
 
 * `gimp_transform(transform, item | image + selection=true, …, interpolation, clip)` on a layer,

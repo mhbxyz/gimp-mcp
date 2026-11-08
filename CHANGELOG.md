@@ -56,6 +56,10 @@ what is covered by the compatibility promise.
 - Geometry toolset (#55): perspective, shear, 3×3 matrices and rotation around any point for layers,
   groups, paths, channels and the selection; whole-image rotation and flips. `gimp_resize_canvas` can
   resize the layers with the canvas and fill the new areas.
+- Channels toolset (#51): select by color and fuzzy select (threshold, criterion, sample merged), select
+  from alpha, text, paths and channels; grow, shrink, border, feather, sharpen, round, remove holes,
+  translate; channels (empty, saved selection, color component) that can be changed, combined and
+  deleted. `gimp_inspect_image` lists the image's channels.
 
 ### Fixed
 
