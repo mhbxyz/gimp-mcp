@@ -1,11 +1,11 @@
 name: Release
 
-# Builds the artifacts once, tests them with a real GIMP, attests their
-# provenance, then:
+# Builds the artifacts once, tests them with a real GIMP on Linux, macOS and
+# Windows (gimp-os-tests.yml), attests their provenance, then:
 #   * creates (or updates) a draft GitHub release with artifacts, checksums and notes;
 #   * publishes the same files to TestPyPI (approval in the `testpypi` environment),
-#     verifies them there, then promotes them to PyPI (approval in the `pypi`
-#     environment) and verifies the published package;
+#     verifies them there on every OS, then promotes them to PyPI (approval in the
+#     `pypi` environment) and verifies the published package on every OS;
 #   * only then makes the GitHub release public.
 # Every step can be re-run safely. A dry run (manual run with dry_run=true, from
 # any branch) builds and tests everything and publishes nothing.
@@ -83,9 +83,23 @@ jobs:
           GIMP_MCP_CI_SKIP_BUILD: "1"
         run: ci/run-e2e.sh
 
+  test-os:
+    name: Full test suite on ${{ matrix.os }}
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, windows-2025]
+    uses: ./.github/workflows/gimp-os-tests.yml
+    with:
+      os: ${{ matrix.os }}
+      ref: ${{ github.ref_name }}
+      version: ${{ needs.build.outputs.version }}
+      tests: tests/unit tests/e2e
+
   attest:
     name: Attest build provenance
-    needs: [build, test]
+    needs: [build, test, test-os]
     if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-24.04
     permissions:
@@ -105,7 +119,7 @@ jobs:
 
   github-draft:
     name: Draft GitHub release
-    needs: [build, test, attest]
+    needs: [build, test, test-os, attest]
     if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-24.04
     permissions:
@@ -133,7 +147,7 @@ jobs:
 
   publish-testpypi:
     name: Publish to TestPyPI
-    needs: [build, test, attest]
+    needs: [build, test, test-os, attest]
     if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-24.04
     environment:
@@ -181,9 +195,24 @@ jobs:
           GIMP_MCP_CI_ENV: GIMP_MCP_DIST_WHEEL=/src/wheels/gimp_mcp-${{ needs.build.outputs.version }}-py3-none-any.whl
         run: ci/run-e2e.sh tests/e2e/test_distribution.py
 
+  verify-testpypi-os:
+    name: TestPyPI upload on ${{ matrix.os }}
+    needs: [build, publish-testpypi]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, windows-2025]
+    uses: ./.github/workflows/gimp-os-tests.yml
+    with:
+      os: ${{ matrix.os }}
+      ref: ${{ github.ref_name }}
+      version: ${{ needs.build.outputs.version }}
+      tests: tests/e2e/test_distribution.py
+      index: testpypi
+
   publish-pypi:
     name: Publish to PyPI
-    needs: [build, verify-testpypi]
+    needs: [build, verify-testpypi, verify-testpypi-os]
     if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-24.04
     environment:
@@ -253,9 +282,24 @@ jobs:
           GIMP_MCP_CI_ENV: GIMP_MCP_DIST_REQUIREMENT=gimp-mcp==${{ needs.build.outputs.version }}
         run: ci/run-e2e.sh tests/e2e/test_distribution.py
 
+  verify-pypi-os:
+    name: PyPI release on ${{ matrix.os }}
+    needs: [build, publish-pypi]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, windows-2025]
+    uses: ./.github/workflows/gimp-os-tests.yml
+    with:
+      os: ${{ matrix.os }}
+      ref: ${{ github.ref_name }}
+      version: ${{ needs.build.outputs.version }}
+      tests: tests/e2e/test_distribution.py
+      index: pypi
+
   finalize:
     name: Make the GitHub release public
-    needs: [build, github-draft, verify-pypi]
+    needs: [build, github-draft, verify-pypi, verify-pypi-os]
     if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-24.04
     permissions:
@@ -269,7 +313,7 @@ jobs:
 
   publish-mcp-registry:
     name: Publish to the MCP registry
-    needs: [build, verify-pypi]
+    needs: [build, verify-pypi, verify-pypi-os]
     if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-24.04
     environment:

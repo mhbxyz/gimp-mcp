@@ -244,7 +244,13 @@ def test_cli_exit_codes_and_json(tmp_path):
     import subprocess
     import sys
 
-    env = {**os.environ, "HOME": str(tmp_path), "GIMP_MCP_SOCKET": str(tmp_path / "x.sock"), "PATH": "/nonexistent"}
+    env = {
+        **os.environ,
+        "HOME": str(tmp_path),
+        "GIMP_MCP_SOCKET": str(tmp_path / "x.sock"),
+        "PATH": "/nonexistent",
+        "GIMP_MCP_GIMP_CONSOLE": str(tmp_path / "no-gimp"),
+    }  # not the GIMP installed in /Applications
     proc = subprocess.run(
         [sys.executable, "-m", "gimp_mcp", "doctor", "--json"], capture_output=True, text=True, env=env, timeout=60
     )

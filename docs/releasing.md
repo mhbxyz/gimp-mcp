@@ -20,14 +20,17 @@ Design and verified facts: [ADR 0002](adr/0002-release-pipeline.md).
    `tag-release.yml` tags the merge commit `vX.Y.Z` and starts `release.yml`.
 3. `release.yml` (see the job graph in the ADR):
    * builds once (wheel, sdist, `SHA256SUMS`, `RELEASE_NOTES.md` from the
-     CHANGELOG), runs the whole suite against the pinned GIMP, and attests the
+     CHANGELOG), runs the whole suite with a real GIMP on **Linux** (pinned
+     container), **macOS 15** and **Windows Server 2025** (gimp.org's GIMP 3.2.6,
+     `gimp-os-tests.yml`; the built wheel is the one installed), and attests the
      build provenance of the wheel and sdist;
    * creates (or updates, on a re-run) a **draft** GitHub release;
    * waits for your approval of the `testpypi` deployment, publishes there,
-     checks the files and drives a real GIMP with the downloaded wheel;
+     checks the files and drives a real GIMP with the downloaded wheel on Linux,
+     macOS and Windows;
    * waits for your approval of the `pypi` deployment, publishes the same files
      (skipped when PyPI already has exactly them), checks them and drives a real
-     GIMP with `uv pip install gimp-mcp==X.Y.Z` and `uvx`;
+     GIMP with `uv pip install gimp-mcp==X.Y.Z` and `uvx`, on the three OSes;
    * makes the GitHub release public;
    * publishes `server.json` to the official MCP registry (approval of the
      `pypi` environment, GitHub OIDC; see [ADR 0004](adr/0004-discovery-channels.md)).
@@ -41,7 +44,7 @@ Design and verified facts: [ADR 0002](adr/0002-release-pipeline.md).
 
 *Actions → Release → Run workflow* with **dry_run** checked (any branch),
 or `gh workflow run release.yml -f dry_run=true --ref main`: builds, runs the
-full suite, uploads the `dist` artifact (to inspect), and stops there — no
+full suite on Linux, macOS and Windows, uploads the `dist` artifact (to inspect), and stops there — no
 attestation, no release, no upload.
 
 ## Verifying a release (users)

@@ -1,0 +1,85 @@
+name: Tests with a real GIMP on macOS or Windows
+
+# Called by release.yml (#104): the same pinned GIMP as the CI jobs e2e-macos and e2e-windows
+# (gimp.org installers, SHA-256 verified), then pytest on what the release is about to publish or
+# has just published:
+#   index: ""         the artifacts built by the release (GIMP_MCP_DIST_WHEEL = the built wheel)
+#   index: testpypi   the wheel downloaded from TestPyPI after its SHA-256 matched the built one
+#   index: pypi       gimp-mcp==<version> installed from PyPI (pip and uvx)
+# Publishes nothing.
+on:
+  workflow_call:
+    inputs:
+      os:
+        type: string
+        required: true
+      ref:
+        type: string
+        required: true
+      version:
+        type: string
+        required: true
+      tests:
+        type: string
+        required: true
+      index:
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  gimp-tests:
+    name: GIMP 3.2.6 on ${{ inputs.os }}
+    runs-on: ${{ inputs.os }}
+    timeout-minutes: 75
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0 # the upgrade test builds the previous release from history
+      - name: Install GIMP 3.2.6 from gimp.org (SHA-256 verified)
+        if: runner.os == 'macOS'
+        run: ci/install-gimp-macos.sh
+      - name: Install GIMP 3.2.6 from gimp.org (SHA-256 verified)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ci/install-gimp-windows.ps1
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --frozen
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Test the built wheel
+        if: inputs.index == ''
+        run: echo "GIMP_MCP_DIST_WHEEL=$GITHUB_WORKSPACE/dist/gimp_mcp-${{ inputs.version }}-py3-none-any.whl" >> "$GITHUB_ENV"
+      - name: Same files on TestPyPI as built (SHA-256), downloaded for testing
+        if: inputs.index == 'testpypi'
+        run: |
+          uv run python scripts/verify_published.py testpypi "${{ inputs.version }}" dist/SHA256SUMS --download wheels
+          echo "GIMP_MCP_DIST_WHEEL=$GITHUB_WORKSPACE/wheels/gimp_mcp-${{ inputs.version }}-py3-none-any.whl" >> "$GITHUB_ENV"
+      - name: Wait until PyPI's index serves the release (its CDN lags behind the JSON API)
+        if: inputs.index == 'pypi'
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          for attempt in $(seq 1 40); do
+            if uv run --no-project --with pip python -m pip download --quiet --no-deps --no-cache-dir \
+                --dest "$RUNNER_TEMP/probe" "gimp-mcp==$VERSION"; then
+              echo "GIMP_MCP_DIST_REQUIREMENT=gimp-mcp==$VERSION" >> "$GITHUB_ENV"
+              echo "served after $attempt attempt(s)"; exit 0
+            fi
+            sleep 15
+          done
+          echo "PyPI's index still does not serve gimp-mcp==$VERSION after 10 minutes"; exit 1
+      - name: Tests on a real GIMP
+        env:
+          GIMP_MCP_REQUIRE_GIMP: "1"
+        run: uv run pytest ${{ inputs.tests }} -ra

@@ -165,7 +165,8 @@ async def test_gimp3_directory_overrides_the_profile(tmp_path):
 async def test_missing_gimp_stops_with_instructions(tmp_path):
     world = make_world(tmp_path)
     remove_program(world.bin, "gimp-console-3.2")
-    world.env["PATH"] = str(world.bin)  # the machine's own GIMP must not be found
+    world.env["PATH"] = str(world.bin)  # the machine's own GIMP must not be found: not on PATH, and not
+    world.env["GIMP_MCP_GIMP_CONSOLE"] = str(tmp_path / "no-gimp")  # in /Applications or Program Files
     code = await run_setup(options(world))
     assert code == 1 and "Install GIMP 3.2" in world.text
     assert not plugin_dir(world).exists()
