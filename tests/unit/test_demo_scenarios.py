@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from dataclasses import replace
 
 import pytest
 
-from demo.harness import ASSETS, DEMO, asset_licenses, check_assets, load, scenario_names
+from demo.harness import ASSETS, DEMO, agent_inputs, asset_licenses, check_assets, load, scenario_names
 from gimp_mcp.toolsets import check_toolset
 
 NAMES = scenario_names()
@@ -25,10 +26,16 @@ def test_a_scenario_declares_what_it_needs_and_what_an_agent_is_asked(name):
     for toolset in scenario.toolsets:
         check_toolset(toolset)  # raises on an unknown toolset
     check_assets(scenario)  # every asset exists and has a source and a license
-    # the agent version exports where the recording waits for it, and uses the same assets
+    # the agent version exports where the recording waits for it
     assert f"~/out/{scenario.agent_output}" in scenario.prompt
-    for name_ in scenario.assets:
-        assert f"~/assets/{name_}" in scenario.prompt or not name_.endswith((".png", ".jpg", ".svg"))
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_the_agent_finds_every_input_its_prompt_names(name, tmp_path):
+    scenario = load(name)
+    files = {path.name for path in agent_inputs(scenario, tmp_path)}
+    named = set(re.findall(r"~/inputs/([\w.-]+)", scenario.prompt))
+    assert named and named <= files, (named, files)
 
 
 def test_an_asset_without_source_and_license_is_refused():
@@ -62,3 +69,18 @@ def test_run_lists_the_scenarios_and_prints_prompts():
     assert prompt.stdout.strip() == load("thumbnail").prompt
     unknown = subprocess.run([*run, "nope"], capture_output=True, text=True, timeout=60)
     assert unknown.returncode != 0 and "unknown scenario" in unknown.stderr
+
+
+def test_the_restoration_agent_checks_reject_the_unrestored_scan(tmp_path):
+    from PIL import Image
+
+    from demo.scenarios import old_photo_restoration as restoration
+
+    restoration.make_scan(tmp_path / "scan.png")
+    scan = Image.open(tmp_path / "scan.png")
+    scan.save(tmp_path / "restored-web.jpg")
+    restoration.write_tiff16(tmp_path / "restored-print.tif", scan, 300)
+    failed = {c.description for c in restoration.agent_check(tmp_path, "") if not c.passed}
+    assert "the sky's color bands are level (under 0.5° measured)" in failed
+    assert "no scanner bed remains along the edges" in failed
+    assert "full contrast again (1%-99%: <=30 and >=225)" in failed

@@ -345,3 +345,8 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   composites in linear RGB, so 50% of (220, 30, 30) over (40, 80, 200) is (163, 61, 148), not the
   sRGB average (130, 55, 115); `gegl:gaussian-blur` also works in linear light, so an 8 px
   black-and-white checkerboard blurred flat becomes (188, 188, 188), the linear midpoint.
+* Heal and clone (seen building the restoration demo, #108, GIMP 3.2.6): a single-point `heal` stroke
+  (`gimp-heal`) on a 6 px dust spot with a 15 px brush at hardness 1 brings it back to the clean color
+  (within 10/255); at hardness 0.6 the soft edge keeps part of the spot. Along a scratch, each heal dab's
+  edge lies on the scratch, so heal carries it back in (still visible); `clone` along the stroke with the
+  same offset removes it, except where the source offset crosses an edge of the picture.

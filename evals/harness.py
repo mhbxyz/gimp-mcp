@@ -244,6 +244,8 @@ def report_json(results: list[TaskResult], meta: dict[str, Any]) -> dict[str, An
                 "cache_creation_tokens": r.metrics.cache_creation_tokens,
                 "model": r.metrics.model,
                 "gimp_tools": r.metrics.gimp_tools,
+                "date": meta.get("date", ""),
+                "package": meta.get("package", ""),
             }
             for r in results
         },
@@ -271,6 +273,8 @@ def report_markdown(data: dict[str, Any], found: list[str] | None = None) -> str
         f"model {meta.get('model', '?')}, {meta.get('date', '?')}. Default toolsets; the agent enables others itself.",
         "",
     ]
+    if meta.get("updated"):
+        lines += [f"Updated since: {meta['updated']} (each task's package and date are in the JSON).", ""]
     if found is not None:
         lines += ["## Compared with the baseline", ""]
         lines += [f"* **regression** {item}" for item in found] or ["No regression."]
