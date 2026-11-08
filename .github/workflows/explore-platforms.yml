@@ -1,0 +1,75 @@
+# Temporary: records facts about GIMP 3.2.6 on macOS and Windows runners for ADR 0008 (#98).
+name: Explore platforms
+on:
+  push:
+    branches: [explore/platforms]
+permissions:
+  contents: read
+jobs:
+  macos:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install GIMP 3.2.6 (arm64 DMG, checksum verified)
+        run: |
+          curl -fsSL -o gimp.dmg https://download.gimp.org/gimp/v3.2/macos/gimp-3.2.6-arm64.dmg
+          echo "854573aec2be6a185aa021109c3c0ca94f210379204b704231bdd191b4060294  gimp.dmg" | shasum -a 256 -c
+          hdiutil attach gimp.dmg -nobrowse -readonly -mountpoint /Volumes/gimp
+          ls -la /Volumes/gimp
+          app=$(find /Volumes/gimp -maxdepth 1 -name '*.app' | head -1)
+          cp -R "$app" /Applications/
+          hdiutil detach /Volumes/gimp
+      - name: Layout
+        run: |
+          app=$(ls -d /Applications/GIMP*.app | head -1); echo "app=$app"
+          ls -la "$app/Contents/MacOS"
+          find "$app/Contents" -maxdepth 3 \( -name 'gimp-console*' -o -name 'python3*' -o -name 'gimp-3*' \) | head -20
+          find "$app/Contents" -path '*plug-ins*' -maxdepth 4 -type d | head -10
+      - name: Probe GIMP's Python
+        timeout-minutes: 8
+        continue-on-error: true
+        run: |
+          app=$(ls -d /Applications/GIMP*.app | head -1)
+          console=$(find "$app/Contents/MacOS" -name 'gimp-console*' -type f | head -1)
+          [ -n "$console" ] || console="$app/Contents/MacOS/gimp"
+          echo "console=$console"
+          export PROBE_OUT="$PWD/probe.json"
+          "$console" --version
+          "$console" -i -n --no-splash --batch-interpreter=python-fu-eval \
+            -b "exec(open('$PWD/ci/explore/probe.py').read())" -b "Gimp.quit()" || echo "exit $?"
+          cat probe.json || true
+          ls -la "$HOME/Library/Application Support/GIMP" || true
+      - name: Probe the runner's Python
+        run: python3 ci/explore/host_probe.py
+  windows:
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install GIMP 3.2.6 (installer, checksum verified)
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri https://download.gimp.org/gimp/v3.2/windows/gimp-3.2.6-setup.exe -OutFile gimp-setup.exe
+          $hash = (Get-FileHash gimp-setup.exe -Algorithm SHA256).Hash
+          if ($hash -ne '9337CCCBC01D4098EE7A3DAB215B3AFBE6ECE99C5287C92441D6F12CF541EBCA') { throw "bad checksum $hash" }
+          Start-Process .\gimp-setup.exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/CURRENTUSER','/DIR=C:\gimp' -Wait
+          Get-ChildItem C:\gimp | Select-Object Name
+          Get-ChildItem C:\gimp\bin -Filter 'gimp*' | Select-Object Name
+          Get-ChildItem C:\gimp\bin -Filter 'python*' | Select-Object Name
+          Get-ChildItem C:\gimp\lib\gimp -Recurse -Depth 1 -ErrorAction SilentlyContinue | Select-Object -First 10 FullName
+      - name: Probe GIMP's Python
+        timeout-minutes: 8
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $env:PROBE_OUT = "$PWD\probe.json"
+          $probe = "$PWD\ci\explore\probe.py" -replace '\\','/'
+          $console = Get-ChildItem C:\gimp\bin -Filter 'gimp-console*.exe' | Select-Object -First 1
+          Write-Host "console=$($console.FullName)"
+          & $console.FullName --version
+          & $console.FullName -i -n --no-splash --batch-interpreter=python-fu-eval -b "exec(open('$probe').read())" -b "Gimp.quit()"
+          Get-Content probe.json
+          Get-ChildItem "$env:APPDATA\GIMP" -ErrorAction SilentlyContinue
+      - name: Probe the runner's Python
+        run: python ci/explore/host_probe.py
