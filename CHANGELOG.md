@@ -14,6 +14,10 @@ what is covered by the compatibility promise.
   and keeps the token handshake; nothing listens on the network (tested).
 - macOS support (#99): GIMP 3.2 from gimp.org on Apple Silicon, verified by the full end-to-end suite
   on GitHub's macOS 15 runner; the bridge's Unix socket checks the peer with `LOCAL_PEERCRED`.
+- `gimp-mcp install-plugin`, `setup` and `uninstall` on macOS and Windows (#101): GIMP profile and
+  Claude Desktop, Cursor and VS Code configurations at each OS's place (`~/Library/Application Support`,
+  `%APPDATA%`, `%USERPROFILE%`), with the same backups; on Windows the configured command is the
+  environment's `Scripts\gimp-mcp.exe` (or `uvx`), and works from a path with spaces.
 
 ### Changed
 

@@ -102,11 +102,11 @@ class Client:
 
     @property
     def home(self) -> Path:
-        return Path(self.env.get("HOME") or Path.home())
+        return Path(platforms.home(self.env))
 
     @property
     def config_home(self) -> Path:
-        return Path(platforms.config_home({**self.env, "HOME": str(self.home)}))
+        return Path(platforms.config_home(self.env))
 
     def detected(self) -> bool:
         raise NotImplementedError

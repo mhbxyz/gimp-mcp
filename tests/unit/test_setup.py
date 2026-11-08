@@ -18,14 +18,20 @@ from gimp_mcp.setup import SetupOptions, run_setup, server_command
 
 from .fake_bridge import running_fake_bridge
 
-FAKE_CLI_CMD = """@echo off
-echo %~f0 %*>> "{log}"
-if "%*"=="mcp get gimp" goto get
-if "%*"=="mcp get gimp --scope user" goto get
-exit /b 0
-:get
-{get_behaviour}
+# Windows: a .cmd relay to Python, which logs argv as the program received it (cmd.exe's %* is the
+# raw command line, quotes still escaped)
+FAKE_CLI_PY = """import sys
+log, has_gimp, name, args = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4:]
+with open(log, "a", encoding="utf-8") as out:
+    out.write(" ".join([name, *args]) + "\\n")
+if args[:3] == ["mcp", "get", "gimp"] and args[3:] in ([], ["--scope", "user"]):
+    if has_gimp == "yes":
+        print("  Command: /opt/gimp-mcp/bin/gimp-mcp serve")
+        sys.exit(0)
+    sys.exit(1)
 """
+
+FAKE_CLI_CMD = '@"{python}" "{relay}" "{log}" {has_gimp} "%~dpn0" %*\n@exit /b %ERRORLEVEL%\n'
 
 FAKE_CLI = """#!/bin/sh
 echo "$0 $*" >> "{log}"
@@ -75,6 +81,10 @@ def fake_program(bin_dir: Path, name: str, posix: str, cmd: str) -> None:
         script.chmod(0o755)
 
 
+def remove_program(bin_dir: Path, name: str) -> None:
+    (bin_dir / (f"{name}.cmd" if WINDOWS else name)).unlink()
+
+
 def isolated_env(home: Path, bin_dir: Path) -> dict[str, str]:
     """Every per-user location of every OS inside ``home``; only the fake programs on PATH."""
     env = {"HOME": str(home), "USERPROFILE": str(home), "APPDATA": str(home / "AppData" / "Roaming"),
@@ -100,12 +110,14 @@ def make_world(tmp_path: Path, clients: tuple[str, ...] = (), claude_has_gimp: b
     # gimp-console reporting 3.2.6
     fake_program(bin_dir, "gimp-console-3.2", "#!/bin/sh\necho 'GNU Image Manipulation Program version 3.2.6'\n",
                  "@echo GNU Image Manipulation Program version 3.2.6\n")  # fmt: skip
+    relay = tmp_path / "fake_cli.py"
+    relay.write_text(FAKE_CLI_PY, encoding="utf-8")
     for name in ("claude", "code"):
         if name in clients:
             get = "echo '  Command: /opt/gimp-mcp/bin/gimp-mcp serve'; exit 0" if claude_has_gimp else "exit 1"
-            get_cmd = "echo   Command: /opt/gimp-mcp/bin/gimp-mcp serve\nexit /b 0" if claude_has_gimp else "exit /b 1"
-            fake_program(bin_dir, name, FAKE_CLI.format(log=log, get_behaviour=get),
-                         FAKE_CLI_CMD.format(log=log, get_behaviour=get_cmd))  # fmt: skip
+            cmd = FAKE_CLI_CMD.format(python=sys.executable, relay=relay, log=log,
+                                      has_gimp="yes" if claude_has_gimp else "no")  # fmt: skip
+            fake_program(bin_dir, name, FAKE_CLI.format(log=log, get_behaviour=get), cmd)
     env = isolated_env(home, bin_dir)
     world = World(home, bin_dir, log, env)
     if "claude-desktop" in clients:
@@ -152,7 +164,7 @@ async def test_gimp3_directory_overrides_the_profile(tmp_path):
 
 async def test_missing_gimp_stops_with_instructions(tmp_path):
     world = make_world(tmp_path)
-    (world.bin / "gimp-console-3.2").unlink()
+    remove_program(world.bin, "gimp-console-3.2")
     world.env["PATH"] = str(world.bin)  # the machine's own GIMP must not be found
     code = await run_setup(options(world))
     assert code == 1 and "Install GIMP 3.2" in world.text
@@ -204,6 +216,15 @@ async def test_yes_configures_every_detected_client(tmp_path):
     cursor = json.loads((world.home / ".cursor" / "mcp.json").read_text())
     assert cursor["mcpServers"]["gimp"]["command"] == "/opt/gimp-mcp/bin/gimp-mcp"
     assert (config_home(world) / "Claude" / "claude_desktop_config.json").exists()
+
+
+@pytest.mark.skipif(not WINDOWS, reason="USERPROFILE is the home directory on Windows only")
+async def test_cursor_on_windows_lives_in_userprofile_even_when_home_is_set(tmp_path):
+    world = make_world(tmp_path, clients=("cursor",))
+    world.env["HOME"] = str(tmp_path / "msys-home")  # Git Bash and MSYS2 set HOME to their own directory
+    await run_setup(options(world, assume_yes=True, interactive=False))
+    assert (world.home / ".cursor" / "mcp.json").exists()
+    assert not (tmp_path / "msys-home").exists()
 
 
 async def test_running_twice_changes_nothing_the_second_time(tmp_path):
@@ -262,14 +283,16 @@ def test_server_command_is_absolute_and_pinned_when_run_through_uvx(tmp_path):
     uvx.write_text("")
     uvx.chmod(0o755)
     command = server_command(prefix=str(uv_cache), env={"PATH": str(uvx.parent)})
-    assert command == [str(uvx), "--from", f"gimp-mcp=={gimp_mcp.__version__}", "gimp-mcp", "serve"]
+    # shutil.which spells the extension as PATHEXT does (uvx.EXE); Windows paths ignore case
+    command[0] = os.path.normcase(command[0])
+    assert command == [os.path.normcase(uvx), "--from", f"gimp-mcp=={gimp_mcp.__version__}", "gimp-mcp", "serve"]
 
 
 def test_cli_entry_point(tmp_path):
     import subprocess
 
     world = make_world(tmp_path, clients=("cursor",))
-    env = {**os.environ, **world.env, "PATH": f"{world.bin}:{os.environ['PATH']}"}
+    env = {**os.environ, **world.env, "PATH": os.pathsep.join([str(world.bin), os.environ["PATH"]])}
     proc = subprocess.run(
         [sys.executable, "-m", "gimp_mcp", "setup", "--yes", "--no-doctor"],
         capture_output=True, text=True, env=env, timeout=60, stdin=subprocess.DEVNULL,
