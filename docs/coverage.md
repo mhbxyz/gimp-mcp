@@ -4,7 +4,7 @@
 
 Inventory: GIMP **3.2.6**, 1030 PDB procedures (722 internal, 3 persistent, 244 plugin, 61 temporary), 200 GEGL operations available to filters.
 
-MCP tools: **77**. PDB procedures relied upon by tools: **134** (13.0% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
+MCP tools: **81**. PDB procedures relied upon by tools: **138** (13.4% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
 
 ## Capabilities
 
@@ -14,6 +14,9 @@ MCP tools: **77**. PDB procedures relied upon by tools: **134** (13.0% of the in
 | Session | Toolsets: list the tool groups, enable more during a session | tested | `gimp_list_toolsets`, `gimp_enable_toolsets` | `tests/unit/test_toolsets.py`, `tests/e2e/test_thumbnail_journey.py` | 3.2 | MCP-side only, no GIMP procedure; see docs/toolsets.md |
 | Inspection | Image properties and ordered layer tree (groups, masks) | tested | `gimp_inspect_image`, `gimp_inspect_item` | `tests/e2e/test_inspect.py` | 3.2 |  |
 | Preview | Composite preview as PNG (max 1024 px) | tested | `gimp_preview` | `tests/e2e/test_preview.py` | 3.2 | 8-bit sRGB rendering of the visible layers; larger renders go through export. |
+| Modes | Convert between RGB, grayscale and indexed (palette, colors, dithering) | tested | `gimp_convert_mode` | `tests/e2e/test_modes.py` | 3.2 |  |
+| Modes | Convert precision (8/16/32-bit integer, half/float/double, linear or not) | tested | `gimp_convert_precision` | `tests/e2e/test_modes.py` | 3.2 |  |
+| Modes | Color profiles: read, assign, convert (intent, BPC), remove, built-in or ICC file; embed on export | tested | `gimp_get_color_profile`, `gimp_set_color_profile` | `tests/e2e/test_modes.py` | 3.2 |  |
 | Color | Levels, color balance, colorize, desaturate, invert, threshold, posterize (editable or destructive) | tested | `gimp_levels`, `gimp_color_balance`, `gimp_colorize`, `gimp_desaturate`, `gimp_invert`, `gimp_threshold`, `gimp_posterize` | `tests/unit/test_color_plans.py`, `tests/e2e/test_color.py` | 3.2 | Through GIMP's own operations (gimp:levels…) as filters, merged for destructive mode. |
 | Color | Curves (spline points or explicit samples) | tested | `gimp_curves` | `tests/e2e/test_color.py` | 3.2 | Destructive only: an editable curves filter needs a GimpCurve object. |
 | Color | Exposure, shadows-highlights, white balance, equalize, stretch contrast | tested | `gimp_exposure`, `gimp_shadows_highlights`, `gimp_auto_adjust` | `tests/e2e/test_color.py` | 3.2 |  |
@@ -40,7 +43,7 @@ MCP tools: **77**. PDB procedures relied upon by tools: **134** (13.0% of the in
 
 | Family | Procedures in GIMP | Used by MCP tools |
 |---|---|---|
-| `gimp-image-*` | 137 | 31 |
+| `gimp-image-*` | 137 | 35 |
 | `gimp-context-*` | 121 | 15 |
 | `plug-in-*` | 68 | 0 |
 | `gimp-drawable-*` | 56 | 30 |

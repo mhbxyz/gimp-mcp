@@ -29,6 +29,7 @@ TOOLSETS: dict[str, str] = {
     "full-resolution crops.",
     "color": "Color adjustments: levels, curves, color balance, colorize, desaturate, invert, threshold, "
     "posterize, exposure, shadows-highlights, automatic corrections.",
+    "modes": "Image mode (RGB, grayscale, indexed), precision (8 to 64 bits, linear or not) and ICC color profiles.",
     "effects": "The full GEGL filter catalog: list operations, apply any of them, edit, reorder and merge "
     "editable filters.",
     "procedures": "Search, describe and call allowlisted GIMP procedures (advanced).",

@@ -37,6 +37,9 @@ class SaveResult(BaseModel):
 class PngOptions(BaseModel):
     compression: int = Field(default=9, ge=0, le=9, description="zlib level, 0 (none) - 9 (smallest). Lossless.")
     interlaced: bool = Field(default=False, description="Adam7 interlacing.")
+    color_profile: bool | None = Field(
+        default=None, description="Embed the color profile (iCCP); default: only when the image has one assigned."
+    )
 
 
 class JpegOptions(BaseModel):
@@ -44,6 +47,9 @@ class JpegOptions(BaseModel):
     progressive: bool = Field(default=False, description="Progressive instead of baseline encoding.")
     optimize: bool = Field(default=True, description="Optimized Huffman tables.")
     smoothing: float = Field(default=0.0, ge=0.0, le=1.0)
+    color_profile: bool | None = Field(
+        default=None, description="Embed the color profile (ICC); default: only when the image has one assigned."
+    )
     background: str = Field(
         default="#ffffff", description="Color transparent pixels are flattened onto. " + COLOR_DESCRIPTION
     )
