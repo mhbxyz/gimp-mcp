@@ -398,7 +398,9 @@ work on them.
 * `gimp_create_vector_layer(path, name?, fill?, stroke?, position)`: renders a path with
   `fill` (`enabled`, `color`) and `stroke` (`enabled`, `color`, `width`, `cap`, `join`,
   `miter_limit`, `dash` in multiples of the width, `dash_offset`). `gimp_set_vector_layer` changes
-  only the given values; `gimp_inspect_vector_layer` returns the path id and every setting.
+  only the given values; `gimp_inspect_vector_layer` returns the path id and every setting,
+  including a fill or stroke pattern set in GIMP's UI. Patterns cannot be set: GIMP 3.2 has no
+  setter for them (#92).
 * `gimp_create_link_layer(image, file, name?, position)`, `gimp_set_link_layer(item, file)`,
   `gimp_inspect_link_layer` (file, MIME type). The XCF stores the file's path **and** the last
   pixels: when the XCF is opened GIMP reads the file again (a changed file shows its new
