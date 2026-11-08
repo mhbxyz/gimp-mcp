@@ -3,7 +3,7 @@
     "package": "0.5.0 (checkout)",
     "model": "claude-sonnet-5-5",
     "date": "2026-11-08",
-    "updated": "old-photo-restoration, product-cutout and social-media-kit on 2026-11-08"
+    "updated": "old-photo-restoration, product-cutout and social-media-kit on 2026-11-08; screenshot-annotation on 2026-11-08"
   },
   "tasks": {
     "resize-export": {
@@ -1390,6 +1390,102 @@
       "output_tokens": 12850,
       "cache_read_tokens": 663588,
       "cache_creation_tokens": 37993,
+      "model": "claude-sonnet-5-5",
+      "gimp_tools": 50,
+      "date": "2026-11-08",
+      "package": "0.5.0 (checkout)"
+    },
+    "screenshot-annotation": {
+      "passed": false,
+      "checks": [
+        {
+          "description": "the session finished",
+          "passed": true,
+          "detail": "success"
+        },
+        {
+          "description": "tutorial.png is a lossless PNG of the same size",
+          "passed": true,
+          "detail": "PNG (1280, 800)"
+        },
+        {
+          "description": "the e-mail keeps no detail (no glyph pixel left)",
+          "passed": true,
+          "detail": "dark pixels 0 (were 229)"
+        },
+        {
+          "description": "the avatar keeps no detail (flatter, eyes and mouth gone)",
+          "passed": true,
+          "detail": "std dev 39.3 (was 71.4), features still visible at []"
+        },
+        {
+          "description": "outside the annotations and redactions, pixels are identical to the screenshot",
+          "passed": true,
+          "detail": "0 other changed pixels"
+        },
+        {
+          "description": "red annotations at the Save button, the E-mail field, the Name and Phone fields",
+          "passed": true,
+          "detail": "red pixels: save 2236, e-mail 608, name 636, phone 608"
+        },
+        {
+          "description": "the PNG carries no metadata (no text, Exif, time or profile chunk)",
+          "passed": false,
+          "detail": "chunks ['IHDR', 'sRGB', 'gAMA', 'cHRM', 'pHYs', 'tIME', 'IDAT', 'IDAT', 'IDAT', 'IEND']"
+        }
+      ],
+      "tool_calls": 36,
+      "tools": [
+        "gimp_open_image",
+        "gimp_preview",
+        "gimp_list_toolsets",
+        "gimp_enable_toolsets",
+        "gimp_describe_filter_operation",
+        "gimp_inspect_image",
+        "gimp_select_rectangle",
+        "gimp_apply_filter",
+        "gimp_select_rectangle",
+        "gimp_apply_filter",
+        "gimp_select_rectangle",
+        "gimp_create_layer",
+        "gimp_draw_shape",
+        "gimp_draw_shape",
+        "gimp_draw_shape",
+        "gimp_draw_shape",
+        "gimp_draw_path",
+        "gimp_draw_path",
+        "gimp_create_text_layer",
+        "gimp_create_text_layer",
+        "gimp_create_text_layer",
+        "gimp_create_text_layer",
+        "gimp_set_layer_offsets",
+        "gimp_set_layer_offsets",
+        "gimp_set_layer_offsets",
+        "gimp_set_layer_offsets",
+        "gimp_preview",
+        "gimp_select_rectangle",
+        "gimp_draw_path",
+        "gimp_draw_path",
+        "gimp_draw_path",
+        "gimp_draw_path",
+        "gimp_draw_path",
+        "gimp_draw_path",
+        "gimp_preview",
+        "gimp_export_image"
+      ],
+      "errors": [],
+      "other_tools": [
+        "ToolSearch",
+        "Bash",
+        "ToolSearch",
+        "ToolSearch"
+      ],
+      "duration_s": 76.3,
+      "turns": 41,
+      "input_tokens": 38,
+      "output_tokens": 8628,
+      "cache_read_tokens": 492658,
+      "cache_creation_tokens": 32545,
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-08",

@@ -90,11 +90,31 @@ def social_media_kit(out: Path, report: Report) -> None:
     assert sum("guides on the safe area" in c.description and c.passed for c in report.checks) == 4
 
 
+def screenshot_annotation(out: Path, report: Report) -> None:
+    import struct
+
+    with Image.open(out / "screenshot.png") as before, Image.open(out / "tutorial.png") as after:
+        assert after.format == "PNG" and after.size == before.size == (1280, 800)
+        a, b = before.convert("RGB"), after.convert("RGB")
+        # far from every annotation: the sidebar and the header's left part are untouched
+        assert a.crop((0, 140, 260, 800)).tobytes() == b.crop((0, 140, 260, 800)).tobytes()
+        assert a.crop((0, 0, 1000, 140)).tobytes() == b.crop((0, 0, 1000, 140)).tobytes()
+        # no dark glyph remains in the e-mail field
+        assert sum(b.crop((424, 312, 760, 332)).convert("L").histogram()[:100]) == 0
+    data, chunks, pos = (out / "tutorial.png").read_bytes(), [], 8
+    while pos < len(data):
+        length, kind = struct.unpack(">I4s", data[pos : pos + 8])
+        chunks.append(kind)
+        pos += 12 + length
+    assert not {b"tEXt", b"iTXt", b"zTXt", b"eXIf", b"tIME"} & set(chunks), chunks
+
+
 INDEPENDENT: dict[str, Callable[[Path, Report], None]] = {
     "thumbnail": thumbnail,
     "old-photo-restoration": old_photo_restoration,
     "product-cutout": product_cutout,
     "social-media-kit": social_media_kit,
+    "screenshot-annotation": screenshot_annotation,
 }
 
 
