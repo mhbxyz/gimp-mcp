@@ -19,6 +19,27 @@
 * Paths given to file tools are interpreted with the user's permissions (see
   the file tools documentation for overwrite rules).
 
+## File paths
+
+Decision (#102): file tools accept **local absolute paths only**.
+
+* On Windows, UNC paths (`\\server\share\…`, including `\\localhost\C$\…`) and the device
+  namespaces (`\\?\…`, `\\.\…`) are refused before GIMP is asked anything. Opening a UNC path makes
+  Windows connect to that machine and offer the user's credentials (NTLM), so a path suggested by
+  a document or a web page an agent read could leak them or pull a file from an attacker's server.
+  Reserved device names (`CON`, `NUL`, `COM1`…) are refused too: they are not files.
+* Mapped drives (`Z:\…`) and network file systems mounted on Linux or macOS are accepted: the user
+  chose to mount them, and the OS presents them as local paths.
+* Batch globs stay inside their directory: patterns cannot have a drive, a root or `..`, and
+  every match is kept only if its resolved location is inside the directory, compared by file
+  identity (device and inode), so symlinks, junctions, case and Unicode spellings cannot escape.
+* "Never an input" and "same file listed twice" compare file identities; outputs that do not exist
+  yet are compared as the OS names them (case-insensitive on macOS and Windows, Unicode form
+  ignored on macOS, the safe side on case-sensitive volumes).
+
+Tests: `tests/unit/test_os_paths.py` (rules for every OS on every runner, and the behaviour of the
+runner's own file system) and `tests/e2e/test_os_paths.py` (real GIMP on Linux, macOS and Windows).
+
 ## Reliability guarantees
 
 | Situation | Behaviour | Test |

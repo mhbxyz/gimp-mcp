@@ -43,6 +43,13 @@ what is covered by the compatibility promise.
 
 ### Security
 
+- File tools refuse Windows network (UNC) and device paths and reserved device names: opening a
+  UNC path sends the user's credentials to that machine (#102, `docs/security.md#file-paths`).
+- Batch globs decide "inside the directory" by file identity, so Windows junctions, case and
+  Unicode spellings cannot escape it; an output that is an input under another spelling (`A.PNG`
+  for `a.png` on macOS or Windows, another Unicode form on macOS) is refused, and so are two
+  outputs the OS would name alike (#102).
+
 - The bridge refuses a connection whose peer uid it cannot read; it used to accept it, which mattered
   on systems without `SO_PEERCRED`. On macOS the uid now comes from `LOCAL_PEERCRED` (#98).
 

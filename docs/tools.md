@@ -148,6 +148,11 @@ structured metadata: `width`, `height` (preview), `source_width`,
   permissions**. They must be **absolute** (`~` is expanded): GIMP and the MCP
   server do not share a working directory, so relative paths are refused
   (`INVALID_ARGUMENT`).
+* They must be **local**. On Windows, network (UNC, `\\server\share\…`) and
+  device paths (`\\?\…`, `\\.\…`) and reserved device names (`CON`, `NUL`,
+  `COM1`…, with or without extension) are refused (`INVALID_ARGUMENT`): copy the
+  file to a local folder first. Mapped drives and mounted network file systems
+  are local paths for the OS and are accepted ([security](security.md#file-paths)).
 * Directories are never created (`WRITE_FAILED` when the parent is missing or
   not writable).
 * An existing file is **never replaced** unless `overwrite: true`
@@ -466,12 +471,15 @@ call of a listed tool, with that tool's own checks.
   number, `{index:03d}` is formatted). `{{` and `}}` are literal braces. Steps cannot call
   `gimp_run_batch`, `gimp_enable_toolsets` or `gimp_close_image`, nor tools of disabled toolsets.
 * Inputs: explicit absolute `files`, or the regular files matching `pattern` (`*.jpg`,
-  `**/*.png`) inside the absolute `directory`, sorted. The pattern cannot be absolute or contain
-  `..`, and symlinks pointing outside the directory are not followed. More than `max_files`
-  matches is refused.
+  `**/*.png`) inside the absolute `directory`, sorted. The pattern cannot be absolute (no drive or
+  root) or contain `..`, and links (symlinks, Windows junctions) leading outside the directory are not
+  followed: "inside" is decided by file identity, so case and Unicode spellings cannot fool it. A file
+  listed twice under two spellings (`a.png`, `A.png` on macOS or Windows) is refused. More than
+  `max_files` matches is refused.
 * Outputs: `output` is a naming pattern (`~/out/{stem}-small.webp`) written by the step whose path
   is `{output}`. Every output is checked before the first file is opened: its directory exists,
-  no two inputs give the same output, no output is an input, and an existing file is refused with
+  no two inputs give the same output (compared as the OS does: ignoring case on macOS and Windows,
+  and the Unicode form on macOS), no output is an input (whatever its spelling, by file identity), and an existing file is refused with
   `FILE_EXISTS` unless `overwrite=true` (the batch passes `overwrite` to the writing step).
 * Validation before anything runs: tool names, argument names and types (with the first file's
   values), placeholders and outputs. Any problem is `INVALID_ARGUMENT` (or `FILE_EXISTS`,
