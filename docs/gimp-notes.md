@@ -142,5 +142,12 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   a hidden filter (`set_visible(False)`) leaves the rendering byte-identical; XCF keeps editable
   filters with their parameters. Baking a filter stack stores 8-bit values while the live stack
   computes in float: results may differ by 1.
+* **Color operations** (checked 2026-11-08): `gimp:levels` defaults to `trc=linear` (64 with
+  input 0..128 gives 90); `trc=non-linear` works on sRGB values (gives 128, like the Levels
+  dialog). `gimp:colorize` ignores a changed `hue`/`saturation` and follows its `color` property
+  (HSL(h, s, 50%); `colorize_hsl(0, 100, 0)` and `color=#ff0000` both give (176, 0, 0) on 50% gray).
+  `gimp_drawable_curves_explicit` asserts `num_values >= 256`. `levels_stretch()` (Auto White
+  Balance) leaves a 50/200 two-tone image at 3/255, not 0/255. `equalize(False)` maps a two-tone
+  image to 128/255. `gimp:curves` needs a `GimpCurve` object, which plug-ins cannot build.
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.
