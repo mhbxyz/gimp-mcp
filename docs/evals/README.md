@@ -64,7 +64,18 @@ A `Task` in `evals/tasks.py`: name, the toolsets a solution needs, the prompt (n
 pass on the reference and fail on an empty output folder, and that the prompt names every file.
 A failure found by the suite is fixed, or filed as an issue for the API review (milestone v0.7.0).
 
-## Baseline (2026-11-08)
+## End of v0.6.0 (2026-11-09)
+
+The [baseline](baseline.md) is now the full run at the end of v0.6.0: **21 of 26 tasks pass** (all 18 basic tasks
+but `darken`, and 6 of the 8 demo scenarios' agent versions), with gimp-mcp as released in 0.6.0 and Claude Sonnet 5.5.
+Each failure has its issue for the API review (v0.7.0): `darken` (#149), `product-cutout` and `web-photo-batch` (no
+sRGB profile embedded, #158; the batch also set the opacity on the photo instead of the watermark, #162),
+`print-flyer` (a TIFF page per layer, #165), and `old-photo-restoration`, which passed on its first run and missed
+this time (contrast 11-218 instead of ≥225, alignment 13.8 for 12): the same agent, the same tools, another
+choice of levels. Agents vary from run to run: compare with the baseline over several runs before calling a change a
+regression. `lossless-webp` and `screenshot-annotation`, which failed in their first runs, passed.
+
+## First baseline (2026-11-08)
 
 [16 of the first 18 tasks pass](baseline.md) with gimp-mcp 0.5.0 and Claude Sonnet 5.5. What the run
 showed, each filed for the API review (v0.7.0):

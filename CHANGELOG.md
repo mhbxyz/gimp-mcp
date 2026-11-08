@@ -6,6 +6,8 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-09
+
 ### Added
 
 - Demo: photo montage with sky replacement (#115). `uv run demo/run.py sky-replacement` replaces a sky
@@ -56,16 +58,16 @@ what is covered by the compatibility promise.
   and flags regressions against `docs/evals/baseline.json`. `evals.yml` runs it on demand and on
   release pull requests (secret `CLAUDE_CODE_OAUTH_TOKEN`).
 
+### Changed
+
+- The README demo is re-recorded with 0.5.0, through `demo/video/record.sh 0.5.0 thumbnail` (#107).
+
 ### Fixed
 
 - The web photo batch demo reads a photo's EXIF orientation from the file when GIMP for Windows returns none
   (it sometimes does, #173).
 - The release waits until PyPI serves a new version to both pip and uv: for v0.5.0, uv could not
   resolve it on the macOS runner seconds after pip could, and the verification failed (passed on re-run).
-
-### Changed
-
-- The README demo is re-recorded with 0.5.0, through `demo/video/record.sh 0.5.0 thumbnail` (#107).
 
 ## [0.5.0] - 2026-11-08
 
@@ -338,6 +340,7 @@ First usable release. Linux only, GIMP 3.2+.
 - Demo (`demo/thumbnail.py`) building a 1280×720 thumbnail through MCP only.
 - CI with a real GIMP 3.2.6 pinned through an Arch Linux Archive snapshot.
 
+[0.6.0]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v0.6.0
 [0.5.0]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v0.5.0
 [0.4.0]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v0.4.0
 [0.3.0]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v0.3.0
