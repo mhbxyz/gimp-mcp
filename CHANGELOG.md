@@ -6,6 +6,11 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+### Added
+
+- macOS support (#99): GIMP 3.2 from gimp.org on Apple Silicon, verified by the full end-to-end suite
+  on GitHub's macOS 15 runner; the bridge's Unix socket checks the peer with `LOCAL_PEERCRED`.
+
 ### Changed
 
 - The README demo is re-recorded with 0.4.0.
@@ -15,6 +20,15 @@ what is covered by the compatibility promise.
 
 ### Fixed
 
+- macOS: the bridge plug-in no longer crashes while listing filters. Operations with a format, pointer or
+  buffer parameter (read from GEGL, which the plug-in now initializes) are never instantiated: libgimp
+  cannot carry those values, and doing it corrupted the plug-in on macOS. Of the 200 operations GIMP
+  3.2.6 offers, only `gegl:checkerboard` changes: it was listed as supported although its `format`
+  parameter was silently dropped, and is now refused with that reason. Enum parameters are listed from
+  the class of one of their values, once per enum type, instead of `pspec.enum_class`, which crashed the
+  plug-in after a few hundred lookups; operations refused by name are no longer instantiated (#99).
+- `gimp-mcp doctor` checks the Python bundled with GIMP on macOS and Windows instead of the system
+  `python3` (#99).
 - The release workflow waits for PyPI's index to serve a new version before installing it: v0.4.0's
   check ran before PyPI's CDN had the release, which stopped the MCP registry and the public release.
 - Text files are read and written as UTF-8 on every OS (the default encoding is not UTF-8 on Windows).

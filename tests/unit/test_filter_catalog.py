@@ -96,3 +96,19 @@ def test_stack_reordering_plan():
     assert gmb_filters.reorder_plan(["c", "b", "a"], "b", 1) == ([], ["c", "b", "a"])
     with pytest.raises(ValueError):
         gmb_filters.reorder_plan(["c", "b", "a"], "b", 3)
+
+
+def test_operations_with_parameters_libgimp_cannot_transfer_are_never_instantiated():
+    # GEGL's own description of a few operations (Gegl.Operation.list_properties, GEGL 0.4 on GIMP 3.2.6):
+    # instantiating them as GIMP filters makes libgimp deserialize a format/pointer/buffer value, which
+    # crashes the plug-in on macOS (docs/gimp-notes.md).
+    checkerboard = [("ParamSpecInt", "gint"), ("ParamFormat", "gpointer"), ("ParamColor", "GeglColor")]
+    buffer_source = [("ParamSpecObject", "GeglBuffer")]
+    npd = [("ParamSpecPointer", "gpointer")]
+    introspect = [("ParamSpecObject", "GeglNode")]
+    blur = [("ParamSpecDouble", "gdouble"), ("ParamSpecEnum", "GeglAbyssPolicy")]
+    assert gmb_filters.untransferable_parameters(checkerboard) == ["GeglParamFormat"]
+    assert gmb_filters.untransferable_parameters(buffer_source) == ["GeglBuffer"]
+    assert gmb_filters.untransferable_parameters(npd) == ["gpointer"]
+    assert gmb_filters.untransferable_parameters(introspect) == ["GeglNode"]
+    assert gmb_filters.untransferable_parameters(blur) == []
