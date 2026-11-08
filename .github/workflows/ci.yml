@@ -39,6 +39,23 @@ jobs:
       - run: uv sync --frozen
       - run: uv run pytest tests/unit -ra
 
+  e2e-macos:
+    name: End-to-end on macOS 15 (arm64) with GIMP 3.2.6
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install GIMP 3.2.6 from gimp.org (SHA-256 verified)
+        run: ci/install-gimp-macos.sh
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --frozen
+      - name: End-to-end tests on a real GIMP
+        env:
+          GIMP_MCP_REQUIRE_GIMP: "1"
+        run: uv run pytest tests/e2e -ra
+
   e2e:
     name: End-to-end with GIMP 3.2.6 (pinned Arch snapshot)
     runs-on: ubuntu-24.04
