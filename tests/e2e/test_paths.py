@@ -221,3 +221,75 @@ async def test_invalid_path_requests_change_nothing(gimp: HeadlessGimp, tmp_path
         assert len((await call(client, "gimp_inspect_image", image=image))["paths"]) == 2
         for each in (image, other):
             await call(client, "gimp_close_image", image=each, discard_changes=True)
+
+
+def path_bounds(path: dict) -> tuple[float, float, float, float]:
+    boxes = [s["bounds"] for s in path["strokes"] if s["bounds"]]
+    x0, y0 = min(b["x"] for b in boxes), min(b["y"] for b in boxes)
+    x1 = max(b["x"] + b["width"] for b in boxes)
+    y1 = max(b["y"] + b["height"] for b in boxes)
+    return x0, y0, x1, y1
+
+
+async def test_text_follows_a_line_and_a_circle(gimp: HeadlessGimp, tmp_path: Path):
+    async with mcp_client(gimp) as client:
+        image, _ = await canvas(client, 500)
+        text = await call(client, "gimp_create_text_layer", image=image, text="WAVE", size=40, x=300, y=40)
+        layer = await call(client, "gimp_inspect_item", item=text["id"])
+        height = layer["height"]
+        outline = path_bounds(await call(client, "gimp_path_from_text", item=text["id"]))
+
+        # on a straight line, the outline is only moved: its middle line (half the layer's height) on the line
+        line = await call(
+            client, "gimp_create_path", image=image, strokes=[{"type": "polyline", "points": [[50, 300], [450, 300]]}]
+        )
+        along = await call(client, "gimp_text_along_path", item=text["id"], path=line["id"])
+        assert along["id"] not in (line["id"], text["id"]) and along["stroke_count"] >= 4
+        x0, y0, x1, y1 = path_bounds(along)
+        assert math.isclose(x0, outline[0] - 300 + 50, abs_tol=1)
+        assert math.isclose(y0, outline[1] - 40 + 300 - height / 2, abs_tol=1)
+        assert math.isclose(x1 - x0, outline[2] - outline[0], abs_tol=1)
+        assert math.isclose(y1 - y0, outline[3] - outline[1], abs_tol=1)
+
+        # on a circle, every painted pixel of the warped text lies in the ring the text box covers
+        ring = await call(
+            client,
+            "gimp_create_path",
+            image=image,
+            strokes=[{"type": "ellipse", "center": [250, 250], "radius_x": 150, "radius_y": 150}],
+        )
+        curved = await call(client, "gimp_text_along_path", item=text["id"], path=ring["id"], name="Curved")
+        assert curved["name"] == "Curved"
+        paint = await call(client, "gimp_create_layer", image=image, name="Paint", fill="transparent")
+        await call(client, "gimp_set_layer_properties", item=text["id"], visible=False)
+        await call(client, "gimp_fill_path", path=curved["id"], item=paint["id"], color="#000000")
+        img = await png(client, image, tmp_path / "curved.png")
+        dark = [(x, y) for y in range(500) for x in range(500) if rgb(img, x, y)[0] < 100]
+        assert len(dark) > 500
+        distances = [math.hypot(x - 250, y - 250) for x, y in dark]
+        assert 150 - height / 2 - 2 <= min(distances) and max(distances) <= 150 + height / 2 + 2
+
+        # the text layer and the guide path are unchanged
+        moved = await call(client, "gimp_inspect_item", item=text["id"])
+        assert (moved["x"], moved["y"]) == (layer["x"], layer["y"]) == (300, 40)
+        assert path_bounds(await call(client, "gimp_inspect_path", path=ring["id"])) == path_bounds(ring)
+
+        paths_before = (await call(client, "gimp_inspect_image", image=image))["paths"]
+        other, other_layer = await canvas(client)
+        elsewhere = await call(client, "gimp_create_path", image=other, strokes=[SQUARE])
+        dot = await call(
+            client, "gimp_create_path", image=image, strokes=[{"type": "polyline", "points": [[5, 5], [5, 5]]}]
+        )
+        assert (await error(client, "gimp_text_along_path", item=text["id"], path=elsewhere["id"]))[
+            "code"
+        ] == "IMAGE_MISMATCH"
+        assert (await error(client, "gimp_text_along_path", item=other_layer, path=elsewhere["id"]))[
+            "code"
+        ] == "WRONG_KIND"
+        assert (await error(client, "gimp_text_along_path", item=text["id"], path=dot["id"]))[
+            "code"
+        ] == "INVALID_ARGUMENT"
+        paths_after = (await call(client, "gimp_inspect_image", image=image))["paths"]
+        assert len(paths_after) == len(paths_before) + 1  # only the zero-length path was added
+        for each in (image, other):
+            await call(client, "gimp_close_image", image=each, discard_changes=True)

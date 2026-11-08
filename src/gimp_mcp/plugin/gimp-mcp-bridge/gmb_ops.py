@@ -21,6 +21,7 @@ import gmb_resources  # noqa: E402
 import gmb_stats  # noqa: E402
 import gmb_text  # noqa: E402
 import gmb_undo  # noqa: E402
+import gmb_warp  # noqa: E402
 from gi.repository import Babl, Gegl, Gimp, Gio, GObject  # noqa: E402
 from gmb_server import BridgeError  # noqa: E402
 
@@ -2099,6 +2100,41 @@ def path_from_text(params):
         if path is None:
             raise BridgeError("GIMP_ERROR", "GIMP could not outline the text layer")
         image.insert_path(path, None, 0)
+    return path_info(path)
+
+
+def _strokes_of(path):
+    strokes = []
+    for stroke in _stroke_ids(path):
+        _kind, controls, closed = path.stroke_get_points(stroke)
+        strokes.append((list(controls), bool(closed)))
+    return strokes
+
+
+@mutation
+def path_text_along(params):
+    """GIMP's Text along Path (no PDB procedure in 3.2): the text's outline warped along a path (#88)."""
+    layer = get_text_layer(params)
+    guide = get_path(params)
+    image = layer.get_image()
+    if guide.get_image().get_id() != image.get_id():
+        raise BridgeError("IMAGE_MISMATCH", "the text layer and the path belong to different images")
+    try:
+        warp = gmb_warp.PathWarp(_strokes_of(guide))
+    except ValueError:
+        raise BridgeError("INVALID_ARGUMENT", "path %d has no length to lay text along" % guide.get_id()) from None
+    outline = Gimp.Path.new_from_text_layer(image, layer)
+    if outline is None:
+        raise BridgeError("GIMP_ERROR", "GIMP could not outline the text layer")
+    _ok, x, y = layer.get_offsets()
+    local = [([v - (x if i % 2 == 0 else y) for i, v in enumerate(controls)], closed)
+             for controls, closed in _strokes_of(outline)]  # fmt: skip
+    warped = warp.warp_strokes(local, 0.5 * layer.get_height())  # GIMP centers horizontal text on the path
+    with undo_step(image):
+        path = Gimp.Path.new(image, params.get("name") or "%s along %s" % (layer.get_name(), guide.get_name()))
+        image.insert_path(path, None, 0)
+        for controls, closed in warped:
+            path.stroke_new_from_points(Gimp.PathStrokeType.BEZIER, controls, closed)
     return path_info(path)
 
 
@@ -4758,6 +4794,7 @@ def build_operations():
         "path.create": path_create,
         "path.add_stroke": path_add_stroke,
         "path.from_text": path_from_text,
+        "path.text_along": path_text_along,
         "path.inspect": path_inspect,
         "path.set": path_set,
         "path.duplicate": path_duplicate,

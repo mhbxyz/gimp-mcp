@@ -172,7 +172,12 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   `image.select_item(op, path)` selects the enclosed area. `plug-in-sel2path` traces the selection
   into a new path named after the (localized) word "Selection". `import_paths_from_string(svg,
   length, merge, scale)` → `(ok, paths)`; `export_path_to_string(path or None)` writes inches
-  from the image resolution. `Gimp.Path.new_from_text_layer(image, layer)`. Paths survive XCF.
+  from the image resolution. `Gimp.Path.new_from_text_layer(image, layer)` places the outline at the
+  layer's offsets. Paths survive XCF. Text along Path has no PDB procedure in 3.2: the text tool runs
+  `gimp_path_warp_path(path, text_outline, 0.5 * layer_height)` (`app/tools/gimptexttool.c`,
+  `app/path/gimppath-warp.c`): x is a distance along the strokes, y an offset along the normal
+  (estimated over ±2 px); GIMP puts points before the start at (0, 0), gimp-mcp extends the first
+  tangent instead.
 * **Resources** (checked 2026-11-08): `Gimp.Brush/Gradient/Pattern/Palette.get_by_name(name)`
   (`None` when missing), `Gimp.brushes_get_list(filter)` etc.; built-in names are localized.
   `Gimp.Brush.new(name)` makes an editable generated brush; setters return `(ok, value)`.
