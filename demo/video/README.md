@@ -5,7 +5,7 @@ gets one prompt ([prompt.txt](prompt.txt)) and drives a real GIMP 3.2 through
 the gimp-mcp package published on PyPI. Nothing is scripted on the GIMP side.
 
 ```sh
-CLAUDE_CODE_OAUTH_TOKEN=... demo/video/record.sh 0.2.0   # token: `claude setup-token`
+CLAUDE_CODE_OAUTH_TOKEN=... demo/video/record.sh 0.3.0   # token: `claude setup-token`
 ```
 
 * [Dockerfile](Dockerfile): an Arch Linux snapshot with GIMP, Xvfb, Alacritty and ffmpeg.

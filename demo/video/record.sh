@@ -10,9 +10,10 @@
 # the client runs in a fresh HOME with only the gimp server (--strict-mcp-config).
 # Outputs: raw.mkv, demo.mp4, demo.webp, poster.png, thumbnail.png (see encode.sh).
 set -euo pipefail
+# OUTPUT_DIR is relative to the caller's directory, so resolve it before cd.
+OUT=$(realpath -m "${2:-$(dirname "$0")/out}")
 cd "$(dirname "$0")"
 VERSION=${1:-$(cd ../.. && uv run --quiet python -c "import gimp_mcp; print(gimp_mcp.__version__)")}
-OUT=$(realpath -m "${2:-out}")
 CLAUDE_BIN=${CLAUDE_BIN:-$(readlink -f "$(command -v claude)")}
 : "${CLAUDE_CODE_OAUTH_TOKEN:?set CLAUDE_CODE_OAUTH_TOKEN (claude setup-token)}"
 NAME=gimp-mcp-video-$$
