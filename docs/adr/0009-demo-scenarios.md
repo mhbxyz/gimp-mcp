@@ -16,7 +16,8 @@ material. One hard-coded script (`demo/thumbnail.py`) did this for one demo only
 * The **scripted** version runs with the toolsets it declares and nothing else, so it proves they
   are enough; its checks are facts (sizes, trees, text, pixels, files read with Pillow), recorded
   with every tool call in `report.md`.
-* The **agent** version is the scenario's prompt given to Claude Code in the isolated video
+* The **agent** version is the scenario's prompt, on files in `~/inputs` (its assets and generated
+  inputs), given to Claude Code in the isolated video
   container (`demo/video/record.sh VERSION SCENARIO`); its result is not asserted by CI (the agent
   evaluation suite, #106, measures agents).
 * `tests/e2e/test_demo_scenarios.py` runs every scenario on a real GIMP in the e2e jobs (Linux,

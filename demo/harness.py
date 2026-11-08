@@ -106,7 +106,7 @@ class Session:
     def out(self) -> Path:
         return self.report.out_dir
 
-    async def call(self, tool: str, **arguments: Any) -> dict[str, Any]:
+    async def call(self, tool: str, /, **arguments: Any) -> dict[str, Any]:
         started = time.monotonic()
         result = await self.client.call_tool(tool, arguments)
         duration = (time.monotonic() - started) * 1000
@@ -120,7 +120,7 @@ class Session:
         self.report.calls.append(CallRecord(tool, arguments, duration, True, summarize(data)))
         return data
 
-    async def error(self, tool: str, **arguments: Any) -> dict[str, Any]:
+    async def error(self, tool: str, /, **arguments: Any) -> dict[str, Any]:
         """A call that must be refused: returns its error (code, message, hint)."""
         started = time.monotonic()
         result = await self.client.call_tool(tool, arguments)
@@ -170,8 +170,22 @@ class Scenario:
     assets: tuple[str, ...]  # files of demo/assets, each listed in LICENSES.md
     outputs: tuple[str, ...]  # files the scripted version writes in its output directory
     steps: Steps  # the scripted version: MCP calls and factual checks
-    prompt: str  # the agent version: one natural-language request (demo/video/record.sh)
+    prompt: str  # the agent version: one natural-language request, on files in ~/inputs
     agent_output: str  # the file the agent version exports into ~/out (the recording waits for it)
+    # files the agent version needs in ~/inputs besides the assets (e.g. a generated scan)
+    make_agent_inputs: Callable[[Path], None] | None = None
+
+
+def agent_inputs(scenario: Scenario, directory: Path) -> list[Path]:
+    """Fill ``directory`` (the agent's ~/inputs) with the scenario's assets and generated inputs."""
+    import shutil
+
+    directory.mkdir(parents=True, exist_ok=True)
+    for name in scenario.assets:
+        shutil.copyfile(asset(name), directory / name)
+    if scenario.make_agent_inputs is not None:
+        scenario.make_agent_inputs(directory)
+    return sorted(path for path in directory.rglob("*") if path.is_file())
 
 
 def asset(name: str) -> Path:
@@ -200,13 +214,14 @@ def check_assets(scenario: Scenario, licenses: dict[str, tuple[str, str]] | None
 
 
 def scenario_names() -> list[str]:
-    return sorted(path.stem for path in SCENARIOS.glob("*.py") if not path.stem.startswith("_"))
+    """Scenario names use hyphens (`old-photo-restoration`); their modules, underscores."""
+    return sorted(path.stem.replace("_", "-") for path in SCENARIOS.glob("*.py") if not path.stem.startswith("_"))
 
 
 def load(name: str) -> Scenario:
     if name not in scenario_names():
         raise KeyError(f"unknown scenario {name!r} (known: {', '.join(scenario_names())})")
-    scenario = importlib.import_module(f"demo.scenarios.{name}").SCENARIO
+    scenario = importlib.import_module(f"demo.scenarios.{name.replace('-', '_')}").SCENARIO
     assert isinstance(scenario, Scenario) and scenario.name == name, name
     return scenario
 
@@ -232,6 +247,24 @@ async def run_scenario(scenario: Scenario, out_dir: Path, server: StdioServerPar
         report.check("scenario ran to completion", False, f"{type(exc).__name__}: {exc}")
     (out_dir / "report.md").write_text(report.markdown(), encoding="utf-8")
     return report
+
+
+def publish(name: str, out_dir: Path, docs: Path) -> Path:
+    """Copy a scenario's report and previews into ``docs/demos/<name>/`` (previews as WebP, to keep
+    the repository small), for its documentation page."""
+    from PIL import Image
+
+    target = docs / "demos" / name
+    (target / "previews").mkdir(parents=True, exist_ok=True)
+    report = (out_dir / "report.md").read_text(encoding="utf-8")
+    # paths of this machine become repository paths
+    report = report.replace(str(out_dir), f"demo/out/{name}").replace(str(ASSETS), "demo/assets")
+    for png in sorted((out_dir / "previews").glob("*.png")):
+        with Image.open(png) as img:
+            img.save(target / "previews" / f"{png.stem}.webp", quality=80, method=6)
+        report = report.replace(f"previews/{png.name}", f"previews/{png.stem}.webp")
+    (target / "report.md").write_text(report, encoding="utf-8")
+    return target
 
 
 def server_parameters(socket_path: str, token_path: str | None = None) -> StdioServerParameters:

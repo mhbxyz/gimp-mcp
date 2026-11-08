@@ -20,6 +20,8 @@ SCENARIO=${2:-thumbnail}
 DEMO_PROMPT=$(cd ../.. && uv run --quiet demo/run.py --prompt "$SCENARIO")
 DEMO_OUTPUT=$(cd ../.. && uv run --quiet demo/run.py --agent-output "$SCENARIO")
 export DEMO_PROMPT DEMO_OUTPUT
+rm -rf "$OUT/inputs"
+(cd ../.. && uv run --quiet demo/run.py --agent-inputs "$SCENARIO" "$OUT/inputs" >/dev/null)
 CLAUDE_BIN=${CLAUDE_BIN:-$(readlink -f "$(command -v claude)")}
 : "${CLAUDE_CODE_OAUTH_TOKEN:?set CLAUDE_CODE_OAUTH_TOKEN (claude setup-token)}"
 NAME=gimp-mcp-video-$$
@@ -29,7 +31,7 @@ docker build -q -t gimp-mcp-video . >/dev/null
 trap 'docker rm -f "$NAME" >/dev/null 2>&1 || true' EXIT
 docker run -d --name "$NAME" --init -e CLAUDE_CODE_OAUTH_TOKEN -e DISABLE_AUTOUPDATER=1 \
   -e GIMP_MCP_VERSION="$VERSION" -e DEMO_PROMPT -e DEMO_OUTPUT \
-  -v "$PWD:/scene:ro" -v "$PWD/../assets:/home/demo/assets:ro" -v "$OUT:/out" \
+  -v "$PWD:/scene:ro" -v "$OUT/inputs:/home/demo/inputs:ro" -v "$OUT:/out" \
   -v "$CLAUDE_BIN:/usr/local/bin/claude:ro" \
   gimp-mcp-video sleep infinity >/dev/null
 docker exec "$NAME" /scene/scene.sh desktop

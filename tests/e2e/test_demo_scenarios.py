@@ -37,7 +37,28 @@ def thumbnail(out: Path, report: Report) -> None:
     assert "`gimp_restore_checkpoint`" in text and "`gimp_set_text`" in text and "`gimp_export_image`" in text
 
 
-INDEPENDENT: dict[str, Callable[[Path, Report], None]] = {"thumbnail": thumbnail}
+def old_photo_restoration(out: Path, report: Report) -> None:
+    with Image.open(out / "scan.png") as scan:
+        assert scan.size == (1400, 950)
+    with Image.open(out / "restored-print.tif") as tiff:
+        assert tiff.format == "TIFF" and tiff.size == (1176, 726)
+        assert set(tiff.tag_v2[258]) == {16}  # BitsPerSample  # type: ignore[attr-defined]
+        assert tuple(round(float(v)) for v in tiff.info["dpi"]) == (300, 300)
+    with Image.open(out / "restored-web.jpg") as jpeg:
+        assert jpeg.format == "JPEG" and jpeg.size == (1176, 726)
+        gray = jpeg.convert("L")
+        histogram = gray.histogram()
+        assert sum(histogram[:26]) > 0.01 * sum(histogram) and sum(histogram[230:]) > 0.01 * sum(histogram)
+        border = [gray.getpixel((x, 0)) for x in range(gray.width)] + [
+            gray.getpixel((0, y)) for y in range(gray.height)
+        ]
+        assert max(border) < 250  # type: ignore[type-var]  # no white scanner bed
+
+
+INDEPENDENT: dict[str, Callable[[Path, Report], None]] = {
+    "thumbnail": thumbnail,
+    "old-photo-restoration": old_photo_restoration,
+}
 
 
 def test_every_scenario_has_independent_verifications():

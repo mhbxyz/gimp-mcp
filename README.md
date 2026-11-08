@@ -75,6 +75,17 @@ adds the server to Claude Code, Claude Desktop, VS Code and Cursor, asking befor
 * *"What's in ~/design/flyer.xcf? List the layers, the hidden ones and the fonts used."*
 * *"Blur the license plate in car.jpg and save a copy next to it."*
 
+## Use cases
+
+Typical GIMP jobs done end to end through MCP, each with a scripted version checked in CI on Linux, macOS
+and Windows, and an agent version (one plain-language request) in the evaluation suite:
+
+* **Restore an old scanned photo**: straighten, crop the scanner bed, heal dust and scratches, restore
+  contrast, reduce grain, 16-bit TIFF for print
+  ([walk-through](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/demos/old-photo-restoration.md)).
+* **YouTube thumbnail** from one photo, with an editable title
+  ([guide](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/guide-thumbnail.md)).
+
 ## What it can do
 
 | | |

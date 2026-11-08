@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from dataclasses import replace
 
 import pytest
 
-from demo.harness import ASSETS, DEMO, asset_licenses, check_assets, load, scenario_names
+from demo.harness import ASSETS, DEMO, agent_inputs, asset_licenses, check_assets, load, scenario_names
 from gimp_mcp.toolsets import check_toolset
 
 NAMES = scenario_names()
@@ -25,10 +26,16 @@ def test_a_scenario_declares_what_it_needs_and_what_an_agent_is_asked(name):
     for toolset in scenario.toolsets:
         check_toolset(toolset)  # raises on an unknown toolset
     check_assets(scenario)  # every asset exists and has a source and a license
-    # the agent version exports where the recording waits for it, and uses the same assets
+    # the agent version exports where the recording waits for it
     assert f"~/out/{scenario.agent_output}" in scenario.prompt
-    for name_ in scenario.assets:
-        assert f"~/assets/{name_}" in scenario.prompt or not name_.endswith((".png", ".jpg", ".svg"))
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_the_agent_finds_every_input_its_prompt_names(name, tmp_path):
+    scenario = load(name)
+    files = {path.name for path in agent_inputs(scenario, tmp_path)}
+    named = set(re.findall(r"~/inputs/([\w.-]+)", scenario.prompt))
+    assert named and named <= files, (named, files)
 
 
 def test_an_asset_without_source_and_license_is_refused():
