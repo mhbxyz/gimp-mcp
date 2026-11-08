@@ -164,7 +164,7 @@ def windows_press(gimp: GuiGimp, keys: str) -> None:
     user32.SetForegroundWindow(hwnd)
     user32.AttachThreadInput(theirs, ours, False)
     time.sleep(0.4)
-    codes = [VIRTUAL_KEYS.get(k, ord(k.upper())) for k in keys.split("+")]
+    codes = [VIRTUAL_KEYS[k] if k in VIRTUAL_KEYS else ord(k.upper()) for k in keys.split("+")]
     for code in codes:
         user32.keybd_event(code, 0, 0, 0)
     for code in reversed(codes):

@@ -355,3 +355,10 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   embeds "the assigned profile" embeds nothing: a lossless WebP comes out as a plain `VP8L` file without
   `ICCP` chunk. Assigning a non-built-in profile (an sRGB ICC file, or sRGB linear) makes
   `file-webp-export` (`include-color-profile`) write a `VP8X` file with an `ICCP` chunk (#158).
+* GIMP with its interface (#105, GIMP 3.2.6 on Linux/Xvfb, macOS 15 and Windows Server 2025): an MCP call
+  that draws a filled and stroked rectangle is **one** step of GIMP's undo history (one Ctrl+Z restores
+  every pixel); a user's Edit › Fill with FG between two calls keeps the layer id, and a checkpoint taken
+  before it restores the pixels; Ctrl+W on an unchanged image closes it without asking, and the next call
+  on it gets `NOT_FOUND`; Ctrl+Q with nothing unsaved quits GIMP, the next call fails, and the same MCP
+  session works again once GIMP is started again. On Xvfb without a window manager, GIMP accepts
+  `xdotool key --window` (synthetic events).

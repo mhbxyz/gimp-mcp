@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # GUI end-to-end tests (#105) on Linux: GIMP with its interface on a virtual display (Xvfb), keys
-# sent with xdotool, inside the demo video image (pinned Arch snapshot, GIMP 3.2).
+# sent with xdotool, inside ci/gui/Dockerfile (pinned Arch snapshot, GIMP 3.2).
 #   ci/run-gui.sh                 # tests/gui
 #   ci/run-gui.sh -k undo -x      # extra pytest arguments
 set -euo pipefail
 cd "$(dirname "$0")/.."
-IMAGE=${GIMP_MCP_GUI_IMAGE:-gimp-mcp-video}
+IMAGE=${GIMP_MCP_GUI_IMAGE:-gimp-mcp-gui}
 if [ -z "${GIMP_MCP_CI_SKIP_BUILD:-}" ]; then
-  docker build -q -t "$IMAGE" demo/video >/dev/null
+  docker build -q -t "$IMAGE" ci/gui >/dev/null
 fi
 mkdir -p ci-artifacts && chmod 777 ci-artifacts
 docker run --rm --init \
