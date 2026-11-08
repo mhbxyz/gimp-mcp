@@ -283,10 +283,17 @@ CAPABILITIES: tuple[Capability, ...] = (
         "Open PDF (pages, size), SVG (size), PSD layers, multi-page TIFF, RAW through GIMP's detection",
         "partial",
         tools=("gimp_open_with_options",),
-        procedures=("file-pdf-load", "file-svg-load", "file-psd-load", "file-tiff-load", "gimp-file-load"),
-        tests=("tests/e2e/test_formats.py",),
-        notes="PDF pages load natively, in the order given. RAW opens in darktable's or RawTherapee's window (GIMP "
-        "with its interface); not tested yet (#129).",
+        procedures=(
+            "file-pdf-load",
+            "file-svg-load",
+            "file-psd-load",
+            "file-tiff-load",
+            "gimp-file-load",
+        ),  # (darktable's loaders exist only where darktable is installed: not in the headless inventory)
+        tests=("tests/e2e/test_formats.py", "tests/gui/test_raw.py"),
+        notes="PDF pages load natively, in the order given. RAW opens in darktable's window (GIMP with its "
+        "interface): verified with a synthetic DNG through `file-darktable-dng-load` on Linux (#129); "
+        "RawTherapee is not tested.",
     ),
     Capability(
         "Formats",
