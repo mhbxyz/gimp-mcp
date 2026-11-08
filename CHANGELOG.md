@@ -6,6 +6,13 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+### Documentation
+
+- The README now opens with a demo: a real Claude Code session driving GIMP through gimp-mcp
+  (animated WebP, full-quality MP4 attached to the v0.2.0 release), followed by what the project
+  is for, example prompts and a capability overview. The quickstart is unchanged.
+- `demo/video/record.sh` re-records that demo reproducibly (Docker, Xvfb, the published package).
+
 ## [0.2.0] - 2026-11-08
 
 Installing and releasing made easy. Linux only, GIMP 3.2+.

@@ -2,14 +2,30 @@
 
 <!-- mcp-name: io.github.mhbxyz/gimp-mcp -->
 
-Let an AI assistant inspect and edit images in **your running GIMP** through the
-[Model Context Protocol](https://modelcontextprotocol.io): layers, text, selections, filters, files, previews.
-Linux, GIMP 3.2+. MIT licensed.
+**Tell your AI assistant what you want, and watch it happen in GIMP.**
+gimp-mcp connects Claude, Codex, Cursor, VS Code or any other [MCP](https://modelcontextprotocol.io) client to
+the GIMP window you already have open: it opens files, builds layers, sets editable text, makes selections, applies
+filters and exports, step by step, right in front of you.
+
+[![PyPI](https://img.shields.io/pypi/v/gimp-mcp?color=blue)](https://pypi.org/project/gimp-mcp/)
+[![Python](https://img.shields.io/pypi/pyversions/gimp-mcp)](https://pypi.org/project/gimp-mcp/)
+[![CI](https://github.com/mhbxyz/gimp-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/mhbxyz/gimp-mcp/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/mhbxyz/gimp-mcp/blob/main/LICENSE)
+
+<p align="center">
+  <a href="https://github.com/mhbxyz/gimp-mcp/releases/download/v0.2.0/gimp-mcp-demo.mp4">
+    <img src="https://raw.githubusercontent.com/mhbxyz/gimp-mcp/main/docs/assets/demo.webp"
+         alt="Claude Code (left) asks gimp-mcp to turn a sunset photo into a YouTube thumbnail; GIMP (right) builds it layer by layer"
+         width="100%">
+  </a>
+  <br>
+  <sub>A real, unedited session at 2× speed: one prompt in Claude Code, everything else done by GIMP through
+  gimp-mcp. <a href="https://github.com/mhbxyz/gimp-mcp/releases/download/v0.2.0/gimp-mcp-demo.mp4">Full-quality video (1080p, real time)</a>.</sub>
+</p>
 
 ## Quickstart
 
-You need [uv](https://docs.astral.sh/uv/getting-started/installation/) and an MCP client
-(Claude Code, Claude Desktop, VS Code, Cursor…). On Ubuntu 26.04:
+You need Linux, [uv](https://docs.astral.sh/uv/getting-started/installation/) and an MCP client. On Ubuntu 26.04:
 
 <!-- doctest: quickstart -->
 ```sh
@@ -21,37 +37,73 @@ uvx gimp-mcp doctor                                   # after (re)starting GIMP:
 Then ask your assistant: *"Use GIMP to create a 1280×720 image with the title 'Hello' and export it to
 ~/hello.png"*.
 
-* Other distributions (Arch, Debian 14, Fedora 44, openSUSE Tumbleweed, Alpine 3.24) and their packages:
+* Arch, Debian 14, Fedora 44, openSUSE Tumbleweed, Alpine 3.24 and GIMP from **Flathub**: see
   [compatibility](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/compatibility.md#linux-distributions).
-  GIMP from **Flathub** works too: `flatpak install flathub org.gimp.GIMP`, then the two `uvx` commands.
-* Step-by-step per client: [Claude Code](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/clients/claude-code.md),
+* Step by step for [Claude Code](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/clients/claude-code.md),
   [Claude Desktop](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/clients/claude-desktop.md),
-  [VS Code and Cursor](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/clients/vscode-cursor.md),
-  [any other MCP client](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/clients/generic.md).
+  [VS Code and Cursor](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/clients/vscode-cursor.md) and
+  [any other MCP client](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/clients/generic.md) (Codex, Zed…).
 * Something wrong? `uvx gimp-mcp doctor` says what and how to fix it
   ([troubleshooting](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/troubleshooting.md)).
 
-Also listed in the [official MCP registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.mhbxyz/gimp-mcp)
-as `io.github.mhbxyz/gimp-mcp` (from the first PyPI release on).
+## Why gimp-mcp
+
+**Your GIMP, live.** The assistant works in the GIMP you have open, not in a hidden copy. Every layer it adds shows up
+in the Layers panel, and you can take over with the mouse at any time.
+
+**Results you can keep editing.** Titles stay editable text layers, each step can go on its own layer, blurs and color
+corrections can be editable filters, and the XCF keeps all of it. The assistant gives you a starting point, not a
+flattened PNG.
+
+**It checks its own work.** Previews come back to the model as images, so it can see the result, fix what looks off and
+only then export. Checkpoints let it try an idea and go back to an earlier state when it doesn't work out.
+
+**Local and locked down.** No network port: one Unix socket that only you can open, a fresh token at every GIMP start,
+a fixed set of operations, and an allowlist for the GIMP procedures it may call (no eval, no Script-Fu passthrough).
+Details in the [security model](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/security.md).
+
+**Set up in one command.** `gimp-mcp setup` finds GIMP (distribution package or Flatpak), installs the plug-in and
+adds the server to Claude Code, Claude Desktop, VS Code and Cursor, asking before it changes any file.
+
+## Things to ask
+
+* *"Open ~/Pictures/team.jpg, crop it to a centered square and export a 512 px avatar."*
+* *"Make a 1200×630 social card for my blog post 'Shipping on Fridays', dark background, title on the left."*
+* *"Brighten only the background layer of poster.xcf and keep the original underneath, hidden."*
+* *"What's in ~/design/flyer.xcf? List the layers, the hidden ones and the fonts used."*
+* *"Blur the license plate in car.jpg and save a copy next to it."*
 
 ## What it can do
 
-52 tools: inspect images and layer trees, previews, create/open/save XCF/export PNG and JPEG, layers and
-groups, resize/crop/transform, selections and masks, painting, brightness/contrast, hue/saturation, blur
-(destructive or editable filters), editable text, undo groups and checkpoints, and allowlisted access to
-~420 GIMP procedures. See the [tool reference](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/tools.md)
-and the [coverage matrix](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/coverage.md).
+| | |
+|---|---|
+| **Look** | list open images, inspect layer trees and items, render previews the model can see |
+| **Files** | create, open, save XCF, export PNG and JPEG with options, close |
+| **Layers** | add, import, duplicate, group, reorder, rename, opacity, blend modes, visibility |
+| **Shape** | resize image or canvas, crop, scale, rotate, flip, move |
+| **Select** | rectangles and ellipses (add, subtract, intersect, feather), invert, layer masks |
+| **Paint** | fills, lines and paths, rectangles and ellipses |
+| **Text** | editable text layers: font, size, color, alignment, spacing |
+| **Adjust** | brightness/contrast, hue/saturation, blur, as destructive or editable filters |
+| **History** | undo groups (one Ctrl+Z in GIMP) and checkpoints the assistant can restore |
+| **Everything else** | about 420 more GIMP procedures, allowlisted |
 
-## Demo
+52 tools in all: see the [tool reference](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/tools.md) and the
+[coverage matrix](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/coverage.md).
 
-```sh
-uv run demo/thumbnail.py                 # from a checkout: isolated headless GIMP, outputs in demo/out/
+## How it works
+
+```text
+ Claude / Codex / Cursor / …            gimp-mcp serve                 GIMP 3.2
+ ───────────────────────────  MCP   ─────────────────────  Unix   ─────────────────────────
+  "make the colors pop"      stdio   validates, maps ids  socket   gimp-mcp-bridge plug-in
+                            ──────▶  to GIMP operations  ──────▶   runs them in your session
 ```
 
-Builds a 1280×720 thumbnail through MCP only (blurred backdrop with editable corrections, masked photo,
-banner, editable title, a badge undone and redone with checkpoints), saves and reopens the XCF, exports PNG
-and JPEG, and writes a report of every call and check.
-Walk-through: [docs/guide-thumbnail.md](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/guide-thumbnail.md).
+`gimp-mcp setup` copies a small Python plug-in into your GIMP profile. GIMP starts it with the application, and it
+serves its local socket while GIMP runs. The MCP server (`uvx gimp-mcp serve`, started by your client) talks to it.
+Also works with a headless GIMP for scripts and CI. More in the
+[architecture notes](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/architecture.md).
 
 ## Documentation
 
@@ -60,12 +112,17 @@ Walk-through: [docs/guide-thumbnail.md](https://github.com/mhbxyz/gimp-mcp/blob/
   [troubleshooting](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/troubleshooting.md) ·
   [compatibility](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/compatibility.md)
 - [Tool reference](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/tools.md) ·
-  [coverage matrix](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/coverage.md)
+  [coverage matrix](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/coverage.md) ·
+  [scripted demo walk-through](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/guide-thumbnail.md)
 - [Architecture](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/architecture.md) ·
   [bridge protocol](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/bridge-protocol.md) ·
   [security](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/security.md) ·
   [decisions](https://github.com/mhbxyz/gimp-mcp/tree/main/docs/adr)
 - [Testing](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/testing.md) ·
   [releasing](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/releasing.md) ·
+  [recording the demo video](https://github.com/mhbxyz/gimp-mcp/blob/main/demo/video/README.md) ·
   [GIMP behaviour notes](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/gimp-notes.md) ·
   [changelog](https://github.com/mhbxyz/gimp-mcp/blob/main/CHANGELOG.md)
+
+Also listed in the [official MCP registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.mhbxyz/gimp-mcp)
+as `io.github.mhbxyz/gimp-mcp`. MIT licensed.
