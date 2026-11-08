@@ -27,7 +27,7 @@ def tid(n: int) -> str:
 @asynccontextmanager
 async def tool_client(ops: dict[str, Op]) -> AsyncIterator[tuple[Client, FakeBridge]]:
     with running_fake_bridge(ops) as bridge:
-        server = build_server(BridgeClient(BridgeEndpoint.for_socket(bridge.socket_path)))
+        server = build_server(BridgeClient(BridgeEndpoint.for_socket(bridge.socket_path)), toolsets="all")
         async with Client(server) as client:
             yield client, bridge
 

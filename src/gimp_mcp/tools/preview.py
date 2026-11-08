@@ -48,6 +48,7 @@ class PreviewInfo(BaseModel):
 
 def register(kit: Toolkit) -> None:
     @kit.tool(
+        toolset="core",
         name="gimp_preview",
         title="Preview image",
         description=(

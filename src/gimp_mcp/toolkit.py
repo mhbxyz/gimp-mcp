@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import functools
 import logging
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Iterable
+from dataclasses import dataclass
 from typing import Any, Generic, TypeVar
 
 from mcp.server.mcpserver import MCPServer
@@ -14,6 +15,7 @@ from pydantic import BaseModel
 from .bridge import BridgeClient
 from .errors import GimpMcpError
 from .ids import IdCodec
+from .toolsets import DEFAULT_TOOLSETS, check_toolset
 
 log = logging.getLogger(__name__)
 
@@ -50,10 +52,22 @@ MUTATING = ToolAnnotations(read_only_hint=False, destructive_hint=False, open_wo
 DESTRUCTIVE = ToolAnnotations(read_only_hint=False, destructive_hint=True, open_world_hint=False)
 
 
+@dataclass
+class CatalogEntry:
+    """A registered tool, listed by the server only while its toolset is enabled."""
+
+    name: str
+    toolset: str
+    register: Callable[[], None]
+    listed: bool = False
+
+
 class Toolkit:
-    def __init__(self, mcp: MCPServer, bridge: BridgeClient):
+    def __init__(self, mcp: MCPServer, bridge: BridgeClient, toolsets: Iterable[str] = DEFAULT_TOOLSETS):
         self.mcp = mcp
         self.bridge = bridge
+        self.enabled: set[str] = {check_toolset(name) for name in toolsets}
+        self.catalog: dict[str, CatalogEntry] = {}
 
     async def codec(self) -> IdCodec:
         session = await self.bridge.connect()
@@ -74,6 +88,18 @@ class Toolkit:
             payload["_session"] = codec.session_id
         return await self.bridge.call(method, payload, mutating=mutating, timeout=timeout)
 
+    def enable(self, toolsets: Iterable[str]) -> list[str]:
+        """Enable toolsets; returns the tools that were added to the server's list."""
+        names = [check_toolset(name) for name in toolsets]
+        self.enabled.update(names)
+        added = []
+        for entry in self.catalog.values():
+            if entry.toolset in self.enabled and not entry.listed:
+                entry.register()
+                entry.listed = True
+                added.append(entry.name)
+        return added
+
     def tool(
         self,
         *,
@@ -81,12 +107,15 @@ class Toolkit:
         title: str,
         description: str,
         annotations: ToolAnnotations,
+        toolset: str,
     ) -> Callable[[Callable[..., Awaitable[Any]]], Callable[..., Awaitable[Any]]]:
         """Register an async tool that returns a pydantic model (or ToolResult).
 
+        The tool is listed by the server only while ``toolset`` is enabled.
         ``GimpMcpError`` becomes a structured error result
         (``structuredContent = {"error": {...}}``, ``isError = true``).
         """
+        check_toolset(toolset)
 
         def decorator(fn: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
             @functools.wraps(fn)
@@ -100,7 +129,16 @@ class Toolkit:
                     return success_result(value.data, value.extra_content)
                 return success_result(value)
 
-            self.mcp.add_tool(wrapper, name=name, title=title, description=description, annotations=annotations)
+            def register() -> None:
+                self.mcp.add_tool(wrapper, name=name, title=title, description=description, annotations=annotations)
+
+            if name in self.catalog:
+                raise ValueError(f"tool {name} registered twice")
+            entry = CatalogEntry(name, toolset, register)
+            self.catalog[name] = entry
+            if toolset in self.enabled:
+                register()
+                entry.listed = True
             return fn
 
         return decorator

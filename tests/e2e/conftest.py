@@ -91,6 +91,7 @@ def server_params(gimp: HeadlessGimp, extra_env: dict[str, str] | None = None) -
         "GIMP_MCP_SOCKET": str(gimp.socket_path),
         "PATH": os.environ.get("PATH", ""),
         "HOME": os.environ.get("HOME", ""),
+        "GIMP_MCP_TOOLSETS": "all",  # tests reach every tool; test_toolsets.py checks the default selection
     }
     env.update(extra_env or {})
     return StdioServerParameters(command=sys.executable, args=["-m", "gimp_mcp", "serve"], env=env)

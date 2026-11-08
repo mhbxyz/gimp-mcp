@@ -61,6 +61,7 @@ def register(kit: Toolkit) -> None:
         )
 
     @kit.tool(
+        toolset="filters",
         name="gimp_brightness_contrast",
         title="Brightness / contrast",
         description=(
@@ -80,6 +81,7 @@ def register(kit: Toolkit) -> None:
         )
 
     @kit.tool(
+        toolset="filters",
         name="gimp_hue_saturation",
         title="Hue / saturation",
         description=(
@@ -105,6 +107,7 @@ def register(kit: Toolkit) -> None:
         )
 
     @kit.tool(
+        toolset="filters",
         name="gimp_gaussian_blur",
         title="Gaussian blur",
         description=(
@@ -122,6 +125,7 @@ def register(kit: Toolkit) -> None:
         return await apply(item, "gaussian-blur", destructive, {"std_dev_x": radius, "std_dev_y": radius_y or radius})
 
     @kit.tool(
+        toolset="filters",
         name="gimp_list_filters",
         title="List editable filters",
         description="Editable (non-destructive) filters attached to a layer.",
@@ -135,6 +139,7 @@ def register(kit: Toolkit) -> None:
         )
 
     @kit.tool(
+        toolset="filters",
         name="gimp_remove_filter",
         title="Remove editable filter",
         description="Remove an editable filter from a layer: the layer renders as if it had never been applied.",

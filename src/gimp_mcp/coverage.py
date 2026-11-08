@@ -44,6 +44,14 @@ CAPABILITIES: tuple[Capability, ...] = (
         tests=("tests/e2e/test_connection.py", "tests/e2e/test_lifecycle.py", "tests/e2e/test_restart.py"),
     ),
     Capability(
+        "Session",
+        "Toolsets: list the tool groups, enable more during a session",
+        "tested",
+        tools=("gimp_list_toolsets", "gimp_enable_toolsets"),
+        tests=("tests/unit/test_toolsets.py", "tests/e2e/test_thumbnail_journey.py"),
+        notes="MCP-side only, no GIMP procedure; see docs/toolsets.md",
+    ),
+    Capability(
         "Inspection",
         "Image properties and ordered layer tree (groups, masks)",
         "tested",

@@ -68,6 +68,7 @@ def register(kit: Toolkit) -> None:
         }
 
     @kit.tool(
+        toolset="text",
         name="gimp_create_text_layer",
         title="Create text layer",
         description=(
@@ -125,6 +126,7 @@ def register(kit: Toolkit) -> None:
         return encode_layer(codec, data)
 
     @kit.tool(
+        toolset="text",
         name="gimp_set_text",
         title="Edit text layer",
         description=(
@@ -170,6 +172,7 @@ def register(kit: Toolkit) -> None:
         return encode_layer(codec, data)
 
     @kit.tool(
+        toolset="text",
         name="gimp_inspect_text",
         title="Inspect text layer",
         description="Text, font, size and unit, color, justification, spacing, antialiasing and geometry.",
@@ -181,6 +184,7 @@ def register(kit: Toolkit) -> None:
         return TextProperties(**{**data, "item": item})
 
     @kit.tool(
+        toolset="text",
         name="gimp_list_fonts",
         title="List fonts",
         description="Fonts GIMP knows (fontconfig names), filtered by a substring.",

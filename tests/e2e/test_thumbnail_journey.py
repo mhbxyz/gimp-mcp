@@ -30,6 +30,11 @@ async def test_thumbnail_journey_produces_verified_outputs(gimp: HeadlessGimp, t
 
     failed = [check for check in report.checks if not check.passed]
     assert not failed, failed
+    # toolsets (#45): only what the demo needs was listed, and that was enough
+    called = {call.tool for call in report.calls}
+    assert called <= report.listed_tools
+    assert {"gimp_call_procedure", "gimp_search_procedures"}.isdisjoint(report.listed_tools)
+    assert len(report.listed_tools) < 52
     assert len(report.checks) >= 13
 
     # independent assertions on the produced files (not only the demo's own checks)

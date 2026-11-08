@@ -16,7 +16,7 @@ INVENTORY = ROOT / "docs" / "coverage" / "pdb-inventory.json"
 
 
 async def registered_tools() -> set[str]:
-    server = build_server(BridgeClient(BridgeEndpoint.for_socket(Path("/nonexistent.sock"))))
+    server = build_server(BridgeClient(BridgeEndpoint.for_socket(Path("/nonexistent.sock"))), toolsets="all")
     async with Client(server) as client:
         return {tool.name for tool in (await client.list_tools()).tools}
 

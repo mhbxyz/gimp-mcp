@@ -32,6 +32,7 @@ def register(kit: Toolkit) -> None:
         return PaintResult(item=item, **data)
 
     @kit.tool(
+        toolset="paint",
         name="gimp_fill",
         title="Fill",
         description=(
@@ -55,6 +56,7 @@ def register(kit: Toolkit) -> None:
         )
 
     @kit.tool(
+        toolset="paint",
         name="gimp_draw_path",
         title="Draw line / polyline",
         description=(
@@ -91,6 +93,7 @@ def register(kit: Toolkit) -> None:
         )
 
     @kit.tool(
+        toolset="paint",
         name="gimp_draw_shape",
         title="Draw rectangle / ellipse",
         description=(
