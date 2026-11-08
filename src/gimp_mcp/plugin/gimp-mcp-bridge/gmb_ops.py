@@ -186,6 +186,15 @@ def image_details(image):
             "precision": image.get_precision().value_nick,
             "resolution": {"x": float(xres), "y": float(yres)},
             "layers": [layer_node(layer) for layer in image.get_layers()],
+            "paths": [
+                {
+                    "id": p.get_id(),
+                    "name": p.get_name(),
+                    "visible": bool(p.get_visible()),
+                    "strokes": len(p.get_strokes()),
+                }
+                for p in image.get_paths()
+            ],
         }
     )
     return data
@@ -1851,6 +1860,332 @@ def color_profile_set(params):
     return color_profile_get(params)
 
 
+# -- paths (#50) -----------------------------------------------------------------------
+
+MAX_DETAILED_STROKES = 200
+
+
+def get_path(params, key="path"):
+    item = get_item(params, key)
+    if item_kind(item) != "path":
+        raise BridgeError(
+            "WRONG_KIND",
+            "item %d is a %s, not a path" % (item.get_id(), item_kind(item)),
+            {"id": item.get_id(), "kind": item_kind(item)},
+        )
+    return item
+
+
+def _stroke_ids(path):
+    return list(path.get_strokes())
+
+
+def _get_stroke(path, number):
+    if number not in _stroke_ids(path):
+        raise BridgeError("NOT_FOUND", "stroke %d is not in path %d" % (number, path.get_id()), {"stroke": number})
+    return number
+
+
+def stroke_info(path, stroke, with_points=False):
+    _kind, controls, closed = path.stroke_get_points(stroke)
+    xs, ys = controls[0::2], controls[1::2]
+    data = {
+        "id": stroke,
+        "closed": bool(closed),
+        "length": round(path.stroke_get_length(stroke, 0.5), 3),
+        "anchors": len(xs) // 3,
+        "bounds": None
+        if not xs
+        else {"x": min(xs), "y": min(ys), "width": max(xs) - min(xs), "height": max(ys) - min(ys)},
+    }
+    if with_points:
+        data["control_points"] = [[round(x, 3), round(y, 3)] for x, y in zip(xs, ys, strict=True)]
+    return data
+
+
+def path_info(path, with_points=False):
+    strokes = _stroke_ids(path)
+    return {
+        "id": path.get_id(),
+        "image": path.get_image().get_id(),
+        "name": path.get_name(),
+        "visible": bool(path.get_visible()),
+        "strokes": [stroke_info(path, s, with_points) for s in strokes[:MAX_DETAILED_STROKES]],
+        "stroke_count": len(strokes),
+    }
+
+
+def _check_stroke_spec(spec):
+    kind = spec.get("type")
+    if kind == "polyline":
+        if len(spec.get("points") or []) < 2:
+            raise BridgeError("INVALID_ARGUMENT", "a polyline needs at least 2 points")
+    elif kind == "bezier":
+        if not spec.get("segments"):
+            raise BridgeError("INVALID_ARGUMENT", "a bezier stroke needs at least one segment")
+    elif kind == "ellipse":
+        if spec.get("radius_x", 0) <= 0 or spec.get("radius_y", 0) <= 0:
+            raise BridgeError("INVALID_ARGUMENT", "ellipse radii must be positive")
+    else:
+        raise BridgeError("INVALID_ARGUMENT", "unknown stroke type %r" % kind)
+
+
+def _add_stroke(path, spec):
+    kind = spec["type"]
+    if kind == "polyline":
+        points = spec["points"]
+        stroke = path.bezier_stroke_new_moveto(float(points[0][0]), float(points[0][1]))
+        for x, y in points[1:]:
+            path.bezier_stroke_lineto(stroke, float(x), float(y))
+    elif kind == "bezier":
+        start = spec["start"]
+        stroke = path.bezier_stroke_new_moveto(float(start[0]), float(start[1]))
+        for segment in spec["segments"]:
+            x, y = segment["to"]
+            c1, c2 = segment.get("control1"), segment.get("control2")
+            if c1 and c2:
+                path.bezier_stroke_cubicto(stroke, c1[0], c1[1], c2[0], c2[1], float(x), float(y))
+            elif c1:
+                path.bezier_stroke_conicto(stroke, c1[0], c1[1], float(x), float(y))
+            else:
+                path.bezier_stroke_lineto(stroke, float(x), float(y))
+    else:
+        cx, cy = spec["center"]
+        return path.bezier_stroke_new_ellipse(
+            float(cx), float(cy), float(spec["radius_x"]), float(spec["radius_y"]), float(spec.get("angle", 0.0))
+        )
+    if spec.get("closed"):
+        path.stroke_close(stroke)
+    return stroke
+
+
+@mutation
+def path_create(params):
+    image = get_image(params)
+    strokes = params.get("strokes") or []
+    for spec in strokes:
+        _check_stroke_spec(spec)
+    with undo_step(image):
+        path = Gimp.Path.new(image, params.get("name") or "Path")
+        image.insert_path(path, None, int(params.get("position", 0)))
+        for spec in strokes:
+            _add_stroke(path, spec)
+    return path_info(path)
+
+
+@mutation
+def path_add_stroke(params):
+    path = get_path(params)
+    _check_stroke_spec(params["stroke"])
+    with undo_step(path.get_image()):
+        stroke = _add_stroke(path, params["stroke"])
+    return {**path_info(path), "added_stroke": stroke}
+
+
+@mutation
+def path_from_text(params):
+    layer = get_text_layer(params)
+    image = layer.get_image()
+    with undo_step(image):
+        path = Gimp.Path.new_from_text_layer(image, layer)
+        if path is None:
+            raise BridgeError("GIMP_ERROR", "GIMP could not outline the text layer")
+        image.insert_path(path, None, 0)
+    return path_info(path)
+
+
+def path_inspect(params):
+    return path_info(get_path(params), with_points=bool(params.get("points")))
+
+
+@mutation
+def path_set(params):
+    path = get_path(params)
+    with undo_step(path.get_image()):
+        if params.get("name") is not None:
+            path.set_name(params["name"])
+        if params.get("visible") is not None:
+            path.set_visible(bool(params["visible"]))
+    return path_info(path)
+
+
+@mutation
+def path_duplicate(params):
+    path = get_path(params)
+    image = path.get_image()
+    with undo_step(image):
+        copy = path.copy()
+        image.insert_path(copy, None, image.get_item_position(path))
+    return path_info(copy)
+
+
+@mutation
+def path_delete(params):
+    path = get_path(params)
+    number = path.get_id()
+    path.get_image().remove_path(path)
+    return {"deleted": number}
+
+
+FLIPS = {"horizontal": Gimp.OrientationType.HORIZONTAL, "vertical": Gimp.OrientationType.VERTICAL}
+
+
+@mutation
+def path_edit_stroke(params):
+    path = get_path(params)
+    stroke = _get_stroke(path, _int_param(params, "stroke"))
+    action = params["action"]
+    with undo_step(path.get_image()):
+        if action == "translate":
+            ok = path.stroke_translate(stroke, float(params.get("dx", 0)), float(params.get("dy", 0)))
+        elif action == "scale":
+            ok = path.stroke_scale(stroke, float(params.get("sx", 1)), float(params.get("sy", 1)))
+        elif action == "rotate":
+            ok = path.stroke_rotate(
+                stroke,
+                float(params.get("center_x", 0)),
+                float(params.get("center_y", 0)),
+                float(params.get("angle", 0)),
+            )
+        elif action == "flip":
+            ok = path.stroke_flip(stroke, FLIPS[params.get("orientation", "horizontal")], float(params.get("axis", 0)))
+        elif action == "reverse":
+            ok = path.stroke_reverse(stroke)
+        elif action == "close":
+            ok = path.stroke_close(stroke)
+        elif action == "remove":
+            ok = path.remove_stroke(stroke)
+        else:
+            raise BridgeError("INVALID_ARGUMENT", "unknown stroke action %r" % action)
+    if not ok:
+        raise BridgeError("GIMP_ERROR", "GIMP refused to %s the stroke" % action)
+    return path_info(path)
+
+
+def path_point_at(params):
+    path = get_path(params)
+    stroke = _get_stroke(path, _int_param(params, "stroke"))
+    length = path.stroke_get_length(stroke, 0.5)
+    distance = float(params["distance"])
+    if not 0 <= distance <= length:
+        raise BridgeError("INVALID_ARGUMENT", "distance must be between 0 and the stroke length %.3f" % length)
+    _ok, x, y, slope, valid = path.stroke_get_point_at_dist(stroke, distance, 0.5)
+    return {"x": x, "y": y, "slope": slope, "valid": bool(valid), "length": round(length, 3)}
+
+
+CHANNEL_OPS = {
+    "replace": Gimp.ChannelOps.REPLACE,
+    "add": Gimp.ChannelOps.ADD,
+    "subtract": Gimp.ChannelOps.SUBTRACT,
+    "intersect": Gimp.ChannelOps.INTERSECT,
+}
+
+
+@mutation
+def path_to_selection(params):
+    path = get_path(params)
+    image = path.get_image()
+    Gimp.context_push()
+    try:
+        Gimp.context_set_antialias(bool(params.get("antialias", True)))
+        Gimp.context_set_feather(False)
+        if not image.select_item(CHANNEL_OPS[params.get("operation", "replace")], path):
+            raise BridgeError("GIMP_ERROR", "GIMP could not turn the path into a selection")
+    finally:
+        Gimp.context_pop()
+    return {**selection_state(image), "image": image.get_id()}
+
+
+@mutation
+def selection_to_path(params):
+    image = get_image(params)
+    if Gimp.Selection.is_empty(image):
+        raise BridgeError("EMPTY_SELECTION", "nothing is selected")
+    before = {p.get_id() for p in image.get_paths()}
+    procedure = Gimp.get_pdb().lookup_procedure("plug-in-sel2path")
+    config = procedure.create_config()
+    config.set_property("run-mode", Gimp.RunMode.NONINTERACTIVE)
+    config.set_property("image", image)
+    result = procedure.run(config)
+    created = [p for p in image.get_paths() if p.get_id() not in before]
+    if result.index(0) != Gimp.PDBStatusType.SUCCESS or not created:
+        raise BridgeError("GIMP_ERROR", "GIMP could not trace the selection")
+    path = created[0]
+    if params.get("name"):
+        path.set_name(params["name"])
+    return path_info(path)
+
+
+@mutation
+def path_stroke(params):
+    path = get_path(params)
+    drawable = get_paintable(params)
+    if drawable.get_image().get_id() != path.get_image().get_id():
+        raise BridgeError("IMAGE_MISMATCH", "the path and the layer belong to different images")
+    brush = None
+    if params.get("method") == "paint" and params.get("brush"):
+        brush = Gimp.Brush.get_by_name(params["brush"])
+        if brush is None:
+            raise BridgeError("NOT_FOUND", "GIMP has no brush named %r" % params["brush"], {"brush": params["brush"]})
+    with undo_step(drawable.get_image()), paint_context(params):
+        if params.get("dash"):
+            Gimp.context_set_line_dash_pattern([float(v) for v in params["dash"]])
+        Gimp.context_set_line_miter_limit(float(params.get("miter_limit", 10.0)))
+        if params.get("method") == "paint":
+            Gimp.context_set_stroke_method(Gimp.StrokeMethod.PAINT_METHOD)
+            Gimp.context_set_paint_method("gimp-paintbrush")
+            if brush is not None:
+                Gimp.context_set_brush(brush)
+            Gimp.context_set_brush_size(float(params.get("width", 2.0)))
+        if not drawable.edit_stroke_item(path):
+            raise BridgeError("GIMP_ERROR", "GIMP refused to stroke the path")
+    return {"item": drawable.get_id(), "path": path.get_id(), "method": params.get("method", "line")}
+
+
+@mutation
+def path_fill(params):
+    path = get_path(params)
+    drawable = get_paintable(params)
+    image = drawable.get_image()
+    if image.get_id() != path.get_image().get_id():
+        raise BridgeError("IMAGE_MISMATCH", "the path and the layer belong to different images")
+    with undo_step(image), saved_selection(image), paint_context(params):
+        image.select_item(Gimp.ChannelOps.REPLACE, path)
+        if Gimp.Selection.is_empty(image):
+            raise BridgeError("INVALID_ARGUMENT", "the path encloses no area (open or empty strokes)")
+        drawable.edit_fill(Gimp.FillType.FOREGROUND)
+    return {"item": drawable.get_id(), "path": path.get_id()}
+
+
+@mutation
+def paths_import_svg(params):
+    image = get_image(params)
+    merge, scale = bool(params.get("merge")), bool(params.get("scale"))
+    before = {p.get_id() for p in image.get_paths()}
+    with undo_step(image):
+        if params.get("file"):
+            ok, _paths = image.import_paths_from_file(Gio.File.new_for_path(params["file"]), merge, scale)
+        else:
+            svg = params.get("svg") or ""
+            ok, _paths = image.import_paths_from_string(svg, len(svg.encode("utf-8")), merge, scale)
+    created = [p for p in image.get_paths() if p.get_id() not in before]
+    if not ok or not created:
+        raise BridgeError("UNSUPPORTED_FORMAT", "no path could be read from the SVG")
+    return {"paths": [path_info(p) for p in created]}
+
+
+def paths_export_svg(params):
+    image = get_image(params)
+    path = get_path(params) if params.get("path") is not None else None
+    if path is not None and path.get_image().get_id() != image.get_id():
+        raise BridgeError("IMAGE_MISMATCH", "the path belongs to another image")
+    svg = image.export_path_to_string(path)
+    if params.get("file"):
+        with open(params["file"], "w", encoding="utf-8") as handle:
+            handle.write(svg)
+    return {"svg": svg if not params.get("file") else None, "file": params.get("file"), "bytes": len(svg.encode())}
+
+
 # -- text --------------------------------------------------------------------------------
 
 JUSTIFICATIONS = {"left": "LEFT", "right": "RIGHT", "center": "CENTER", "fill": "FILL"}
@@ -2527,6 +2862,21 @@ def build_operations():
         "filter.list": filter_list,
         "filter.remove": filter_remove,
         "filter.operations": filter_operations,
+        "path.create": path_create,
+        "path.add_stroke": path_add_stroke,
+        "path.from_text": path_from_text,
+        "path.inspect": path_inspect,
+        "path.set": path_set,
+        "path.duplicate": path_duplicate,
+        "path.delete": path_delete,
+        "path.edit_stroke": path_edit_stroke,
+        "path.point_at": path_point_at,
+        "path.to_selection": path_to_selection,
+        "selection.to_path": selection_to_path,
+        "path.stroke": path_stroke,
+        "path.fill": path_fill,
+        "paths.import_svg": paths_import_svg,
+        "paths.export_svg": paths_export_svg,
         "image.convert_mode": image_convert_mode,
         "image.convert_precision": image_convert_precision,
         "profile.get": color_profile_get,

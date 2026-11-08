@@ -388,6 +388,42 @@ image dirty. Procedure names, arguments and availability depend on the GIMP
 version; check with `gimp_list_callable_procedures` (the committed matrix lists
 422 callable procedures on GIMP 3.2.6).
 
+## Paths (toolset `paths`)
+
+A path is an item (`item:N@session`) listed in `gimp_inspect_image`'s `paths` (`id`, `name`,
+`visible`, `strokes`). It holds **strokes**, numbered inside the path. Coordinates are image
+pixels; paths may extend beyond the canvas. Every change is one undo step.
+
+* **Create**: `gimp_create_path(image, name, strokes=[], position=0)` and
+  `gimp_add_path_stroke(path, stroke)` with strokes
+  `{"type": "polyline", "points": [[x, y], …], "closed"}`,
+  `{"type": "bezier", "start": [x, y], "segments": [{"to": [x, y], "control1"?, "control2"?}], "closed"}`
+  (no control: line; `control1` only: quadratic; both: cubic) or
+  `{"type": "ellipse", "center": [x, y], "radius_x", "radius_y", "angle"}`.
+  `gimp_path_from_text(item)` outlines a text layer's glyphs.
+* **Inspect**: `gimp_inspect_path(path, points=false)` → `strokes[]` with `id`, `closed`,
+  `length` (pixels), `anchors`, `bounds` of the control points, and with `points=true`
+  `control_points` (in-handle, anchor, out-handle per anchor). At most 200 strokes are detailed;
+  `stroke_count` is the total. `gimp_path_point_at(path, stroke, distance)` → `x`, `y`, `slope`.
+* **Manage**: `gimp_set_path` (name, visible in the canvas), `gimp_duplicate_path`,
+  `gimp_delete_path`. `gimp_edit_path_stroke(path, stroke, action)`: `translate` (dx, dy),
+  `scale` (sx, sy, around the origin), `rotate` (angle in degrees around center_x, center_y),
+  `flip` (orientation around axis), `reverse`, `close`, `remove`.
+* **Selections**: `gimp_path_to_selection(path, operation, antialias)`;
+  `gimp_selection_to_path(image, name?)` traces the selection (GIMP's Selection to Path,
+  `EMPTY_SELECTION` when nothing is selected).
+* **Paint**: `gimp_stroke_path(path, item, color, width, method="line", cap, join, miter_limit,
+  dash?, brush?, opacity, antialias)`: `line` draws a geometric line (`dash` lengths are multiples
+  of the width); `paint` uses GIMP's paintbrush with `brush` (by name) at `width` pixels.
+  `gimp_fill_path(path, item, color, opacity, antialias)` fills the enclosed area and restores the
+  selection (`INVALID_ARGUMENT` when the path encloses nothing). The path and the layer must belong
+  to the same image (`IMAGE_MISMATCH`). The user's context (colors, brush) is untouched.
+* **SVG**: `gimp_import_svg_paths(image, file | svg, merge=false, scale=false)` imports every
+  `<path>` (one GIMP path each, or one with `merge`; `scale` fits the SVG to the image)
+  (`UNSUPPORTED_FORMAT` when there is none). `gimp_export_path_svg(image, path?, file?, overwrite)`
+  returns the SVG document of one path or all paths, or writes it (output path rules apply).
+* Paths are saved in XCF with their strokes (`tests/e2e/test_paths.py`).
+
 ## Image mode, precision and color profiles (toolset `modes`)
 
 ### `gimp_convert_mode(image, mode, palette="generate", palette_name?, colors=256, dither="none", dither_alpha=false, remove_unused=true)`

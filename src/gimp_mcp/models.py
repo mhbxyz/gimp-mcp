@@ -51,6 +51,13 @@ class Resolution(BaseModel):
     y: float
 
 
+class PathSummary(BaseModel):
+    id: str
+    name: str
+    visible: bool
+    strokes: int
+
+
 class ImageDetails(BaseModel):
     id: str
     name: str = Field(description="GIMP's display name (may be localized).")
@@ -65,6 +72,7 @@ class ImageDetails(BaseModel):
     resolution: Resolution
     dirty: bool
     layers: list[LayerNode] = Field(description="Layer tree, top-most layer first.")
+    paths: list[PathSummary] = Field(default_factory=list, description="Paths (vectors), top first.")
 
 
 class ItemDetails(BaseModel):
@@ -116,6 +124,7 @@ def encode_image(codec: IdCodec, data: dict[str, Any]) -> ImageDetails:
             **data,
             "id": codec.image(data["id"]),
             "layers": [encode_layer(codec, node) for node in data["layers"]],
+            "paths": [{**p, "id": codec.item(p["id"])} for p in data.get("paths", [])],
         }
     )
 
