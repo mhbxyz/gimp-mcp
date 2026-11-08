@@ -45,6 +45,8 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the upgrade test builds the previous release from history
       - name: Install GIMP 3.2.6 from gimp.org (SHA-256 verified)
         run: ci/install-gimp-macos.sh
       - uses: astral-sh/setup-uv@v6

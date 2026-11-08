@@ -6,6 +6,11 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+### Added
+
+- macOS support (#99): GIMP 3.2 from gimp.org on Apple Silicon, verified by the full end-to-end suite
+  on GitHub's macOS 15 runner; the bridge's Unix socket checks the peer with `LOCAL_PEERCRED`.
+
 ### Changed
 
 - The README demo is re-recorded with 0.4.0.

@@ -5,8 +5,10 @@
 | Component | Supported | Verified by |
 |---|---|---|
 | Operating system | **Linux** (x86_64) | CI (Ubuntu 24.04 runner + Arch Linux container), developer machine (CachyOS) |
+| Operating system | **macOS 15** (Apple Silicon, arm64) | CI job `e2e-macos`: the full e2e suite on GitHub's `macos-15` runner ([ADR 0008](adr/0008-windows-and-macos.md)) |
 | GIMP | **3.2.x** (3.2.6 tested) | CI pins GIMP 3.2.6-2 (`ci/Dockerfile`); older versions are refused with `VERSION_INCOMPATIBLE` |
 | GIMP packaging | distribution packages (`/usr/bin/gimp`, system Python with PyGObject) | CI, developer machine |
+| GIMP packaging | **gimp.org's macOS app** (`GIMP.app` from `gimp-3.2.6-arm64.dmg`, SHA-256 verified; its bundled Python runs the plug-in) | CI job `e2e-macos` (`ci/install-gimp-macos.sh`) |
 | GIMP packaging | **Flatpak from Flathub** (`org.gimp.GIMP`, 3.2.8 tested) | CI job `flatpak` (`ci/Dockerfile.flatpak`, pinned Flathub commit); see [ADR 0003](adr/0003-flatpak-gimp.md) |
 | GIMP's Python (runs the plug-in) | Python 3 with PyGObject ≥ 3.50 and the `Gimp-3.0` typelib | CI (Python 3.14, PyGObject 3.58) |
 | Python for the MCP server | ≥ 3.11 | CI fast job (3.12), e2e (3.14) |
@@ -39,10 +41,18 @@ the matrix changes): the wheel is installed in a clean container of each one (ba
 digest) and drives the distribution's own GIMP over MCP (`ci/run-distro.sh <id>` locally).
 <!-- distributions:end -->
 
+## macOS: what differs
+
+* The bridge is the same local Unix socket, in `~/Library/Application Support/gimp-mcp/` (folder
+  `0700`); the peer's uid comes from `LOCAL_PEERCRED`.
+* Skipped there: the Flatpak test (Linux only). Everything else in `tests/e2e` runs.
+* Known limits of gimp.org's GIMP 3.2.6 macOS build (recorded in `docs/gimp-notes.md`): no
+  `gegl:gluas` (no Lua), and lossless AVIF export fails in its AOM encoder (lossy AVIF works).
+* x86_64 Macs (`gimp-3.2.6-x86_64.dmg`) are not verified: GitHub no longer offers Intel macOS runners.
+
 ## Not supported (not verified)
 
-* **Windows and macOS** — the bridge uses Unix sockets, `SO_PEERCRED`,
-  `/proc` and the XDG runtime directory; nothing is claimed for them.
+* **Windows** — being added (milestone v0.5.0, ADR 0008); nothing is claimed yet.
 * **Snap GIMP** — different confinement; untested. (Flatpak is supported, see above.)
 * **GIMP 2.10 / 3.0** — refused at connection time.
 * Remote GIMP over a network — by design the bridge is local only.
