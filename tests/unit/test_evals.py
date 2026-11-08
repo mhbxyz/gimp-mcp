@@ -112,6 +112,12 @@ def test_a_session_without_result_is_not_finished():
     assert not parse_transcript([json.dumps(TRANSCRIPT[0])]).finished
 
 
+def test_a_session_ended_by_an_error_says_why():
+    cut = {"type": "result", "subtype": "success", "is_error": True, "result": "You've hit your 5-hour limit"}
+    metrics = parse_transcript([json.dumps(cut)])
+    assert not metrics.finished and "5-hour limit" in metrics.stop_reason
+
+
 def task_result(passed: bool) -> dict:
     return {"passed": passed, "checks": [{"description": "the output exists", "passed": passed, "detail": ""}]}
 

@@ -16,6 +16,7 @@ with Pillow), never an aesthetic judgement. It has two versions:
 |---|---|---|
 | `old-photo-restoration` | A tilted, dusty, scratched, faded scan straightened, cropped, healed (heal and clone), leveled and denoised; 16-bit TIFF at 300 dpi and a web JPEG ([page](../docs/demos/old-photo-restoration.md)) | files, layers, transform, painting, color, effects, modes, formats, document |
 | `product-cutout` | A bottle cut out of its studio backdrop (fuzzy select, refined edge, layer mask), soft contact shadow on pure white, centered on 2000×2000 with a 5% margin; JPEG and WebP at 2000, 800 and 400 px with an sRGB profile ([page](../docs/demos/product-cutout.md)) | files, layers, transform, selection, paint, filters, channels, formats, modes, analysis |
+| `social-media-kit` | One design (photo, brand band and colors, logo, editable headline) in four formats: post, story, banner, thumbnail, each with safe-area guides, saved as XCF and exported as PNG ([page](../docs/demos/social-media-kit.md)) | files, layers, transform, paint, text, document |
 | `thumbnail` | 1280×720 video thumbnail from one photo: blurred backdrop, vignetted subject, editable title re-typed after a change of mind, a badge added as one undo step then undone and redone with checkpoints; XCF reopened, PNG and JPEG exported | files, layers, transform, selection, paint, filters, text, history |
 
 ## Writing a scenario

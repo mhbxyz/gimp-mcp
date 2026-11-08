@@ -78,10 +78,23 @@ def product_cutout(out: Path, report: Report) -> None:
         assert abs(max(x1 - x0, y1 - y0) - 1800) <= 24
 
 
+def social_media_kit(out: Path, report: Report) -> None:
+    sizes = {"post": (1080, 1080), "story": (1080, 1920), "banner": (1500, 500), "thumbnail": (1280, 720)}
+    for name, size in sizes.items():
+        with Image.open(out / f"social-{name}.png") as png:
+            assert png.size == size
+            navy = png.convert("RGB").getpixel((4, size[1] - 4))  # bottom-left corner: the brand band
+            assert navy == (0x1D, 0x35, 0x57), navy
+        xcf = (out / f"social-{name}.xcf").read_bytes()
+        assert xcf.startswith(b"gimp xcf") and b"gimp-text-layer" in xcf and b"Golden Hour Sale" in xcf
+    assert sum("guides on the safe area" in c.description and c.passed for c in report.checks) == 4
+
+
 INDEPENDENT: dict[str, Callable[[Path, Report], None]] = {
     "thumbnail": thumbnail,
     "old-photo-restoration": old_photo_restoration,
     "product-cutout": product_cutout,
+    "social-media-kit": social_media_kit,
 }
 
 
