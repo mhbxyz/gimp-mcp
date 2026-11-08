@@ -6,12 +6,6 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
-### Fixed
-
-- macOS: the bridge plug-in no longer crashes while listing filters (GEGL's buffer type is registered
-  before GIMP describes filter parameters); `gimp-mcp doctor` checks the Python bundled with GIMP on macOS
-  and Windows instead of the system `python3` (#99).
-
 ### Changed
 
 - The README demo is re-recorded with 0.4.0.
@@ -21,6 +15,9 @@ what is covered by the compatibility promise.
 
 ### Fixed
 
+- macOS: the bridge plug-in no longer crashes while listing filters (GEGL's buffer type is registered
+  before GIMP describes filter parameters); `gimp-mcp doctor` checks the Python bundled with GIMP on macOS
+  and Windows instead of the system `python3` (#99).
 - The release workflow waits for PyPI's index to serve a new version before installing it: v0.4.0's
   check ran before PyPI's CDN had the release, which stopped the MCP registry and the public release.
 - Text files are read and written as UTF-8 on every OS (the default encoding is not UTF-8 on Windows).
