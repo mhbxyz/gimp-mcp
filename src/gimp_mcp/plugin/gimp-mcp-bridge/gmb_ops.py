@@ -3127,6 +3127,220 @@ def image_export_region(params):
         copy.delete()
 
 
+# -- brush painting, gradients, bucket fill (#53) ---------------------------------------
+
+PAINT_METHODS = {
+    "paintbrush": "gimp-paintbrush",
+    "pencil": "gimp-pencil",
+    "airbrush": "gimp-airbrush",
+    "ink": "gimp-ink",
+    "eraser": "gimp-eraser",
+    "smudge": "gimp-smudge",
+    "dodge": "gimp-dodge-burn",
+    "burn": "gimp-dodge-burn",
+    "clone": "gimp-clone",
+    "heal": "gimp-heal",
+}
+GRADIENT_TYPES = {v.value_nick: v for v in Gimp.GradientType.__enum_values__.values()}
+REPEAT_MODES = {v.value_nick: v for v in Gimp.RepeatMode.__enum_values__.values()}
+SELECT_CRITERIA = {v.value_nick: v for v in Gimp.SelectCriterion.__enum_values__.values()}
+
+
+class brush_context(paint_context):
+    """paint_context plus brush, size, hardness, spacing and dynamics (all explicit)."""
+
+    def __enter__(self):
+        super().__enter__()
+        params = self.params
+        Gimp.context_set_brush(self.brush)
+        Gimp.context_set_brush_size(float(params.get("size", 10.0)))
+        Gimp.context_set_brush_hardness(float(params.get("hardness", 1.0)))
+        Gimp.context_set_brush_spacing(float(params.get("spacing", 10.0)) / 100.0)
+        Gimp.context_set_brush_angle(0.0)
+        Gimp.context_set_brush_aspect_ratio(0.0)
+        if self.dynamics is not None:
+            Gimp.context_set_dynamics_name(self.dynamics)
+        else:  # no dynamics: GIMP's internal name works whatever the (translated) display name
+            Gimp.context_set_dynamics_name("Dynamics Off")
+        self.dynamics = Gimp.context_get_dynamics_name()
+        return self
+
+
+def _brush_and_dynamics(params):
+    brush = Gimp.Brush.get_by_name(params["brush"]) if params.get("brush") else None
+    if params.get("brush") and brush is None:
+        raise BridgeError("NOT_FOUND", "GIMP has no brush named %r" % params["brush"], {"brush": params["brush"]})
+    if brush is None:
+        brush = next((b for b in Gimp.brushes_get_list("") if b.is_generated()), None)
+        if brush is None:
+            raise BridgeError("NOT_FOUND", "GIMP has no generated brush to paint with")
+    dynamics = params.get("dynamics")
+    if dynamics is not None and dynamics not in Gimp.dynamics_get_name_list(""):
+        raise BridgeError("NOT_FOUND", "GIMP has no dynamics named %r" % dynamics, {"dynamics": dynamics})
+    return brush, dynamics
+
+
+@mutation
+def paint_stroke(params):
+    drawable = get_paintable(params)
+    image = drawable.get_image()
+    tool = params["tool"]
+    points = [float(v) for point in params["points"] for v in point]
+    brush, dynamics = _brush_and_dynamics(params)
+    layer_mode(params.get("mode") or "normal")
+    source = None
+    if tool in ("clone", "heal"):
+        source = get_paintable({"item": params["source"]})
+        if source.get_image().get_id() != image.get_id():
+            raise BridgeError("IMAGE_MISMATCH", "the source must be in the same image")
+    context = brush_context(params)
+    context.brush, context.dynamics = brush, dynamics
+    with undo_step(image), context:
+        Gimp.context_set_paint_method(PAINT_METHODS[tool])
+        # libgimp's paint functions take the strokes as a float list (a procedure config cannot)
+        if tool == "airbrush":
+            ok = Gimp.airbrush(drawable, float(params.get("pressure", 50.0)), points)
+        elif tool == "eraser":
+            ok = Gimp.eraser(drawable, points, Gimp.BrushApplicationMode.SOFT, Gimp.PaintApplicationMode.CONSTANT)
+        elif tool == "smudge":
+            ok = Gimp.smudge(drawable, float(params.get("pressure", 50.0)), points)
+        elif tool in ("dodge", "burn"):
+            kind = Gimp.DodgeBurnType.DODGE if tool == "dodge" else Gimp.DodgeBurnType.BURN
+            ok = Gimp.dodgeburn(drawable, float(params.get("exposure", 50.0)), kind, Gimp.TransferMode.MIDTONES, points)
+        elif tool == "clone":
+            ok = Gimp.clone(drawable, source, Gimp.CloneType.IMAGE, float(params.get("source_x", 0)),
+                            float(params.get("source_y", 0)), points)  # fmt: skip
+        elif tool == "heal":
+            ok = Gimp.heal(drawable, source, float(params.get("source_x", 0)), float(params.get("source_y", 0)), points)
+        elif tool == "pencil":
+            ok = Gimp.pencil(drawable, points)
+        elif tool == "paintbrush":
+            ok = Gimp.paintbrush(drawable, 0.0, points, Gimp.PaintApplicationMode.CONSTANT, 0.0)
+        else:  # ink: no PDB procedure, stroke a temporary path with the ink paint method
+            path = Gimp.Path.new(image, "gimp-mcp ink")
+            image.insert_path(path, None, 0)
+            try:
+                controls = [v for i in range(0, len(points), 2) for v in (points[i], points[i + 1]) * 3]
+                path.stroke_new_from_points(Gimp.PathStrokeType.BEZIER, controls, False)
+                Gimp.context_set_stroke_method(Gimp.StrokeMethod.PAINT_METHOD)
+                ok = drawable.edit_stroke_item(path)
+            finally:
+                image.remove_path(path)
+    if not ok:
+        raise BridgeError("GIMP_ERROR", "GIMP refused the %s stroke" % tool)
+    return {"item": drawable.get_id(), "tool": tool, "brush": brush.get_name(), "dynamics": context.dynamics}
+
+
+def _gradient_for(params):
+    """A named gradient, or a temporary one built from inline segments (deleted by the caller)."""
+    if params.get("gradient"):
+        gradient = Gimp.Gradient.get_by_name(params["gradient"])
+        if gradient is None:
+            raise BridgeError("NOT_FOUND", "GIMP has no gradient named %r" % params["gradient"])
+        return gradient, False
+    segments = params.get("segments") or []
+    if not segments:
+        raise BridgeError("INVALID_ARGUMENT", "give a gradient name or inline segments")
+    gradient = Gimp.Gradient.new("gimp-mcp temporary gradient")
+    if len(segments) > 1:
+        gradient.segment_range_split_uniform(0, 0, len(segments))
+    for i, segment in enumerate(segments):
+        gradient.segment_set_left_color(i, color(segment["left_color"]))
+        gradient.segment_set_right_color(i, color(segment["right_color"]))
+    return gradient, True
+
+
+def _gradient_settings(params):
+    shape = GRADIENT_TYPES.get(params.get("shape", "linear"))
+    repeat = REPEAT_MODES.get(params.get("repeat", "none"))
+    if shape is None or repeat is None:
+        raise BridgeError(
+            "INVALID_ARGUMENT",
+            "unknown shape or repeat",
+            {"shapes": sorted(GRADIENT_TYPES), "repeats": sorted(REPEAT_MODES)},
+        )
+    return shape, repeat
+
+
+@mutation
+def gradient_fill(params):
+    drawable = get_paintable(params)
+    shape, repeat = _gradient_settings(params)
+    gradient, temporary = _gradient_for(params)
+    image = drawable.get_image()
+    try:
+        with undo_step(image), paint_context(params):
+            Gimp.context_set_gradient(gradient)
+            Gimp.context_set_gradient_repeat_mode(repeat)
+            Gimp.context_set_gradient_reverse(bool(params.get("reverse")))
+            (x1, y1), (x2, y2) = params["start"], params["end"]
+            ok = drawable.edit_gradient_fill(shape, float(params.get("offset", 0)), False, 1, 0.0, True,
+                                             float(x1), float(y1), float(x2), float(y2))  # fmt: skip
+    finally:
+        if temporary:
+            gradient.delete()
+    if not ok:
+        raise BridgeError("GIMP_ERROR", "GIMP refused the gradient fill")
+    return {"item": drawable.get_id(), "gradient": params.get("gradient") or "inline"}
+
+
+@mutation
+def bucket_fill(params):
+    drawable = get_paintable(params)
+    image = drawable.get_image()
+    fill = params.get("fill", "color")
+    criterion = SELECT_CRITERIA.get(params.get("criterion", "composite"))
+    if criterion is None:
+        raise BridgeError("INVALID_ARGUMENT", "unknown criterion", {"allowed": sorted(SELECT_CRITERIA)})
+    pattern = None
+    if fill == "pattern":
+        pattern = Gimp.Pattern.get_by_name(params.get("pattern") or "")
+        if pattern is None:
+            raise BridgeError("NOT_FOUND", "GIMP has no pattern named %r" % params.get("pattern"))
+    seed = params.get("point")
+    if seed is None and Gimp.Selection.is_empty(image):
+        raise BridgeError("EMPTY_SELECTION", "give a point (fill similar colors) or select an area first")
+    gradient = temporary = None
+    if fill == "gradient":
+        shape, repeat = _gradient_settings(params)
+        gradient, temporary = _gradient_for(params)
+    try:
+        with undo_step(image), paint_context(params):
+            Gimp.context_set_sample_threshold(float(params.get("threshold", 15)) / 255.0)
+            Gimp.context_set_sample_criterion(criterion)
+            Gimp.context_set_sample_merged(bool(params.get("sample_merged")))
+            Gimp.context_set_sample_transparent(bool(params.get("fill_transparent", True)))
+            Gimp.context_set_diagonal_neighbors(bool(params.get("diagonal", False)))
+            if pattern is not None:
+                Gimp.context_set_pattern(pattern)
+            fill_type = Gimp.FillType.PATTERN if fill == "pattern" else Gimp.FillType.FOREGROUND
+            if fill == "gradient":
+                saved = saved_selection(image) if seed is not None else None
+                if saved is not None:
+                    saved.__enter__()
+                try:
+                    if seed is not None:
+                        image.select_contiguous_color(Gimp.ChannelOps.REPLACE, drawable, float(seed[0]), float(seed[1]))
+                    Gimp.context_set_gradient(gradient)
+                    Gimp.context_set_gradient_repeat_mode(repeat)
+                    (x1, y1), (x2, y2) = params["start"], params["end"]
+                    ok = drawable.edit_gradient_fill(shape, 0.0, False, 1, 0.0, True,
+                                                     float(x1), float(y1), float(x2), float(y2))  # fmt: skip
+                finally:
+                    if saved is not None:
+                        saved.__exit__(None, None, None)
+            elif seed is not None:
+                ok = drawable.edit_bucket_fill(fill_type, float(seed[0]), float(seed[1]))
+            else:
+                ok = drawable.edit_fill(fill_type)
+    finally:
+        if temporary:
+            gradient.delete()
+    if not ok:
+        raise BridgeError("GIMP_ERROR", "GIMP refused the fill")
+    return {"item": drawable.get_id(), "fill": fill, "mode": "similar colors" if seed is not None else "selection"}
+
+
 # -- text --------------------------------------------------------------------------------
 
 JUSTIFICATIONS = {"left": "LEFT", "right": "RIGHT", "center": "CENTER", "fill": "FILL"}
@@ -3803,6 +4017,9 @@ def build_operations():
         "filter.list": filter_list,
         "filter.remove": filter_remove,
         "filter.operations": filter_operations,
+        "paint.stroke": paint_stroke,
+        "paint.gradient": gradient_fill,
+        "paint.bucket": bucket_fill,
         "formats.list": file_formats,
         "formats.describe": file_format_describe,
         "image.export_as": image_export_as,

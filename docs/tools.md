@@ -388,6 +388,28 @@ image dirty. Procedure names, arguments and availability depend on the GIMP
 version; check with `gimp_list_callable_procedures` (the committed matrix lists
 422 callable procedures on GIMP 3.2.6).
 
+## Painting with GIMP's tools (toolset `painting`)
+
+Every setting is explicit and GIMP's context (colors, brush, dynamics…) is saved before and
+restored after (checked through `gimp-context-get-*` in `tests/e2e/test_painting.py`). Like
+`gimp_fill`/`gimp_draw_*`: text layers are refused (`WRONG_KIND`, never rasterized), locked pixels
+are refused (`LOCKED`), the selection limits the paint. One undo step each.
+
+* `gimp_paint_stroke(item, tool, points, color, brush?, size, hardness, spacing, dynamics?, opacity,
+  mode, pressure, exposure, source?, source_x, source_y)`: `tool` is `paintbrush`, `pencil` (no
+  antialiasing), `airbrush` (`pressure`), `ink`, `eraser` (to transparency, or to the background
+  color without alpha), `smudge` (`pressure`), `dodge`/`burn` (`exposure`, midtones), `clone` (copies
+  `source` from `source_x`/`source_y`), `heal` (same, matching the colors around). `brush` defaults
+  to a generated round brush, `dynamics` to GIMP's "Dynamics Off" (names are in GIMP's language).
+* `gimp_gradient_fill(item, start, end, gradient | segments, shape, repeat, offset, reverse,
+  opacity, mode)`: `shape` `linear`, `bilinear`, `radial`, `square`, `conical-*`, `shapeburst-*`,
+  `spiral-*`; `repeat` `none`, `sawtooth`, `triangular`. Inline `segments` make a temporary gradient,
+  removed afterwards.
+* `gimp_bucket_fill(item, point?, fill=color|pattern|gradient, …, threshold 0-255, criterion,
+  sample_merged, fill_transparent, diagonal)`: with `point`, fills the contiguous area of similar
+  colors; without, fills the selection (`EMPTY_SELECTION` if there is none). A gradient fill of
+  similar colors selects them, fills, and restores the user's selection.
+
 ## File formats (toolset `formats`)
 
 Beyond `gimp_export_image` (PNG/JPEG) and `gimp_open_image`, every GIMP file procedure is
