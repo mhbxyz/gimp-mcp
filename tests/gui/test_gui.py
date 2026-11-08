@@ -69,8 +69,7 @@ async def test_user_edits_between_calls_keep_ids_and_checkpoints(gui_gimp, tmp_p
     async with mcp_client(gimp) as client:
         image, layer = await first_image(client)
         checkpoint = (await call(client, "gimp_create_checkpoint", image=image, label="before the user"))["checkpoint"]
-        press(gimp, "ctrl+a")  # the user selects all and clears the layer
-        press(gimp, "Delete")
+        press(gimp, "ctrl+comma")  # the user fills the layer with the foreground color (Edit > Fill with FG)
         assert await pixel(client, layer) != BLUE  # the user's edit happened
         assert (await call(client, "gimp_inspect_item", item=layer))["id"] == layer  # same id
         restored = await call(client, "gimp_restore_checkpoint", image=image, checkpoint=checkpoint)

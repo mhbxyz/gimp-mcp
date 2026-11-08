@@ -113,13 +113,10 @@ def press(gimp: GuiGimp, keys: str) -> None:
         sent = subprocess.run(["xdotool", "key", "--clearmodifiers", "--window", window, keys], capture_output=True)
         assert sent.returncode == 0 or keys in ("ctrl+w", "ctrl+q"), sent.stderr
     elif sys.platform == "win32":
-        sendkeys = keys.replace("ctrl+", "^").replace("shift+", "+").replace("Delete", "{DEL}")
-        script = (f"$w = New-Object -ComObject WScript.Shell; $null = $w.AppActivate({gimp.process.pid}); "  # type: ignore[union-attr]
-                  f"Start-Sleep -Milliseconds 400; $w.SendKeys('{sendkeys}')")  # fmt: skip
-        subprocess.run(["powershell", "-NoProfile", "-Command", script], check=True)
+        windows_press(gimp, keys)
     else:  # macOS: GIMP uses the Command key where Linux and Windows use Control
-        key = keys.split("+")[-1]
-        code = {"Delete": "key code 51"}.get(key, f'keystroke "{key}"')
+        key = {"comma": ","}.get(keys.split("+")[-1], keys.split("+")[-1])
+        code = f'keystroke "{key}"'
         modifiers = ", ".join(
             f"{m} down" for m in ("command", "shift") if f"{'ctrl' if m == 'command' else m}+" in keys
         )
@@ -128,6 +125,50 @@ def press(gimp: GuiGimp, keys: str) -> None:
         )
         subprocess.run(["osascript", "-e", script], check=True, capture_output=True)
     time.sleep(1.0)  # GIMP handles the key on its main loop
+
+
+VIRTUAL_KEYS = {"ctrl": 0x11, "shift": 0x10, "comma": 0xBC, "Delete": 0x2E}
+
+
+def windows_press(gimp: GuiGimp, keys: str) -> None:
+    """Bring GIMP's largest window to the front and type the keys with keybd_event (WScript's SendKeys
+    cannot take the focus from a runner's background session)."""
+    assert sys.platform == "win32"  # (also tells the type checker which ctypes it is)
+    import ctypes
+    from ctypes import wintypes
+
+    user32, kernel32 = ctypes.WinDLL("user32"), ctypes.WinDLL("kernel32")
+    assert gimp.process is not None
+    found: list[tuple[int, int]] = []
+
+    @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    def collect(hwnd: int, _: int) -> bool:
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        if pid.value == gimp.process.pid and user32.IsWindowVisible(hwnd):  # type: ignore[union-attr]
+            rect = wintypes.RECT()
+            user32.GetWindowRect(hwnd, ctypes.byref(rect))
+            found.append(((rect.right - rect.left) * (rect.bottom - rect.top), hwnd))
+        return True
+
+    user32.EnumWindows(collect, 0)
+    assert found, "no GIMP window"
+    hwnd = max(found)[1]
+    foreground = user32.GetForegroundWindow()
+    theirs = user32.GetWindowThreadProcessId(foreground, None)
+    ours = kernel32.GetCurrentThreadId()
+    user32.AttachThreadInput(theirs, ours, True)
+    user32.keybd_event(0x12, 0, 0, 0)  # an Alt tap lets a background process take the foreground
+    user32.keybd_event(0x12, 0, 2, 0)
+    user32.ShowWindow(hwnd, 9)
+    user32.SetForegroundWindow(hwnd)
+    user32.AttachThreadInput(theirs, ours, False)
+    time.sleep(0.4)
+    codes = [VIRTUAL_KEYS.get(k, ord(k.upper())) for k in keys.split("+")]
+    for code in codes:
+        user32.keybd_event(code, 0, 0, 0)
+    for code in reversed(codes):
+        user32.keybd_event(code, 0, 2, 0)
 
 
 @pytest.fixture
