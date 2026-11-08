@@ -147,7 +147,7 @@ async def test_scenario_produces_verified_outputs(name: str, gimp_factory, tmp_p
     scenario = load(name)
     report = await run_scenario(scenario, tmp_path, server_params(gimp))
     failed = [check for check in report.checks if not check.passed]
-    assert not failed, failed
+    assert not failed, "\n".join(f"{'ok ' if c.passed else 'FAIL'} {c.description}: {c.detail}" for c in report.checks)
     assert {call.tool for call in report.calls} <= report.listed_tools
     for output in scenario.outputs:
         assert (tmp_path / output).is_file(), output

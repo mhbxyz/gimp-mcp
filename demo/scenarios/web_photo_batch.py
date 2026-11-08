@@ -118,7 +118,7 @@ async def steps(gimp: Session, report: Report) -> None:
 
     # Read each file once (size and EXIF orientation), then group the files a recipe can share.
     groups: dict[tuple[int, int, int], list[str]] = {}
-    read: set[str] = set()  # the interpreted orientation values GIMP returned (in the report)
+    read: dict[str, str] = {}  # the orientation value GIMP returned for each file (in the report)
     for path in sorted(photos.iterdir()):
         if path.name == CORRUPT:
             continue
@@ -126,11 +126,11 @@ async def steps(gimp: Session, report: Report) -> None:
         info = await gimp.call("gimp_inspect_image", image=image)
         exif = (await gimp.call("gimp_get_metadata", image=image))["exif"]
         await gimp.call("gimp_close_image", image=image)
-        read.add(str(exif.get("Exif.Image.Orientation", "")))
+        read[path.stem] = f"{info['width']}x{info['height']} {exif.get('Exif.Image.Orientation', '')}"
         orientation = orientation_of(exif.get("Exif.Image.Orientation", ""))
         groups.setdefault((info["width"], info["height"], orientation), []).append(str(path))
     report.check("every photo was read (size, orientation)", sum(len(g) for g in groups.values()) == len(PHOTOS),
-                 f"{len(groups)} groups; orientations read: {sorted(read)}")  # fmt: skip
+                 f"{len(groups)} groups; read: {read}")  # fmt: skip
     first = True
     results: list[dict] = []
     for (w, h, orientation), files in sorted(groups.items()):
