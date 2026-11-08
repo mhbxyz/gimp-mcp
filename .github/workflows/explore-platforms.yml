@@ -44,7 +44,7 @@ jobs:
         timeout-minutes: 25
         continue-on-error: true
         run: |
-          for mode in prefilter-x3-newonly prefilter-x3-config prefilter-x3-newonly-delete; do
+          for mode in prefilter-x3-partial-noenum prefilter-x3-partial-nochoice prefilter-x3-partial-novalue prefilter-x3-partial; do
             export PROBE_OUT="$PWD/filters-$mode.txt" PLUGIN_DIR="$PWD/src/gimp_mcp/plugin/gimp-mcp-bridge" MODE=$mode
             /Applications/GIMP.app/Contents/MacOS/gimp-console-3.2 -i -n --no-splash --batch-interpreter=python-fu-eval \
               -b "exec(open('$PWD/ci/explore/filters_probe.py').read())" --quit >/dev/null 2>&1 &

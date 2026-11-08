@@ -35,6 +35,17 @@ for walk in range(3 if "x3" in mode else 1):
             pass
         elif "config" in mode:
             drawable_filter.get_config()
+        elif "partial" in mode:
+            config = drawable_filter.get_config()
+            for pspec in config.list_properties():
+                kind = gmb_ops._param_kind(pspec)
+                pspec.get_blurb()
+                if kind == "choice" and "nochoice" not in mode:
+                    list(Gimp.param_spec_choice_get_choice(pspec).list_nicks())
+                if kind == "enum" and "noenum" not in mode:
+                    [v.value_nick for v in pspec.enum_class.__enum_values__.values()]
+                if kind != "unsupported" and "novalue" not in mode:
+                    gmb_ops._config_value(config.get_property(pspec.name))
         else:
             gmb_ops._describe_filter_params(drawable_filter.get_config())
         if "delete" in mode:
