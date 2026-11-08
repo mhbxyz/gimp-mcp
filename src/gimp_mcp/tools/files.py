@@ -40,6 +40,9 @@ class PngOptions(BaseModel):
     color_profile: bool | None = Field(
         default=None, description="Embed the color profile (iCCP); default: only when the image has one assigned."
     )
+    metadata: list[Literal["exif", "xmp", "iptc", "comment", "thumbnail"]] = Field(
+        default_factory=list, description="Metadata to write (none by default: nothing leaks unless asked)."
+    )
 
 
 class JpegOptions(BaseModel):
@@ -49,6 +52,9 @@ class JpegOptions(BaseModel):
     smoothing: float = Field(default=0.0, ge=0.0, le=1.0)
     color_profile: bool | None = Field(
         default=None, description="Embed the color profile (ICC); default: only when the image has one assigned."
+    )
+    metadata: list[Literal["exif", "xmp", "iptc", "comment", "thumbnail"]] = Field(
+        default_factory=list, description="Metadata to write (none by default: nothing leaks unless asked)."
     )
     background: str = Field(
         default="#ffffff", description="Color transparent pixels are flattened onto. " + COLOR_DESCRIPTION
