@@ -43,7 +43,6 @@ def build_previous_wheel(tmp_path: Path) -> Path:
     return next(dist.glob("*.whl"))
 
 
-@pytest.mark.skipif(platforms.CURRENT == "windows", reason="setup and uninstall on Windows: #101")
 async def test_upgrade_from_the_previous_release_then_uninstall(tmp_path: Path):
     if find_gimp_console() is None:
         pytest.skip("gimp-console not found")

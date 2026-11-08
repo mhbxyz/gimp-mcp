@@ -23,8 +23,6 @@ WINDOWS_PENDING_TESTS = {
     "test_a_second_bridge_cannot_take_the_pipe_name",
 }
 WINDOWS_PENDING = {
-    "test_setup": "setup on Windows: #101",
-    "test_uninstall": "setup on Windows: #101",
     "test_doctor": "doctor on Windows: #103",
     "test_flatpak": "Flatpak is Linux only",
 }

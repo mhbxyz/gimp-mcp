@@ -14,7 +14,6 @@ from gimp_mcp.headless import HeadlessGimp, find_gimp_console
 from .dist_helpers import install_distribution
 
 
-@pytest.mark.skipif(platforms.CURRENT == "windows", reason="setup on Windows: #101")
 async def test_setup_installs_configures_and_verifies(tmp_path: Path):
     if find_gimp_console() is None:
         pytest.skip("gimp-console not found")
