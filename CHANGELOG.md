@@ -15,6 +15,11 @@ what is covered by the compatibility promise.
   and checks, now in `demo/out/thumbnail/`); every scenario runs in the end-to-end suite on Linux,
   macOS and Windows.
 
+### Fixed
+
+- The release waits until PyPI serves a new version to both pip and uv: for v0.5.0, uv could not
+  resolve it on the macOS runner seconds after pip could, and the verification failed (passed on re-run).
+
 ## [0.5.0] - 2026-11-08
 
 ### Added

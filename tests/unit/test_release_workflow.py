@@ -109,6 +109,17 @@ def test_installing_from_pypi_waits_for_the_index_to_serve_the_release():
     assert "--no-cache-dir" in script and "sleep" in script and "exit 1" in script
 
 
+def test_the_index_wait_asks_both_installers_used_afterwards():
+    # v0.5.0: pip was served the release while uv, seconds later, was not, and the macOS install that
+    # followed failed. Each wait now asks both installers the tests use.
+    jobs = workflow()["jobs"]
+    linux = next(step["run"] for step in jobs["verify-pypi"]["steps"] if "index serves" in step.get("name", ""))
+    per_os = yaml.safe_load(OS_WORKFLOW.read_text())["jobs"]["gimp-tests"]["steps"]
+    other = next(step["run"] for step in per_os if "index serves" in step.get("name", ""))
+    for script in (linux, other):
+        assert "pip download" in script and "uvx --no-cache --from" in script, script
+
+
 # Release on every supported OS (#104): nothing is published before the full suite passed with a real
 # GIMP on Linux, macOS and Windows, and the published package is installed and driven on each of them.
 OS_WORKFLOW = ROOT / ".github" / "workflows" / "gimp-os-tests.yml"

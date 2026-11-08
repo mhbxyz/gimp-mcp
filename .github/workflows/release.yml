@@ -258,12 +258,15 @@ jobs:
           path: dist
       - name: Same files on PyPI as built (SHA-256)
         run: python3 scripts/verify_published.py pypi "${{ needs.build.outputs.version }}" dist/SHA256SUMS
+      - uses: astral-sh/setup-uv@v6
       - name: Wait until PyPI's index serves the release (its CDN lags behind the JSON API)
         env:
           VERSION: ${{ needs.build.outputs.version }}
         run: |
           for attempt in $(seq 1 40); do
-            if pip download --quiet --no-deps --no-cache-dir --dest "$RUNNER_TEMP/probe" "gimp-mcp==$VERSION"; then
+            # both installers used next: for v0.5.0 pip was served the release while uv, seconds later, was not
+            if pip download --quiet --no-deps --no-cache-dir --dest "$RUNNER_TEMP/probe" "gimp-mcp==$VERSION" &&
+              uvx --no-cache --from "gimp-mcp==$VERSION" gimp-mcp --version; then
               echo "served after $attempt attempt(s)"; exit 0
             fi
             sleep 15
