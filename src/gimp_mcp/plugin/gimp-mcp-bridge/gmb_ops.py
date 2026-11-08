@@ -11,6 +11,7 @@ import os
 import gi
 
 gi.require_version("Babl", "0.1")
+import gmb_filters  # noqa: E402
 import gmb_policy  # noqa: E402
 import gmb_stats  # noqa: E402
 import gmb_undo  # noqa: E402
@@ -1293,6 +1294,303 @@ def filter_remove(params):
     raise BridgeError("NOT_FOUND", "filter %d is not on item %d" % (wanted, drawable.get_id()), {"filter": wanted})
 
 
+# -- GEGL filter catalog (#47) -----------------------------------------------------------
+
+_CATALOG = {}  # operation -> {"title", "description", "categories", "parameters", "supported", "reason"}
+
+
+def _param_kind(pspec):
+    cls = type(pspec).__name__
+    if cls in ("ParamSpecDouble", "ParamSpecFloat"):
+        return "number"
+    if cls in ("ParamSpecInt", "ParamSpecUInt", "ParamSpecInt64", "ParamSpecUInt64", "ParamSpecLong"):
+        return "integer"
+    if cls == "ParamSpecBoolean":
+        return "boolean"
+    if cls == "ParamChoice":
+        return "choice"
+    if cls == "ParamSpecEnum":
+        return "enum"
+    if cls == "ParamColor":
+        return "color"
+    if cls == "ParamSpecString":
+        return "string"
+    return "unsupported"
+
+
+def _config_value(value):
+    """A filter config value -> JSON."""
+    if isinstance(value, Gegl.Color):
+        r, g, b, a = value.get_rgba_with_space(Babl.space("sRGB"))
+        return "#%02x%02x%02x%02x" % tuple(max(0, min(255, round(v * 255))) for v in (r, g, b, a))
+    if isinstance(value, float):
+        return round(value, 6)
+    if value is None or isinstance(value, (bool, int, str)):
+        return value
+    nick = getattr(value, "value_nick", None)
+    return nick if nick is not None else None
+
+
+def _describe_filter_params(config):
+    specs = []
+    for pspec in config.list_properties():
+        kind = _param_kind(pspec)
+        spec = {"name": pspec.name, "kind": kind, "description": pspec.get_blurb()}
+        if kind in ("number", "integer"):
+            spec["min"], spec["max"] = pspec.minimum, pspec.maximum
+            if kind == "number":
+                spec["min"], spec["max"] = round(spec["min"], 6), round(spec["max"], 6)
+        elif kind == "choice":
+            spec["choices"] = list(Gimp.param_spec_choice_get_choice(pspec).list_nicks())
+        elif kind == "enum":
+            spec["choices"] = [v.value_nick for v in pspec.enum_class.__enum_values__.values()]
+        elif kind == "unsupported":
+            spec["type"] = pspec.value_type.name
+        spec["default"] = _config_value(config.get_property(pspec.name)) if kind != "unsupported" else None
+        specs.append(spec)
+    return specs
+
+
+def filter_catalog():
+    """Every operation GIMP offers to filters, introspected once per GIMP session."""
+    if _CATALOG:
+        return _CATALOG
+    scratch = Gimp.Image.new(8, 8, Gimp.ImageBaseType.RGB)
+    try:
+        scratch.undo_disable()
+        layer = Gimp.Layer.new(scratch, "scratch", 8, 8, Gimp.ImageType.RGBA_IMAGE, 100.0, Gimp.LayerMode.NORMAL)
+        scratch.insert_layer(layer, None, 0)
+        for name in Gimp.DrawableFilter.operation_get_available():
+            _ok, keys, values = Gimp.DrawableFilter.operation_get_details(name)
+            details = {key: values.index(i) for i, key in enumerate(keys)}
+            categories = [c for c in (details.get("categories") or "").split(":") if c]
+            try:
+                params = _describe_filter_params(Gimp.DrawableFilter.new(layer, name, "catalog").get_config())
+            except Exception as error:  # an operation GIMP lists but cannot instantiate
+                params, broken = [], "GIMP could not create it: %s" % error
+            else:
+                broken = None
+            supported, reason = gmb_filters.operation_status(name, categories, [p["kind"] for p in params])
+            if broken:
+                supported, reason = False, broken
+            _CATALOG[name] = {
+                "name": name,
+                "title": details.get("title") or name,
+                "description": details.get("description") or "",
+                "categories": categories,
+                "parameters": params,
+                "supported": supported,
+                "reason": reason,
+            }
+    finally:
+        scratch.delete()
+    return _CATALOG
+
+
+def filter_operations(params):
+    query = (params.get("query") or "").lower()
+    category = params.get("category")
+    found = []
+    for entry in filter_catalog().values():
+        if category and category not in entry["categories"]:
+            continue
+        if query and query not in (entry["name"] + " " + entry["title"]).lower():
+            continue
+        found.append({k: entry[k] for k in ("name", "title", "categories", "supported", "reason")})
+    return {"operations": sorted(found, key=lambda e: e["name"])}
+
+
+def _catalog_entry(name):
+    entry = filter_catalog().get(name)
+    if entry is None:
+        raise BridgeError(
+            "NOT_FOUND", "GIMP offers no filter operation %r (see gimp_list_filter_operations)" % name, {"name": name}
+        )
+    return entry
+
+
+def filter_operation_describe(params):
+    return dict(_catalog_entry(params["operation"]))
+
+
+def _filter_values(entry, parameters):
+    try:
+        return gmb_filters.validate(entry["parameters"], parameters or {})
+    except gmb_filters.InvalidParameter as error:
+        raise BridgeError("INVALID_ARGUMENT", "%s: %s" % (entry["name"], error), {"operation": entry["name"]}) from None
+
+
+def _set_config(drawable_filter, entry, values):
+    config = drawable_filter.get_config()
+    specs = {spec["name"]: spec for spec in entry["parameters"]}
+    for name, value in values.items():
+        kind = specs[name]["kind"]
+        if kind == "color":
+            value = color(value)
+        elif kind == "enum":
+            pspec = config.find_property(name)
+            value = next(v for v in pspec.enum_class.__enum_values__.values() if v.value_nick == value)
+        config.set_property(name, value)
+
+
+def filter_state(drawable_filter):
+    entry = filter_catalog().get(drawable_filter.get_operation_name())
+    config = drawable_filter.get_config()
+    parameters = {}
+    for spec in entry["parameters"] if entry else []:
+        if spec["kind"] != "unsupported":
+            parameters[spec["name"]] = _config_value(config.get_property(spec["name"]))
+    data = filter_info(drawable_filter)
+    data["mode"] = drawable_filter.get_blend_mode().value_nick
+    data["parameters"] = parameters
+    return data
+
+
+def _check_filterable(drawable, destructive):
+    kind = item_kind(drawable)
+    if destructive and kind != "layer":
+        raise BridgeError(
+            "WRONG_KIND",
+            "a destructive filter needs a plain layer (%s given): use destructive=false on groups and text" % kind,
+            {"item": drawable.get_id(), "kind": kind},
+        )
+    if destructive and drawable.get_lock_content():
+        raise BridgeError("LOCKED", "the pixels of %r are locked" % drawable.get_name(), {"item": drawable.get_id()})
+
+
+def _filter_appearance(params):
+    """Validated opacity (0-1), mode and visibility from params, or None for each missing one."""
+    opacity = params.get("opacity")
+    mode = layer_mode(params["mode"]) if params.get("mode") is not None else None
+    return (None if opacity is None else float(opacity) / 100.0), mode, params.get("visible")
+
+
+def _apply_appearance(drawable_filter, opacity, mode, visible):
+    if opacity is not None:
+        drawable_filter.set_opacity(opacity)
+    if mode is not None:
+        drawable_filter.set_blend_mode(mode)
+    if visible is not None:
+        drawable_filter.set_visible(bool(visible))
+
+
+@mutation
+def filter_apply_any(params):
+    drawable = get_layer(params)
+    entry = _catalog_entry(params["operation"])
+    if not entry["supported"]:
+        raise BridgeError(
+            "UNSUPPORTED", "%s cannot be applied: %s" % (entry["name"], entry["reason"]), {"operation": entry["name"]}
+        )
+    values = _filter_values(entry, params.get("parameters"))
+    destructive = bool(params.get("destructive"))
+    _check_filterable(drawable, destructive)
+    opacity, mode, visible = _filter_appearance(params)
+    image = drawable.get_image()
+    restricted = not Gimp.Selection.is_empty(image)
+    with undo_step(image):
+        drawable_filter = Gimp.DrawableFilter.new(drawable, entry["name"], params.get("name") or entry["title"])
+        _set_config(drawable_filter, entry, values)
+        _apply_appearance(drawable_filter, opacity, mode, visible)
+        drawable_filter.update()
+        if destructive:
+            state = filter_state(drawable_filter)
+            drawable.merge_filter(drawable_filter)
+            state["id"] = None
+        else:
+            drawable.append_filter(drawable_filter)
+            if drawable_filter.get_id() not in [f.get_id() for f in drawable.get_filters()]:
+                raise BridgeError("GIMP_ERROR", "GIMP did not keep the editable filter on %r" % drawable.get_name())
+            state = filter_state(drawable_filter)
+    return {"filter": state, "destructive": destructive, "restricted_to_selection": restricted}
+
+
+def _get_filter(drawable, number):
+    for drawable_filter in drawable.get_filters():
+        if drawable_filter.get_id() == number:
+            return drawable_filter
+    raise BridgeError("NOT_FOUND", "filter %d is not on item %d" % (number, drawable.get_id()), {"filter": number})
+
+
+def filter_inspect(params):
+    drawable = get_layer(params)
+    return filter_state(_get_filter(drawable, _int_param(params, "filter")))
+
+
+@mutation
+def filter_set(params):
+    drawable = get_layer(params)
+    drawable_filter = _get_filter(drawable, _int_param(params, "filter"))
+    entry = _catalog_entry(drawable_filter.get_operation_name())
+    values = _filter_values(entry, params.get("parameters"))
+    opacity, mode, visible = _filter_appearance(params)
+    with undo_step(drawable.get_image()):
+        _set_config(drawable_filter, entry, values)
+        _apply_appearance(drawable_filter, opacity, mode, visible)
+        drawable_filter.update()
+    return filter_state(drawable_filter)
+
+
+def _detached_copy(drawable, old):
+    """A new filter with the operation, parameters and appearance of ``old``, not yet in the stack."""
+    copy = Gimp.DrawableFilter.new(drawable, old.get_operation_name(), old.get_name())
+    source, target = old.get_config(), copy.get_config()
+    for pspec in source.list_properties():
+        target.set_property(pspec.name, source.get_property(pspec.name))
+    _apply_appearance(copy, old.get_opacity(), old.get_blend_mode(), old.get_visible())
+    return copy
+
+
+@mutation
+def filter_reorder(params):
+    drawable = get_layer(params)
+    moved = _get_filter(drawable, _int_param(params, "filter")).get_id()
+    stack = [f.get_id() for f in drawable.get_filters()]
+    try:
+        rebuild, _final = gmb_filters.reorder_plan(stack, moved, int(params["position"]))
+    except ValueError as error:
+        raise BridgeError("INVALID_ARGUMENT", str(error)) from None
+    renamed = {}
+    with undo_step(drawable.get_image()):
+        by_id = {f.get_id(): f for f in drawable.get_filters()}
+        copies = [(number, _detached_copy(drawable, by_id[number])) for number in rebuild]
+        for number in rebuild:
+            by_id[number].delete()
+        for number, copy in copies:  # bottom-up
+            copy.update()
+            drawable.append_filter(copy)
+            renamed[number] = copy.get_id()
+    return {
+        "filters": [filter_info(f) for f in drawable.get_filters()],
+        "recreated": {str(old): new for old, new in renamed.items()},
+    }
+
+
+@mutation
+def filter_merge(params):
+    """Bake the filter stack into the layer's pixels, from the bottom up to ``up_to`` (default: all)."""
+    drawable = get_layer(params)
+    _check_filterable(drawable, True)
+    stack = drawable.get_filters()  # top first
+    if not stack:
+        raise BridgeError("INVALID_ARGUMENT", "%r has no filter to merge" % drawable.get_name())
+    above = []
+    if params.get("up_to") is not None:
+        target = _get_filter(drawable, _int_param(params, "up_to"))
+        above = stack[: [f.get_id() for f in stack].index(target.get_id())]
+    with undo_step(drawable.get_image()):
+        kept = []
+        for drawable_filter in above:  # keep copies of the filters above, outside the stack
+            kept.append(_detached_copy(drawable, drawable_filter))
+            drawable_filter.delete()
+        merged = len(drawable.get_filters())
+        drawable.merge_filters()
+        for copy in reversed(kept):  # bottom-up
+            copy.update()
+            drawable.append_filter(copy)
+    return {"merged": merged, "filters": [filter_info(f) for f in drawable.get_filters()]}
+
+
 # -- text --------------------------------------------------------------------------------
 
 JUSTIFICATIONS = {"left": "LEFT", "right": "RIGHT", "center": "CENTER", "fill": "FILL"}
@@ -1968,6 +2266,13 @@ def build_operations():
         "filter.apply": filter_apply,
         "filter.list": filter_list,
         "filter.remove": filter_remove,
+        "filter.operations": filter_operations,
+        "filter.describe": filter_operation_describe,
+        "filter.apply_any": filter_apply_any,
+        "filter.inspect": filter_inspect,
+        "filter.set": filter_set,
+        "filter.reorder": filter_reorder,
+        "filter.merge": filter_merge,
         "paint.fill": paint_fill,
         "paint.path": paint_path,
         "paint.shape": paint_shape,

@@ -388,6 +388,59 @@ image dirty. Procedure names, arguments and availability depend on the GIMP
 version; check with `gimp_list_callable_procedures` (the committed matrix lists
 422 callable procedures on GIMP 3.2.6).
 
+## Effects: the GEGL filter catalog (toolset `effects`)
+
+GIMP 3.2 offers about 200 GEGL operations as filters. Their parameters are **introspected from
+GIMP** (once per GIMP session) and every value is validated by the bridge before anything changes
+(`INVALID_ARGUMENT` names the parameter and the allowed range or choices).
+
+### `gimp_list_filter_operations(query="", category?)`
+
+`operations[]`: `name` (`gegl:unsharp-mask`…), `title`, `categories` (`blur`, `distort`, `light`,
+`noise`…), `supported`, `reason`. Not supported, and listed with the reason:
+
+* scripts and file readers: `gegl:gluas`, `gegl:ctx-script`, `gegl:styles` (denied);
+* operations with an auxiliary input (a second image): `gegl:bump-map`, `gegl:displace`,
+  `gegl:variable-blur`, and six that GIMP 3.2 silently drops when appended as filters
+  (`gegl:gaussian-blur-selective`, `gegl:lens-blur`, `gegl:negative-darkroom`, `gegl:oilify`,
+  `gegl:voronoi-diagram`, `gimp:set-alpha`);
+* internal GIMP operations (layer modes, compositing, selection helpers);
+* operations with a parameter the bridge cannot set (`gimp:curves`: a curve object).
+
+### `gimp_describe_filter_operation(operation)`
+
+`description` and `parameters[]`: `name`, `kind` (`number`, `integer`, `boolean`, `choice`, `enum`,
+`color`, `string`, `unsupported`), `min`, `max`, `choices`, `default`, `description` (GIMP's text, in
+GIMP's language). Colors are `#rrggbbaa`.
+
+### `gimp_apply_filter(item, operation, parameters={}, destructive=false, name?, opacity?, mode?, visible?)`
+
+Default: adds an **editable filter** on top of the layer's filter stack (pixels untouched; saved in
+XCF with its parameters). `destructive=true`: bakes the result into the pixels (plain layers only,
+`WRONG_KIND` on groups and text, `LOCKED` on locked pixels). Parameters not given keep GIMP's
+defaults. Both modes respect the selection active at that moment (`restricted_to_selection`).
+Returns the filter's state (`id` is `null` when destructive). `UNSUPPORTED` for an operation listed
+as not supported, `NOT_FOUND` for an unknown one. One undo step.
+
+### `gimp_inspect_filter(item, filter)` / `gimp_set_filter(item, filter, parameters?, visible?, opacity?, mode?)`
+
+State of an editable filter: `operation`, `name`, `visible`, `opacity` (0-100), `mode` (blend
+mode nick), `parameters` (current values). `gimp_set_filter` changes only what is given (one undo
+step); a hidden filter leaves the layer's rendering exactly as without it.
+
+### `gimp_move_filter(item, filter, position)`
+
+Moves a filter in the stack (0 = top, applied last). GIMP 3.2 can only append filters on top: the
+filters from the top down to the lowest moved slot are **re-created** with the same operation,
+parameters, name, opacity, mode and visibility, and get new ids (`recreated`: old id → new id).
+
+### `gimp_merge_filters(item, up_to?)`
+
+Bakes filters into the pixels (destructive, plain layers only): the whole stack, or from the bottom
+up to and including `up_to`; the filters above stay editable (re-created, new ids). The live stack
+computes in floating point while baked pixels are stored in the layer's precision: on 8-bit layers
+values may move by 1.
+
 ## Analysis (toolset `analysis`, read-only)
 
 Measure instead of guessing from a downscaled preview. Values are **8-bit sRGB (0-255)**
@@ -503,4 +556,5 @@ another image), `NOT_FOUND`.
 | `EMPTY_SELECTION` | The operation needs a selection and nothing is selected. |
 | `IMAGE_MISMATCH` | Objects from different images combined in one operation. |
 | `LOCKED` | The targeted property or content is locked in GIMP. |
+| `UNSUPPORTED` | The operation exists but cannot be used through this tool (`message` says why). |
 | `GIMP_ERROR` | Unexpected failure inside GIMP; for a mutation the outcome is `unknown`. |
