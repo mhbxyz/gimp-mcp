@@ -40,4 +40,6 @@ Why this shape: see [ADR 0001](adr/0001-bridge-persistent-plugin-unix-socket.md)
   one at a time across all connected servers.
 * **stdout** of `gimp-mcp serve` carries only MCP JSON-RPC; logs go to stderr
   (`--verbose` for debug logs). Logs never contain image data or the token.
-* Linux only (verified on GIMP 3.2.6). Windows/macOS are not supported yet.
+* Linux is supported (verified on GIMP 3.2.6); Windows and macOS are being added (ADR 0008,
+  milestone v0.5.0). OS-specific locations live in `platforms.py` (server) and `gmb_platform.py`
+  (plug-in).

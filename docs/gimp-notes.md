@@ -297,3 +297,16 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   the batch reports `UNSUPPORTED_FORMAT` at the opening step, nothing stays open, and the other
   files still run. Closing with `discard_changes` leaves input files byte-for-byte unchanged
   (`tests/e2e/test_batch.py`).
+* **Windows and macOS** (checked 2026-11-08 on GitHub runners, GIMP 3.2.6 from gimp.org, ADR 0008):
+  macOS: `gimp-3.2.6-arm64.dmg` holds `GIMP.app`; `Contents/MacOS/gimp-console-3.2` (also
+  `gimp-console` symlinks) and `python3` (3.14.7, PyGObject 3.56, GLib 2.88); profile
+  `~/Library/Application Support/GIMP/3.2`; GIMP's Python has `AF_UNIX`, `LOCAL_PEERCRED` and
+  `GLib.unix_fd_add_full` (deprecated for `GLibUnix.fd_add_full`). Windows: `gimp-3.2.6-setup.exe
+  /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CURRENTUSER /DIR=C:\gimp` installs without prompts;
+  `bin\gimp-console-3.2.exe` and `bin\python.exe` (3.14.7 MinGW, PyGObject 3.58, GLib 2.90); profile
+  `%APPDATA%\GIMP\3.2`; GIMP's Python has no `socket.AF_UNIX` and no `GLib.unix_fd_add_full`, but has
+  `_winapi` named pipes, `ctypes` and `GLib.io_add_watch`, and Gio listens on a Unix socket. On both,
+  `gimp-console -i --batch-interpreter=python-fu-eval -b <code> --quit` runs Python headless;
+  `-b "Gimp.quit()"` fails ("returned no return values") and leaves GIMP running. `XDG_RUNTIME_DIR` is
+  unset. The runners' own CPython: macOS has `AF_UNIX`/`LOCAL_PEERCRED`, Windows has neither (named
+  pipes only).

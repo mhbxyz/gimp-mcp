@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from . import __version__
+from . import __version__, platforms
 from .bridge import BridgeClient, BridgeEndpoint
 from .errors import GimpMcpError
 from .installer import PLUGIN_NAME, install_plugin, installed_plugin_dir
@@ -102,7 +102,7 @@ class Client:
 
     @property
     def config_home(self) -> Path:
-        return Path(self.env.get("XDG_CONFIG_HOME") or self.home / ".config")
+        return Path(platforms.config_home({**self.env, "HOME": str(self.home)}))
 
     def detected(self) -> bool:
         raise NotImplementedError
@@ -293,7 +293,7 @@ class VSCode(Client):
 
     def plan(self) -> Change | None:
         try:
-            current = json.loads(self.user_config().read_text()).get("servers", {}).get(SERVER_NAME)
+            current = json.loads(self.user_config().read_text(encoding="utf-8")).get("servers", {}).get(SERVER_NAME)
         except (OSError, ValueError, AttributeError):
             current = None
         payload = self.payload()
@@ -394,7 +394,7 @@ def installed_profiles(options: SetupOptions, active: Path) -> list[Path]:
 
 def _installed_version(directory: Path) -> str | None:
     try:
-        return (directory / "VERSION").read_text().strip() or None
+        return (directory / "VERSION").read_text(encoding="utf-8").strip() or None
     except OSError:
         return None
 

@@ -24,6 +24,7 @@ def test_relative_paths_are_refused_because_gimp_and_the_server_have_different_c
 
 def test_home_is_expanded(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))  # Windows expands ~ from USERPROFILE
     (tmp_path / "a.png").write_bytes(b"x")
     assert check_input_file("~/a.png") == tmp_path / "a.png"
 
