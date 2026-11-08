@@ -6,8 +6,6 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
-## [0.5.0] - 2026-11-08
-
 ### Added
 
 - Demo scenarios (#107): `uv run demo/run.py <scenario>` or `--all` runs typical GIMP jobs through
@@ -16,6 +14,11 @@ what is covered by the compatibility promise.
   records the agent version of any scenario. The thumbnail demo is the first scenario (same outputs
   and checks, now in `demo/out/thumbnail/`); every scenario runs in the end-to-end suite on Linux,
   macOS and Windows.
+
+## [0.5.0] - 2026-11-08
+
+### Added
+
 - Windows support (#100): GIMP 3.2 from gimp.org's installer, verified by the end-to-end suite on GitHub's
   Windows Server 2025 runner. The bridge serves a named pipe that only the current user can open (owner-only
   DACL, remote clients rejected, first instance only), checks the client's and the server's process owner,
