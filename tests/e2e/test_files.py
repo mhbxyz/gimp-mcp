@@ -153,3 +153,20 @@ async def test_closing_invalidates_the_image_id(gimp: HeadlessGimp, layered_xcf:
         await call(client, "gimp_close_image", image=opened)
         status = await call(client, "gimp_status")
     assert status["images"] == []
+
+
+async def test_paths_with_spaces_and_non_ascii_characters(gimp: HeadlessGimp, tmp_path: Path):
+    # Windows paths also carry a drive letter and backslashes (tmp_path does there)
+    folder = tmp_path / "dossier été" / "Ünïcode ñame 写真"
+    folder.mkdir(parents=True)
+    png_path, xcf_path = folder / "image à exporter.png", folder / "projet été.xcf"
+    async with mcp_client(gimp) as client:
+        created = await call(client, "gimp_create_image", width=20, height=10, fill="#ff8800")
+        await call(client, "gimp_export_image", image=created["id"], path=str(png_path))
+        await call(client, "gimp_save_image", image=created["id"], path=str(xcf_path))
+        await call(client, "gimp_close_image", image=created["id"], discard_changes=True)
+        reopened = await call(client, "gimp_open_image", path=str(xcf_path))
+        await call(client, "gimp_close_image", image=reopened["id"], discard_changes=True)
+    assert (reopened["width"], reopened["height"]) == (20, 10)
+    with Image.open(png_path) as png:
+        assert png.size == (20, 10) and png.convert("RGB").getpixel((5, 5)) == (0xFF, 0x88, 0x00)
