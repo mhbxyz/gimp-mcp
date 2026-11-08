@@ -29,6 +29,8 @@ TOOLSETS: dict[str, str] = {
     "full-resolution crops.",
     "color": "Color adjustments: levels, curves, color balance, colorize, desaturate, invert, threshold, "
     "posterize, exposure, shadows-highlights, automatic corrections.",
+    "typography": "Rich text markup, text outlines, kerning, hinting, indentation, language and right-to-left or "
+    "vertical text.",
     "vector": "GIMP 3.2 vector layers (a path rendered with editable fill and stroke) and link layers (an "
     "external image file).",
     "channels": "Select by color, fuzzy select, select from items; grow, shrink, border, feather, round, "
