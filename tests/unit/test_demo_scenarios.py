@@ -105,3 +105,14 @@ def test_the_screenshot_checks_reject_an_unredacted_copy(tmp_path):
     assert "the e-mail keeps no detail (no glyph pixel left)" in failed
     assert "the avatar keeps no detail (flatter, eyes and mouth gone)" in failed
     assert "the PNG carries no metadata (no text, Exif, time or profile chunk)" in failed  # the planted tEXt
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [("right, top", 6), ("left, bottom", 8), ("bottom, left", 8), ("Left, Bottom", 8), ("6", 6), ("8", 8),
+     ("top, left", 1), ("", 1)],
+)  # fmt: skip
+def test_the_batch_demo_reads_exif_orientation_from_interpreted_values(value, expected):
+    from demo.scenarios.web_photo_batch import orientation_of
+
+    assert orientation_of(value) == expected

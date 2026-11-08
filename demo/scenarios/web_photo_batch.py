@@ -75,9 +75,21 @@ def make_logo(path: Path, alpha: int = 255) -> None:
     img.save(path)
 
 
-# what gimp_get_metadata returns for EXIF orientations 6 and 8 (Exiv2's interpreted values, in GIMP's
-# language: #161); the demos run GIMP with LANG=C.UTF-8
-ORIENTATIONS = {"right, top": 6, "left, bottom": 8}
+def orientation_of(value: object) -> int:
+    """EXIF orientation 6 or 8 from what gimp_get_metadata returns: Exiv2's interpreted value in GIMP's
+    language ("right, top" for 6, "left, bottom" for 8; the demos run GIMP in English) or a number
+    (#161: no raw value yet). Anything else is treated as upright."""
+    import re
+
+    text = str(value).strip().lower()
+    if text in ("6", "8"):
+        return int(text)
+    words = set(re.findall(r"[a-z]+", text))
+    if {"right", "top"} <= words:
+        return 6
+    if {"left", "bottom"} <= words:
+        return 8
+    return 1
 
 
 def target_size(w: int, h: int) -> tuple[int, int]:
@@ -106,6 +118,7 @@ async def steps(gimp: Session, report: Report) -> None:
 
     # Read each file once (size and EXIF orientation), then group the files a recipe can share.
     groups: dict[tuple[int, int, int], list[str]] = {}
+    seen: set[str] = set()  # the interpreted orientation values GIMP returned (in the report)
     for path in sorted(photos.iterdir()):
         if path.name == CORRUPT:
             continue
@@ -113,10 +126,11 @@ async def steps(gimp: Session, report: Report) -> None:
         info = await gimp.call("gimp_inspect_image", image=image)
         exif = (await gimp.call("gimp_get_metadata", image=image))["exif"]
         await gimp.call("gimp_close_image", image=image)
-        orientation = ORIENTATIONS.get(str(exif.get("Exif.Image.Orientation", "")).strip(), 1)
+        seen.add(str(exif.get("Exif.Image.Orientation", "")))
+        orientation = orientation_of(exif.get("Exif.Image.Orientation", ""))
         groups.setdefault((info["width"], info["height"], orientation), []).append(str(path))
     report.check("every photo was read (size, orientation)", sum(len(g) for g in groups.values()) == len(PHOTOS),
-                 f"{len(groups)} groups")  # fmt: skip
+                 f"{len(groups)} groups; orientations read: {sorted(seen)}")  # fmt: skip
     first = True
     results: list[dict] = []
     for (w, h, orientation), files in sorted(groups.items()):
