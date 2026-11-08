@@ -23,11 +23,12 @@ import json
 import os
 import socket
 import stat
-import struct
 import sys
 import traceback
 from collections.abc import Callable
 from typing import Any
+
+import gmb_platform
 
 PROTOCOL_VERSION = 1
 DEFAULT_MAX_REQUEST_BYTES = 8 * 1024 * 1024
@@ -35,35 +36,20 @@ SEND_TIMEOUT_SECONDS = 10.0
 
 
 def default_socket_path(environ: dict[str, str]) -> str:
-    """Socket location; must match gimp_mcp.bridge.default_socket_path."""
-    explicit = environ.get("GIMP_MCP_SOCKET")
-    if explicit:
-        return explicit
-    runtime = environ.get("XDG_RUNTIME_DIR")
-    app = environ.get("FLATPAK_ID")
-    if app and runtime:
-        # Inside a Flatpak sandbox only $XDG_RUNTIME_DIR/app/$FLATPAK_ID is shared with the host.
-        return os.path.join(runtime, "app", app, "gimp-mcp", "bridge.sock")
-    if runtime and os.path.isdir(runtime):
-        return os.path.join(runtime, "gimp-mcp", "bridge.sock")
-    return os.path.join("/tmp", "gimp-mcp-%d" % os.getuid(), "bridge.sock")
+    """Socket location (gmb_platform.bridge_address, mirrored by gimp_mcp.platforms)."""
+    return gmb_platform.bridge_address(environ)[1]
 
 
 def gimp_session_id(gimp_pid: int | None = None) -> str:
     """Identify the GIMP process: stable while it runs, different after a restart.
 
-    Derived from GIMP's pid and start time (Linux /proc), so restarting only the
+    Derived from GIMP's pid and start time (where the OS gives it), so restarting only the
     bridge keeps the ids valid while restarting GIMP invalidates them.
     """
     import hashlib
 
     pid = os.getppid() if gimp_pid is None else gimp_pid
-    start = ""
-    try:
-        with open("/proc/%d/stat" % pid) as handle:
-            start = handle.read().rsplit(")", 1)[1].split()[19]
-    except (OSError, IndexError):
-        start = secrets_token()
+    start = gmb_platform.process_start(pid) or secrets_token()
     return hashlib.sha256(("%d:%s" % (pid, start)).encode()).hexdigest()[:8]
 
 
@@ -99,12 +85,7 @@ def log(message: str) -> None:
 
 
 def _peer_uid(sock: socket.socket) -> int | None:
-    so_peercred = getattr(socket, "SO_PEERCRED", None)
-    if so_peercred is None:
-        return None
-    creds = sock.getsockopt(socket.SOL_SOCKET, so_peercred, struct.calcsize("3i"))
-    _pid, uid, _gid = struct.unpack("3i", creds)
-    return uid
+    return gmb_platform.peer_uid(sock)
 
 
 class Connection:
@@ -221,7 +202,7 @@ class BridgeServer:
                 return None
             raise
         uid = _peer_uid(sock)
-        if uid is not None and uid != self.allowed_uid:
+        if uid is None or uid != self.allowed_uid:  # an unidentified peer is refused too
             log("rejected connection from uid %s" % uid)
             sock.close()
             return None

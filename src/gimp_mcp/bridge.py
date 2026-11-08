@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from . import __version__
+from . import __version__, platforms
 from .errors import INSTALL_HINT, GimpMcpError
 from .versions import Compatibility, check_plugin_version
 
@@ -33,7 +33,7 @@ PROTOCOL_VERSION = 1
 MIN_GIMP_VERSION = (3, 2)
 MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 SOCKET_ENV = "GIMP_MCP_SOCKET"
-FLATPAK_APP = "org.gimp.GIMP"
+FLATPAK_APP = platforms.FLATPAK_APP
 _POLLRDHUP = getattr(select, "POLLRDHUP", 0)
 
 
@@ -48,24 +48,14 @@ class BridgeEndpoint:
 
     @classmethod
     def default(cls, environ: dict[str, str] | None = None) -> BridgeEndpoint:
-        return cls.for_socket(default_socket_path(environ))
+        address = platforms.bridge_address(os.environ if environ is None else environ)
+        return cls(socket_path=Path(address.path), token_path=Path(address.token_path))
 
 
 def default_socket_path(environ: dict[str, str] | None = None) -> Path:
-    """Socket path shared by the plug-in and the server (same rules on both sides)."""
-    env = os.environ if environ is None else environ
-    explicit = env.get(SOCKET_ENV)
-    if explicit:
-        return Path(explicit)
-    runtime = env.get("XDG_RUNTIME_DIR")
-    if runtime and os.path.isdir(runtime):
-        native = Path(runtime) / "gimp-mcp" / "bridge.sock"
-        # A Flatpak GIMP (org.gimp.GIMP) serves under the app directory shared with the host.
-        flatpak = Path(runtime) / "app" / FLATPAK_APP / "gimp-mcp" / "bridge.sock"
-        if not native.exists() and flatpak.exists():
-            return flatpak
-        return native
-    return Path("/tmp") / f"gimp-mcp-{os.getuid()}" / "bridge.sock"
+    """Address shared by the plug-in and the server (``platforms.bridge_address``; a Flatpak GIMP's
+    socket is used when only it exists)."""
+    return Path(platforms.bridge_address(os.environ if environ is None else environ).path)
 
 
 @dataclass(frozen=True)

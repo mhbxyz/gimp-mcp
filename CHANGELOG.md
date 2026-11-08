@@ -6,10 +6,22 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+### Changed
+
+- OS-specific locations (GIMP profile, client configuration folders, bridge address, headless GIMP)
+  come from one platform layer that knows Linux, macOS and Windows (#98, ADR 0008). Linux behaves as
+  before; `gimp-mcp doctor` skips the GIMP-process check where it cannot list processes.
+
 ### Fixed
 
 - The release workflow waits for PyPI's index to serve a new version before installing it: v0.4.0's
   check ran before PyPI's CDN had the release, which stopped the MCP registry and the public release.
+- Text files are read and written as UTF-8 on every OS (the default encoding is not UTF-8 on Windows).
+
+### Security
+
+- The bridge refuses a connection whose peer uid it cannot read; it used to accept it, which mattered
+  on systems without `SO_PEERCRED`. On macOS the uid now comes from `LOCAL_PEERCRED` (#98).
 
 ## [0.4.0] - 2026-11-08
 

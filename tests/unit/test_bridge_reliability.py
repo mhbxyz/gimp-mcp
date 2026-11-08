@@ -41,6 +41,17 @@ async def test_connection_from_another_uid_is_closed_before_any_request():
         assert bridge.calls == []
 
 
+async def test_a_peer_whose_uid_cannot_be_read_is_refused(monkeypatch):
+    import gmb_platform  # type: ignore[import-not-found]
+
+    monkeypatch.setattr(gmb_platform, "peer_uid", lambda sock: None)
+    with running_fake_bridge({"x": lambda p: {}}) as bridge:
+        with pytest.raises(GimpMcpError) as excinfo:
+            await client_for(bridge, connect_timeout=1).call("x")
+        assert excinfo.value.code == "BRIDGE_UNAVAILABLE"
+        assert bridge.calls == []
+
+
 def test_request_before_hello_is_refused_and_connection_closed():
     with running_fake_bridge({"x": lambda p: {"ran": True}}) as bridge:
         with socket.socket(socket.AF_UNIX) as sock:
