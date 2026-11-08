@@ -3,7 +3,7 @@
     "package": "0.5.0 (checkout)",
     "model": "claude-sonnet-5-5",
     "date": "2026-11-08",
-    "updated": "old-photo-restoration, product-cutout and social-media-kit on 2026-11-08; screenshot-annotation on 2026-11-08; web-photo-batch on 2026-11-08; animated-sticker on 2026-11-08; print-flyer on 2026-11-08"
+    "updated": "old-photo-restoration, product-cutout and social-media-kit on 2026-11-08; screenshot-annotation on 2026-11-08; web-photo-batch on 2026-11-08; animated-sticker on 2026-11-08; print-flyer on 2026-11-08; sky-replacement on 2026-11-08"
   },
   "tasks": {
     "resize-export": {
@@ -1860,6 +1860,79 @@
       "output_tokens": 3472,
       "cache_read_tokens": 172711,
       "cache_creation_tokens": 21520,
+      "model": "claude-sonnet-5-5",
+      "gimp_tools": 50,
+      "date": "2026-11-08",
+      "package": "0.5.0 (checkout)"
+    },
+    "sky-replacement": {
+      "passed": true,
+      "checks": [
+        {
+          "description": "the session finished",
+          "passed": true,
+          "detail": "success"
+        },
+        {
+          "description": "montage.png has the landscape's size",
+          "passed": true,
+          "detail": "(1200, 800)"
+        },
+        {
+          "description": "sky pixels come from the new sky (within 8)",
+          "passed": true,
+          "detail": "worst 0"
+        },
+        {
+          "description": "foreground pixels change only by a bounded color grade (at most 40, not none)",
+          "passed": true,
+          "detail": "largest 28, mean 19.2"
+        },
+        {
+          "description": "the horizon transition is narrower than 6 px (no gray halo, no sky on the ground)",
+          "passed": true,
+          "detail": "gray above at x=[], sky below at x=[]"
+        },
+        {
+          "description": "the XCF keeps the new sky as a masked layer over the landscape",
+          "passed": true,
+          "detail": "[('New Sky', True), ('Background', False)]"
+        }
+      ],
+      "tool_calls": 19,
+      "tools": [
+        "gimp_status",
+        "gimp_list_toolsets",
+        "gimp_enable_toolsets",
+        "gimp_open_image",
+        "gimp_preview",
+        "gimp_sample_colors",
+        "gimp_import_layer",
+        "gimp_inspect_image",
+        "gimp_select_by_color",
+        "gimp_modify_selection_shape",
+        "gimp_modify_selection_shape",
+        "gimp_add_layer_mask",
+        "gimp_color_balance",
+        "gimp_remove_filter",
+        "gimp_select_rectangle",
+        "gimp_color_balance",
+        "gimp_preview",
+        "gimp_save_image",
+        "gimp_export_image"
+      ],
+      "errors": [],
+      "other_tools": [
+        "ToolSearch",
+        "Bash",
+        "ToolSearch"
+      ],
+      "duration_s": 35.1,
+      "turns": 23,
+      "input_tokens": 26,
+      "output_tokens": 3281,
+      "cache_read_tokens": 284468,
+      "cache_creation_tokens": 21771,
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-08",
