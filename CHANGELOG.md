@@ -6,6 +6,11 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+### Fixed
+
+- The release workflow waits for PyPI's index to serve a new version before installing it: v0.4.0's
+  check ran before PyPI's CDN had the release, which stopped the MCP registry and the public release.
+
 ## [0.4.0] - 2026-11-08
 
 ### Added
