@@ -25,6 +25,10 @@ what is covered by the compatibility promise.
 - The release waits until PyPI serves a new version to both pip and uv: for v0.5.0, uv could not
   resolve it on the macOS runner seconds after pip could, and the verification failed (passed on re-run).
 
+### Changed
+
+- The README demo is re-recorded with 0.5.0, through `demo/video/record.sh 0.5.0 thumbnail` (#107).
+
 ## [0.5.0] - 2026-11-08
 
 ### Added

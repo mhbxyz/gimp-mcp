@@ -13,14 +13,14 @@ filters and exports, step by step, right in front of you.
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/mhbxyz/gimp-mcp/blob/main/LICENSE)
 
 <p align="center">
-  <a href="https://github.com/mhbxyz/gimp-mcp/releases/download/v0.4.0/gimp-mcp-demo.mp4">
+  <a href="https://github.com/mhbxyz/gimp-mcp/releases/download/v0.5.0/gimp-mcp-demo.mp4">
     <img src="https://raw.githubusercontent.com/mhbxyz/gimp-mcp/main/docs/assets/demo.webp"
          alt="Claude Code (left) asks gimp-mcp to turn a sunset photo into a YouTube thumbnail; GIMP (right) builds it layer by layer"
          width="100%">
   </a>
   <br>
   <sub>A real, unedited session at 2× speed: one prompt in Claude Code, everything else done by GIMP through
-  gimp-mcp. <a href="https://github.com/mhbxyz/gimp-mcp/releases/download/v0.4.0/gimp-mcp-demo.mp4">Full-quality video (1080p, real time)</a>.</sub>
+  gimp-mcp. <a href="https://github.com/mhbxyz/gimp-mcp/releases/download/v0.5.0/gimp-mcp-demo.mp4">Full-quality video (1080p, real time)</a>.</sub>
 </p>
 
 ## Quickstart
