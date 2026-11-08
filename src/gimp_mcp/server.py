@@ -21,6 +21,7 @@ from .tools import (
     files,
     filters,
     formats,
+    geometry,
     history,
     inspect,
     layers,
@@ -94,6 +95,7 @@ def build_server(
         document,
         formats,
         painting,
+        geometry,
     ):
         module.register(kit)
     return mcp

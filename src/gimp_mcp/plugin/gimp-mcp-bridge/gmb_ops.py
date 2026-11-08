@@ -693,10 +693,13 @@ def require_unlocked(layer, position=False, content=False):
             )
 
 
+TRANSFORM_RESIZE = {v.value_nick: v for v in Gimp.TransformResize.__enum_values__.values()}
+
+
 class transform_context:
     def __init__(self, interpolation="cubic", clip="adjust"):
         self.interpolation = INTERPOLATIONS[interpolation]
-        self.clip = Gimp.TransformResize.CLIP if clip == "clip" else Gimp.TransformResize.ADJUST
+        self.clip = TRANSFORM_RESIZE.get(clip or "adjust", Gimp.TransformResize.ADJUST)
 
     def __enter__(self):
         Gimp.context_push()
@@ -723,9 +726,103 @@ def image_scale(params):
 
 @mutation
 def image_resize(params):
+    """Canvas resize; resize_layers: none, all (every layer to the canvas) or image-sized (layers that
+    covered the old canvas); new layer areas are transparent or filled with fill_color."""
     image = get_image(params)
-    image.resize(params["width"], params["height"], params.get("offset_x", 0), params.get("offset_y", 0))
+    mode = params.get("resize_layers", "none")
+    old_w, old_h = image.get_width(), image.get_height()
+    targets = []
+    if mode != "none":
+        for layer in image.get_layers():
+            _ok, x, y = layer.get_offsets()
+            if mode == "all" or (x, y, layer.get_width(), layer.get_height()) == (0, 0, old_w, old_h):
+                targets.append(layer)
+    dx, dy = params.get("offset_x", 0), params.get("offset_y", 0)
+    with undo_step(image):
+        image.resize(params["width"], params["height"], dx, dy)
+        for layer in targets:
+            _ok, x, y = layer.get_offsets()
+            old = (x, y, layer.get_width(), layer.get_height())
+            layer.resize_to_image_size()
+            if params.get("fill_color") is not None:
+                with saved_selection(image), paint_context({"color": params["fill_color"]}):
+                    image.select_rectangle(Gimp.ChannelOps.REPLACE, 0, 0, image.get_width(), image.get_height())
+                    image.select_rectangle(Gimp.ChannelOps.SUBTRACT, *old)
+                    if not Gimp.Selection.is_empty(image):
+                        layer.edit_fill(Gimp.FillType.FOREGROUND)
     return geometry(image)
+
+
+ROTATIONS = {90: Gimp.RotationType.DEGREES90, 180: Gimp.RotationType.DEGREES180, 270: Gimp.RotationType.DEGREES270}
+
+
+@mutation
+def image_rotate(params):
+    image = get_image(params)
+    if not image.rotate(ROTATIONS[int(params["angle"])]):
+        raise BridgeError("GIMP_ERROR", "GIMP could not rotate the image")
+    return geometry(image)
+
+
+@mutation
+def image_flip(params):
+    image = get_image(params)
+    orientation = (
+        Gimp.OrientationType.HORIZONTAL if params["orientation"] == "horizontal" else Gimp.OrientationType.VERTICAL
+    )
+    if not image.flip(orientation):
+        raise BridgeError("GIMP_ERROR", "GIMP could not flip the image")
+    return geometry(image)
+
+
+def _transform_target(params):
+    if params.get("selection"):
+        image = get_image(params)
+        if Gimp.Selection.is_empty(image):
+            raise BridgeError("EMPTY_SELECTION", "there is no selection to transform")
+        return image.get_selection(), image, "selection"
+    item = get_item(params)
+    kind = item_kind(item)
+    if kind in ("layer", "group", "text"):
+        require_unlocked(item, position=True, content=True)
+    elif kind not in ("path", "channel"):
+        raise BridgeError("WRONG_KIND", "a %s cannot be transformed" % kind)
+    return item, item.get_image(), kind
+
+
+@mutation
+def item_transform(params):
+    import math
+
+    target, image, kind = _transform_target(params)
+    transform = params["transform"]
+    with undo_step(image), transform_context(params.get("interpolation", "cubic"), params.get("clip", "adjust")):
+        if transform == "perspective":
+            corners = [float(v) for corner in params["corners"] for v in corner]
+            result = target.transform_perspective(*corners)
+        elif transform == "shear":
+            orientation = (
+                Gimp.OrientationType.HORIZONTAL
+                if params.get("orientation", "horizontal") == "horizontal"
+                else Gimp.OrientationType.VERTICAL
+            )
+            result = target.transform_shear(orientation, float(params["magnitude"]))
+        elif transform == "matrix":
+            values = [float(v) for row in params["matrix"] for v in row]
+            result = target.transform_matrix(*values)
+        else:  # rotate around an explicit center
+            result = target.transform_rotate(math.radians(float(params["angle"])), False,
+                                             float(params["center_x"]), float(params["center_y"]))  # fmt: skip
+    if result is None:
+        raise BridgeError("GIMP_ERROR", "GIMP refused the transform")
+    data = {"kind": kind, "image": image.get_id()}
+    if kind in ("layer", "group", "text"):
+        data["layer"] = layer_node(result, recurse=False)
+    elif kind == "selection":
+        data["selection"] = selection_state(image)
+    else:
+        data["item"] = result.get_id()
+    return data
 
 
 @mutation
@@ -4017,6 +4114,9 @@ def build_operations():
         "filter.list": filter_list,
         "filter.remove": filter_remove,
         "filter.operations": filter_operations,
+        "item.transform": item_transform,
+        "image.rotate": image_rotate,
+        "image.flip": image_flip,
         "paint.stroke": paint_stroke,
         "paint.gradient": gradient_fill,
         "paint.bucket": bucket_fill,

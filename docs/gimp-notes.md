@@ -227,5 +227,11 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   `context_set_dynamics_name("Dynamics Off")` works with the internal name.
   `drawable.edit_gradient_fill(type, offset, supersample, depth, threshold, dither, x1, y1, x2, y2)`
   and `drawable.edit_bucket_fill(fill_type, x, y)` use the context gradient/threshold/criterion.
+* **Transforms** (checked 2026-11-08): `item.transform_perspective(x0, y0, x1, y1, x2, y2, x3, y3)`,
+  `transform_shear(orientation, magnitude)`, `transform_matrix(c00 … c22)`,
+  `transform_rotate(radians, auto_center, cx, cy)` work on layers, paths, channels and the
+  selection (`image.get_selection()`), and return the transformed item. Interpolation softens a
+  transformed selection's edge by one pixel. `Gimp.TransformResize` nicks: `adjust`, `clip`, `crop`,
+  `crop-with-aspect`. `image.rotate(Gimp.RotationType.DEGREES90)`, `image.flip(orientation)`.
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.
