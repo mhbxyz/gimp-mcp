@@ -10,7 +10,7 @@ verified so far live in `docs/gimp-notes.md` (add to it, don't re-discover).
 - Fast tests (no GIMP): `uv run pytest tests/unit`
 - End-to-end (real headless GIMP): `uv run pytest tests/e2e` (`GIMP_MCP_REQUIRE_GIMP=1` to fail when GIMP is absent)
 - Lint/format/types: `uv run ruff check . && uv run ruff format --check . && uv run pyright`
-- Demo: `uv run demo/thumbnail.py` (headless GIMP, outputs + report in `demo/out/`); README video: `demo/video/README.md`
+- Demos: `uv run demo/run.py <scenario>|--all` (headless GIMP, outputs + report in `demo/out/<scenario>/`; `demo/README.md`); videos: `demo/video/record.sh VERSION [SCENARIO]`
 - Release: `scripts/prepare_release.py X.Y.Z` (opens the release PR; merging it tags and starts release.yml). Dry run: `gh workflow run release.yml -f dry_run=true --ref main`
 - Guided install (writes client configs! use a temporary HOME when testing): `uv run gimp-mcp setup`
 - Generated docs, never edited by hand:

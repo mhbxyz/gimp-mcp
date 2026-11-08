@@ -11,7 +11,7 @@ MCP tools: **159**. PDB procedures relied upon by tools: **285** (27.7% of the i
 | Area | Capability | Status | MCP tools | Verified by | Min. GIMP | Notes |
 |---|---|---|---|---|---|---|
 | Session | Connection diagnostics, open images | tested | `gimp_status` | `tests/e2e/test_connection.py`, `tests/e2e/test_lifecycle.py`, `tests/e2e/test_restart.py` | 3.2 |  |
-| Session | Toolsets: list the tool groups, enable more during a session | tested | `gimp_list_toolsets`, `gimp_enable_toolsets` | `tests/unit/test_toolsets.py`, `tests/e2e/test_thumbnail_journey.py` | 3.2 | MCP-side only, no GIMP procedure; see docs/toolsets.md |
+| Session | Toolsets: list the tool groups, enable more during a session | tested | `gimp_list_toolsets`, `gimp_enable_toolsets` | `tests/unit/test_toolsets.py`, `tests/e2e/test_demo_scenarios.py` | 3.2 | MCP-side only, no GIMP procedure; see docs/toolsets.md |
 | Inspection | Image properties and ordered layer tree (groups, masks) | tested | `gimp_inspect_image`, `gimp_inspect_item` | `tests/e2e/test_inspect.py` | 3.2 |  |
 | Preview | Composite preview as PNG (max 1024 px) | tested | `gimp_preview` | `tests/e2e/test_preview.py` | 3.2 | 8-bit sRGB rendering of the visible layers; larger renders go through export. |
 | Animation | Frames with duration and disposal, frame previews, optimize/unoptimize, animated GIF and WebP export | tested | `gimp_list_frames`, `gimp_add_frame`, `gimp_set_frame`, `gimp_preview_frame`, `gimp_optimize_animation`, `gimp_export_animation` | `tests/e2e/test_animation.py`, `tests/unit/test_animation_names.py` | 3.2 | No APNG exporter in GIMP 3.2. |

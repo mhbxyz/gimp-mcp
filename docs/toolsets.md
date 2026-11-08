@@ -73,7 +73,7 @@ Rules of thumb:
 * Add `analysis` when the agent should check its edits with numbers (histograms, comparisons).
 * Add `procedures` for scripted or unusual work: it reaches about 420 allowlisted GIMP procedures.
 * Batch or CI scripts that know exactly what they call can list just those toolsets, like
-  `demo/thumbnail.py`.
+  each demo scenario (`demo/scenarios/`).
 
 ## The toolsets
 

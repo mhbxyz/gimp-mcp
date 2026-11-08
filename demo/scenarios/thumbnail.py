@@ -1,170 +1,17 @@
-"""End-to-end demo: build a 1280x720 thumbnail in GIMP through MCP only.
-
-    uv run demo/thumbnail.py                 # starts an isolated headless GIMP
-    uv run demo/thumbnail.py --socket PATH   # uses your running GIMP (plug-in installed)
-
-Everything goes through an MCP client talking to `gimp-mcp serve` over stdio;
-the script never calls GIMP directly (it only launches a headless GIMP when no
-socket is given). Outputs in demo/out/: thumbnail.xcf, thumbnail.png,
-thumbnail.jpg, previews/*.png and report.md (every tool call with its
-duration, every verification with its result).
-
-The checks are factual (sizes, layer tree, editable text, files on disk,
-pixels): no aesthetic judgement is made.
-"""
+"""A 1280x720 video thumbnail from one photo: blurred backdrop, vignetted subject, editable title
+re-typed after a change of mind, a badge added as one undo step then undone and redone with
+checkpoints, saved as XCF, reopened and exported to PNG and JPEG."""
 
 from __future__ import annotations
 
-import argparse
-import asyncio
-import base64
-import io
 import json
-import os
-import sys
-import time
-from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any
 
-from mcp import Client, StdioServerParameters
+from demo.harness import Report, Scenario, Session, asset, find, image_size, pixel, tree
 
-ROOT = Path(__file__).resolve().parent
-SOURCE = ROOT / "assets" / "lake-sunset.png"
 WIDTH, HEIGHT = 1280, 720
-# Only the toolsets the demo calls (docs/toolsets.md): the server lists nothing else.
-TOOLSETS = "files,layers,transform,selection,paint,filters,text,history"
 FIRST_TITLE = "Sunset over the Lake"
 FINAL_TITLE = "Golden Hour at the Lake"
-
-
-@dataclass
-class CallRecord:
-    tool: str
-    arguments: dict[str, Any]
-    duration_ms: float
-    ok: bool
-    summary: str
-
-
-@dataclass
-class Check:
-    description: str
-    passed: bool
-    detail: str = ""
-
-
-@dataclass
-class Report:
-    out_dir: Path
-    calls: list[CallRecord] = field(default_factory=list)
-    listed_tools: set[str] = field(default_factory=set)
-    checks: list[Check] = field(default_factory=list)
-    previews: list[tuple[str, str]] = field(default_factory=list)
-    started: float = field(default_factory=time.monotonic)
-
-    @property
-    def ok(self) -> bool:
-        return bool(self.checks) and all(check.passed for check in self.checks)
-
-    def check(self, description: str, passed: bool, detail: str = "") -> None:
-        self.checks.append(Check(description, bool(passed), detail))
-
-    def markdown(self) -> str:
-        total = time.monotonic() - self.started
-        lines = [
-            "# gimp-mcp thumbnail demo report",
-            "",
-            f"Result: **{'PASS' if self.ok else 'FAIL'}** — {sum(c.passed for c in self.checks)}/"
-            f"{len(self.checks)} checks, {len(self.calls)} MCP tool calls, {total:.1f} s.",
-            "",
-            "Outputs: `thumbnail.xcf` (editable project), `thumbnail.png`, `thumbnail.jpg`.",
-            "",
-            "## Previews (from `gimp_preview`)",
-            "",
-        ]
-        lines += [f"**{title}**\n\n![{title}]({path})\n" for title, path in self.previews]
-        lines += ["## Checks", "", "| # | Check | Result | Detail |", "|---|---|---|---|"]
-        for index, check in enumerate(self.checks, 1):
-            lines.append(
-                f"| {index} | {check.description} | {'pass' if check.passed else '**FAIL**'} | {check.detail} |"
-            )
-        lines += ["", "## Tool calls", "", "| # | Tool | Arguments | ms | Result |", "|---|---|---|---|---|"]
-        for index, call in enumerate(self.calls, 1):
-            args = json.dumps(call.arguments, ensure_ascii=False)
-            if len(args) > 120:
-                args = args[:117] + "..."
-            status = call.summary if call.ok else f"**error** {call.summary}"
-            lines.append(f"| {index} | `{call.tool}` | `{args}` | {call.duration_ms:.0f} | {status} |")
-        lines.append("")
-        return "\n".join(lines)
-
-
-class Session:
-    """Thin recorder around the MCP client: every call is timed and logged."""
-
-    def __init__(self, client: Client, report: Report):
-        self.client = client
-        self.report = report
-
-    async def call(self, tool: str, **arguments: Any) -> dict[str, Any]:
-        started = time.monotonic()
-        result = await self.client.call_tool(tool, arguments)
-        duration = (time.monotonic() - started) * 1000
-        data = result.structured_content or {}
-        if result.is_error:
-            error = data.get("error", {})
-            self.report.calls.append(
-                CallRecord(tool, arguments, duration, False, f"{error.get('code')}: {error.get('message')}")
-            )
-            raise RuntimeError(f"{tool} failed: {error.get('code')}: {error.get('message')} ({error.get('hint')})")
-        self.report.calls.append(CallRecord(tool, arguments, duration, True, summarize(data)))
-        return data
-
-    async def preview(self, image: str, name: str, title: str) -> bytes:
-        started = time.monotonic()
-        result = await self.client.call_tool("gimp_preview", {"image": image, "max_size": 640})
-        duration = (time.monotonic() - started) * 1000
-        block = next(block for block in result.content if block.type == "image")
-        png = base64.b64decode(block.data)
-        directory = self.report.out_dir / "previews"
-        directory.mkdir(parents=True, exist_ok=True)
-        (directory / f"{name}.png").write_bytes(png)
-        info = result.structured_content or {}
-        self.report.calls.append(
-            CallRecord(
-                "gimp_preview",
-                {"image": image, "max_size": 640},
-                duration,
-                True,
-                f"{info.get('width')}x{info.get('height')} PNG, {info.get('bytes')} bytes",
-            )
-        )
-        self.report.previews.append((title, f"previews/{name}.png"))
-        return png
-
-
-def summarize(data: dict[str, Any]) -> str:
-    keys = ("id", "name", "kind", "width", "height", "x", "y", "path", "bytes", "changed", "destructive", "filter")
-    parts = [f"{key}={data[key]}" for key in keys if key in data and data[key] is not None]
-    return ", ".join(parts)[:160] or "ok"
-
-
-def tree(image: dict[str, Any]) -> list[Any]:
-    def walk(nodes: list[dict[str, Any]]) -> list[Any]:
-        return [[n["name"], n["kind"], walk(n.get("children") or [])] for n in nodes]
-
-    return walk(image["layers"])
-
-
-def find(image: dict[str, Any], name: str) -> dict[str, Any]:
-    stack = list(image["layers"])
-    while stack:
-        node = stack.pop(0)
-        if node["name"] == name:
-            return node
-        stack.extend(node.get("children") or [])
-    raise KeyError(name)
 
 
 async def first_text(gimp: Session, image: str, text: str) -> dict[str, Any]:
@@ -177,21 +24,6 @@ async def first_text(gimp: Session, image: str, text: str) -> dict[str, Any]:
             return node
         stack.extend(node.get("children") or [])
     raise KeyError(text)
-
-
-def image_size(data: bytes) -> tuple[int, int]:
-    from PIL import Image
-
-    with Image.open(io.BytesIO(data)) as img:
-        return img.size
-
-
-def pixel(data: bytes, x: int, y: int) -> tuple[int, int, int]:
-    from PIL import Image
-
-    with Image.open(io.BytesIO(data)) as img:
-        r, g, b = img.convert("RGB").getpixel((x, y))  # type: ignore[misc]
-        return (r, g, b)
 
 
 EXPECTED_TREE = [
@@ -209,8 +41,8 @@ EXPECTED_TREE = [
 ]  # fmt: skip
 
 
-async def build(gimp: Session, report: Report) -> dict[str, Any]:
-    out = report.out_dir
+async def steps(gimp: Session, report: Report) -> None:
+    out = gimp.out
     status = await gimp.call("gimp_status")
     report.check("connected to GIMP through MCP", status["connected"], f"GIMP {status['gimp_version']}")
 
@@ -220,7 +52,9 @@ async def build(gimp: Session, report: Report) -> dict[str, Any]:
     title_group = (await gimp.call("gimp_create_group", image=image, name="Title"))["id"]
 
     # Backdrop: the source, scaled to cover the canvas, blurred and toned down.
-    back = await gimp.call("gimp_import_layer", image=image, path=str(SOURCE), name="Backdrop photo", parent=backdrop)
+    back = await gimp.call(
+        "gimp_import_layer", image=image, path=str(asset("lake-sunset.png")), name="Backdrop photo", parent=backdrop
+    )
     await gimp.call("gimp_scale_layer", item=back["id"], width=1280, height=800, anchor="top-left")
     await gimp.call("gimp_set_layer_offsets", item=back["id"], x=0, y=-40)
     await gimp.call("gimp_gaussian_blur", item=back["id"], radius=14)
@@ -231,7 +65,9 @@ async def build(gimp: Session, report: Report) -> dict[str, Any]:
     await gimp.preview(image, "01-backdrop", "1. Blurred, darkened backdrop")
 
     # Subject: the sharp photo, framed by a feathered elliptical mask (vignette).
-    photo = await gimp.call("gimp_import_layer", image=image, path=str(SOURCE), name="Photo", parent=subject)
+    photo = await gimp.call(
+        "gimp_import_layer", image=image, path=str(asset("lake-sunset.png")), name="Photo", parent=subject
+    )
     await gimp.call("gimp_scale_layer", item=photo["id"], width=880, height=550, anchor="top-left")
     await gimp.call("gimp_set_layer_offsets", item=photo["id"], x=200, y=20)
     await gimp.call("gimp_select_ellipse", image=image, x=210, y=30, width=860, height=530, feather=70)
@@ -389,57 +225,19 @@ async def build(gimp: Session, report: Report) -> dict[str, Any]:
         report.check(
             f"{path.name} is a {WIDTH}x{HEIGHT} image", size == (WIDTH, HEIGHT), f"{path.stat().st_size} bytes"
         )
-    return {"xcf": xcf, "png": png, "jpg": jpg}
 
 
-async def run_demo(out_dir: Path, server: StdioServerParameters) -> Report:
-    out_dir.mkdir(parents=True, exist_ok=True)
-    report = Report(out_dir=out_dir)
-    server = server.model_copy(update={"env": {**(server.env or {}), "GIMP_MCP_TOOLSETS": TOOLSETS}})
-    try:
-        async with Client(server, read_timeout_seconds=180) as client:
-            report.listed_tools = {tool.name for tool in (await client.list_tools()).tools}
-            await build(Session(client, report), report)
-            called = {call.tool for call in report.calls}
-            report.check(
-                f"the server listed only the demo's toolsets ({len(report.listed_tools)} tools)",
-                called <= report.listed_tools and "gimp_call_procedure" not in report.listed_tools,
-                TOOLSETS,
-            )
-    except Exception as exc:  # the report must show what failed
-        report.check("demo ran to completion", False, f"{type(exc).__name__}: {exc}")
-    (out_dir / "report.md").write_text(report.markdown(), encoding="utf-8")
-    return report
-
-
-def server_parameters(socket_path: str) -> StdioServerParameters:
-    env = {key: value for key, value in os.environ.items() if key in ("PATH", "HOME", "LANG", "XDG_RUNTIME_DIR")}
-    env["GIMP_MCP_SOCKET"] = socket_path
-    return StdioServerParameters(command=sys.executable, args=["-m", "gimp_mcp", "serve"], env=env)
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--out", default=str(ROOT / "out"), help="output directory (default: demo/out)")
-    parser.add_argument("--socket", help="bridge socket of a running GIMP (default: start a headless GIMP)")
-    args = parser.parse_args()
-    out = Path(args.out).resolve()
-    if args.socket:
-        report = asyncio.run(run_demo(out, server_parameters(args.socket)))
-    else:
-        from gimp_mcp.headless import HeadlessGimp
-
-        print("starting an isolated headless GIMP...", file=sys.stderr)
-        with HeadlessGimp() as gimp:
-            report = asyncio.run(run_demo(out, server_parameters(str(gimp.socket_path))))
-    status = "PASS" if report.ok else "FAIL"
-    print(
-        f"{status}: {sum(c.passed for c in report.checks)}/{len(report.checks)} checks, "
-        f"{len(report.calls)} tool calls. Report: {out / 'report.md'}",
-        file=sys.stderr,
-    )
-    return 0 if report.ok else 1
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+SCENARIO = Scenario(
+    name="thumbnail",
+    title="video thumbnail",
+    toolsets=("files", "layers", "transform", "selection", "paint", "filters", "text", "history"),
+    assets=("lake-sunset.png",),
+    outputs=("thumbnail.xcf", "thumbnail.png", "thumbnail.jpg"),
+    steps=steps,
+    prompt=(
+        "Open ~/assets/lake-sunset.png in GIMP and turn it into a 1280x720 YouTube thumbnail: make the colors "
+        'pop, darken the left third so text reads well, add a big bold title "GOLDEN HOUR" and a smaller '
+        'subtitle "5 editing tricks", keep each edit on its own layer, then export ~/out/thumbnail.png.'
+    ),
+    agent_output="thumbnail.png",
+)

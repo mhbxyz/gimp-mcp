@@ -5,11 +5,10 @@
 #   scene.sh record    type the prompt, record until the export exists, stop
 set -euo pipefail
 
-: "${GIMP_MCP_VERSION:?}"
+: "${GIMP_MCP_VERSION:?}" "${DEMO_PROMPT:?}" "${DEMO_OUTPUT:?}"
 WIDTH=1920 HEIGHT=1080 TERM_WIDTH=780
 export DISPLAY=:99
 OUT=/out
-PROMPT_FILE=/scene/prompt.txt
 
 window() { # window CLASS -> id of its largest visible window
   local best="" area=0
@@ -75,7 +74,7 @@ record() {
   xdotool mousemove 4 $((HEIGHT - 4)) # no pointer, no tooltip over GIMP
   sleep 2
   xdotool windowfocus --sync "$term"
-  xdotool type --delay 28 --window "$term" "$(cat "$PROMPT_FILE")"
+  xdotool type --delay 28 --window "$term" "$DEMO_PROMPT"
   sleep 0.8
   xdotool key --window "$term" Return
   # Keep GIMP framed: it grows its window to the image when a display opens, and the
@@ -92,7 +91,7 @@ record() {
   ) &
   local fit_pid=$!
   # Finished = the export exists and the client printed its final answer (screen stops changing).
-  wait_for 900 test -s "$HOME/out/thumbnail.png"
+  wait_for 900 test -s "$HOME/out/$DEMO_OUTPUT"
   local last="" same=0
   while ((same < 12)); do
     sleep 1
@@ -102,7 +101,7 @@ record() {
   sleep 2
   kill "$fit_pid" 2>/dev/null || true
   kill -INT "$ffmpeg_pid"; wait "$ffmpeg_pid" || true
-  cp "$HOME/out/thumbnail.png" "$OUT/thumbnail.png"
+  cp "$HOME/out/$DEMO_OUTPUT" "$OUT/$DEMO_OUTPUT"
   echo "recorded $OUT/raw.mkv"
 }
 
