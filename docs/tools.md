@@ -388,6 +388,40 @@ image dirty. Procedure names, arguments and availability depend on the GIMP
 version; check with `gimp_list_callable_procedures` (the committed matrix lists
 422 callable procedures on GIMP 3.2.6).
 
+## Resources (toolset `resources`)
+
+Brushes, gradients, patterns and palettes are referenced **by name** (`kind` = `brush`,
+`gradient`, `pattern`, `palette`). Built-in resources are read-only: renaming, editing or deleting
+them is `READ_ONLY` (duplicate first). Names of built-in resources may be translated in GIMP's
+language: list them rather than hard-coding them.
+
+* `gimp_list_resources(kind, query, limit)` → `name`, `editable`, `generated` (brushes), `total`.
+* `gimp_inspect_resource(kind, name, preview=false)`: brushes `width`, `height`, `color`, `spacing`
+  and, for generated brushes, `shape`, `radius`, `hardness`, `angle`, `aspect_ratio`, `spikes`;
+  gradients `segments` (`left`, `middle`, `right` positions, colors `#rrggbbaa`, `blending`,
+  `coloring`); patterns `width`, `height`, `bpp`; palettes `columns`, `entries`. `preview=true`
+  adds an image: the brush (mask as alpha for grayscale brushes), the pattern, a 256×32 gradient
+  strip or the palette swatches.
+* `gimp_create_resource(kind, name)` (brush, gradient, palette; GIMP makes the name unique),
+  `gimp_duplicate_resource(kind, name, new_name?)` (works on built-ins), `gimp_rename_resource`,
+  `gimp_delete_resource` (deletes the file, not undoable).
+* `gimp_edit_brush(name, shape?, radius?, hardness?, angle?, aspect_ratio?, spikes?, spacing?)`:
+  user generated brushes only. `gimp_edit_gradient(name, segments)` replaces the segments (colors,
+  `blending` linear/curved/sine/sphere-increasing/sphere-decreasing/step, `coloring`
+  rgb/hsv-ccw/hsv-cw, optional increasing end positions). `gimp_edit_palette(name, entries?, columns?)`
+  replaces the entries.
+* `gimp_import_palette(file)`: a GIMP palette (`.gpl`) is copied into the profile's `palettes`
+  folder and loaded. Other formats (`.aco`, `.act`, `.ase`, `.pal`) are `UNSUPPORTED_FORMAT`:
+  GIMP 3.2 reads them only through its Palettes dialog (#81).
+* `gimp_export_palette(name, file, format="gpl", overwrite)`: `gpl`, or GIMP's own palette exports
+  `css`, `text`, `python`, `php`, `java`, and `kpl` (Krita).
+
+**Where resources live.** User resources are files in the GIMP profile (`~/.config/GIMP/3.2/brushes`,
+`gradients`, `palettes`, or `$GIMP3_DIRECTORY/…`). GIMP writes a new resource's file as soon as it
+is created and saves later edits when it quits normally, like edits made in its own editors. If
+GIMP is killed, the resource stays but unsaved edits are lost (tested). The tests only ever use
+temporary profiles.
+
 ## Paths (toolset `paths`)
 
 A path is an item (`item:N@session`) listed in `gimp_inspect_image`'s `paths` (`id`, `name`,
@@ -664,4 +698,5 @@ another image), `NOT_FOUND`.
 | `IMAGE_MISMATCH` | Objects from different images combined in one operation. |
 | `LOCKED` | The targeted property or content is locked in GIMP. |
 | `UNSUPPORTED` | The operation exists but cannot be used through this tool (`message` says why). |
+| `READ_ONLY` | A built-in resource cannot be changed: duplicate it first. |
 | `GIMP_ERROR` | Unexpected failure inside GIMP; for a mutation the outcome is `unknown`. |

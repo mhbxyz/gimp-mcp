@@ -14,6 +14,7 @@ gi.require_version("Babl", "0.1")
 import gmb_color  # noqa: E402
 import gmb_filters  # noqa: E402
 import gmb_policy  # noqa: E402
+import gmb_resources  # noqa: E402
 import gmb_stats  # noqa: E402
 import gmb_undo  # noqa: E402
 from gi.repository import Babl, Gegl, Gimp, Gio  # noqa: E402
@@ -2186,6 +2187,325 @@ def paths_export_svg(params):
     return {"svg": svg if not params.get("file") else None, "file": params.get("file"), "bytes": len(svg.encode())}
 
 
+# -- resources (#52) ---------------------------------------------------------------------
+
+RESOURCE_CLASSES = {
+    "brush": (Gimp.Brush, Gimp.brushes_get_list),
+    "gradient": (Gimp.Gradient, Gimp.gradients_get_list),
+    "pattern": (Gimp.Pattern, Gimp.patterns_get_list),
+    "palette": (Gimp.Palette, Gimp.palettes_get_list),
+}
+BRUSH_SHAPES = {v.value_nick: v for v in Gimp.BrushGeneratedShape.__enum_values__.values()}
+SEGMENT_BLENDS = {v.value_nick: v for v in Gimp.GradientSegmentType.__enum_values__.values()}
+SEGMENT_COLORINGS = {v.value_nick: v for v in Gimp.GradientSegmentColor.__enum_values__.values()}
+PALETTE_EXPORTS = {
+    "css": "gimp-palette-export-css",
+    "java": "gimp-palette-export-java",
+    "php": "gimp-palette-export-php",
+    "python": "gimp-palette-export-python",
+    "text": "gimp-palette-export-text",
+}
+
+
+def get_resource(kind, name):
+    cls, _lister = RESOURCE_CLASSES[kind]
+    resource = cls.get_by_name(name) if name else None
+    if resource is None:
+        raise BridgeError("NOT_FOUND", "GIMP has no %s named %r" % (kind, name), {"kind": kind, "name": name})
+    return resource
+
+
+def editable_resource(kind, name):
+    resource = get_resource(kind, name)
+    if not resource.is_editable():
+        raise BridgeError(
+            "READ_ONLY",
+            "%s %r is a built-in (read-only) resource: duplicate it to change a copy" % (kind, name),
+            {"kind": kind, "name": name},
+        )
+    return resource
+
+
+def _rgba(gegl_color):
+    r, g, b, a = gegl_color.get_rgba_with_space(Babl.space("sRGB"))
+    return [max(0, min(255, round(v * 255))) for v in (r, g, b, a)]
+
+
+def _hex8(gegl_color):
+    return "#%02x%02x%02x%02x" % tuple(_rgba(gegl_color))
+
+
+def _buffer_png(buffer):
+    extent = buffer.get_extent()
+    data = bytes(buffer.get(extent, 1.0, "R'G'B'A u8", Gegl.AbyssPolicy.CLAMP))
+    return gmb_resources.encode_png(data, extent.width, extent.height, 4)
+
+
+def _brush_png(brush):
+    """Color brushes: their pixels; grayscale brushes (and generated ones): black with the mask as alpha."""
+    if brush.get_info()[4] > 0:  # color_bpp: only color brushes have a pixel buffer (else GLib warns)
+        return _buffer_png(brush.get_buffer(256, 256, Babl.format("R'G'B'A u8")))
+    mask = brush.get_mask(256, 256, Babl.format("Y' u8"))
+    extent = mask.get_extent()
+    alpha = bytes(mask.get(extent, 1.0, "Y' u8", Gegl.AbyssPolicy.CLAMP))
+    rgba = bytearray(len(alpha) * 4)
+    rgba[3::4] = alpha
+    return gmb_resources.encode_png(bytes(rgba), extent.width, extent.height, 4)
+
+
+def resource_summary(kind, resource):
+    data = {"kind": kind, "name": resource.get_name(), "editable": bool(resource.is_editable())}
+    if kind == "brush":
+        data["generated"] = bool(resource.is_generated())
+    return data
+
+
+def resources_list(params):
+    kind = params["kind"]
+    _cls, lister = RESOURCE_CLASSES[kind]
+    found = lister(params.get("query") or "")
+    limit = int(params.get("limit", 200))
+    return {"resources": [resource_summary(kind, r) for r in found[:limit]], "total": len(found)}
+
+
+def _brush_details(brush):
+    _ok, width, height, _mask_bpp, color_bpp = brush.get_info()
+    data = {"width": width, "height": height, "color": color_bpp > 0, "spacing": brush.get_spacing()}
+    if brush.is_generated():
+        data.update(
+            {
+                "shape": brush.get_shape()[1].value_nick,
+                "radius": brush.get_radius()[1],
+                "hardness": round(brush.get_hardness()[1], 4),
+                "angle": brush.get_angle()[1],
+                "aspect_ratio": brush.get_aspect_ratio()[1],
+                "spikes": brush.get_spikes()[1],
+            }
+        )
+    return data
+
+
+def _gradient_details(gradient):
+    segments = []
+    for i in range(gradient.get_number_of_segments()):
+        segments.append(
+            {
+                "left": round(gradient.segment_get_left_pos(i)[1], 6),
+                "middle": round(gradient.segment_get_middle_pos(i)[1], 6),
+                "right": round(gradient.segment_get_right_pos(i)[1], 6),
+                "left_color": _hex8(gradient.segment_get_left_color(i)),
+                "right_color": _hex8(gradient.segment_get_right_color(i)),
+                "blending": gradient.segment_get_blending_function(i)[1].value_nick,
+                "coloring": gradient.segment_get_coloring_type(i)[1].value_nick,
+            }
+        )
+    return {"segments": segments}
+
+
+def _palette_details(palette):
+    entries = []
+    for i in range(palette.get_color_count()):
+        name = palette.get_entry_name(i)
+        entries.append({"index": i, "name": name[1] if isinstance(name, tuple) else name,
+                        "color": _hex8(palette.get_entry_color(i))})  # fmt: skip
+    return {"columns": palette.get_columns(), "entries": entries}
+
+
+def resource_inspect(params):
+    import base64
+
+    kind = params["kind"]
+    resource = get_resource(kind, params["name"])
+    data = resource_summary(kind, resource)
+    png = None
+    if kind == "brush":
+        data.update(_brush_details(resource))
+        if params.get("preview"):
+            png = _brush_png(resource)
+    elif kind == "pattern":
+        _ok, width, height, bpp = resource.get_info()
+        data.update({"width": width, "height": height, "bpp": bpp})
+        if params.get("preview"):
+            png = _buffer_png(resource.get_buffer(256, 256, Babl.format("R'G'B'A u8")))
+    elif kind == "gradient":
+        data.update(_gradient_details(resource))
+        if params.get("preview"):
+            samples = [c.get_rgba_with_space(Babl.space("sRGB")) for c in resource.get_uniform_samples(256, False)]
+            png = gmb_resources.gradient_strip(samples, 32)
+    else:
+        data.update(_palette_details(resource))
+        if params.get("preview"):
+            colors = [tuple(_rgba(resource.get_entry_color(i))[:3]) for i in range(resource.get_color_count())]
+            png = gmb_resources.palette_swatches(colors, resource.get_columns())
+    if png is not None:
+        data["preview"] = base64.b64encode(png).decode("ascii")
+    return data
+
+
+@mutation
+def resource_create(params):
+    kind = params["kind"]
+    if kind == "pattern":
+        raise BridgeError("UNSUPPORTED", "GIMP 3.2 cannot create patterns from a plug-in")
+    cls, _lister = RESOURCE_CLASSES[kind]
+    resource = cls.new(params["name"])
+    if resource is None:
+        raise BridgeError("GIMP_ERROR", "GIMP could not create the %s" % kind)
+    return resource_summary(kind, resource)
+
+
+@mutation
+def resource_duplicate(params):
+    kind = params["kind"]
+    source = get_resource(kind, params["name"])
+    copy = source.duplicate()
+    if copy is None:
+        raise BridgeError("GIMP_ERROR", "GIMP could not duplicate the %s" % kind)
+    if params.get("new_name"):
+        copy.rename(params["new_name"])
+    return resource_summary(kind, copy)
+
+
+@mutation
+def resource_rename(params):
+    kind = params["kind"]
+    resource = editable_resource(kind, params["name"])
+    if not resource.rename(params["new_name"]):
+        raise BridgeError("GIMP_ERROR", "GIMP refused the new name")
+    return resource_summary(kind, resource)
+
+
+@mutation
+def resource_delete(params):
+    kind = params["kind"]
+    resource = editable_resource(kind, params["name"])
+    name = resource.get_name()
+    if not resource.delete():
+        raise BridgeError("GIMP_ERROR", "GIMP could not delete the %s" % kind)
+    return {"kind": kind, "deleted": name}
+
+
+@mutation
+def brush_edit(params):
+    brush = editable_resource("brush", params["name"])
+    if not brush.is_generated():
+        raise BridgeError("READ_ONLY", "only generated brushes have editable parameters")
+    if params.get("shape") is not None and params["shape"] not in BRUSH_SHAPES:
+        raise BridgeError("INVALID_ARGUMENT", "unknown shape", {"allowed": sorted(BRUSH_SHAPES)})
+    setters = (
+        ("shape", lambda v: brush.set_shape(BRUSH_SHAPES[v])),
+        ("radius", lambda v: brush.set_radius(float(v))),
+        ("hardness", lambda v: brush.set_hardness(float(v))),
+        ("angle", lambda v: brush.set_angle(float(v))),
+        ("aspect_ratio", lambda v: brush.set_aspect_ratio(float(v))),
+        ("spikes", lambda v: brush.set_spikes(int(v))),
+        ("spacing", lambda v: brush.set_spacing(int(v))),
+    )
+    for key, setter in setters:
+        if params.get(key) is not None:
+            setter(params[key])
+    return {**resource_summary("brush", brush), **_brush_details(brush)}
+
+
+@mutation
+def gradient_edit(params):
+    gradient = editable_resource("gradient", params["name"])
+    segments = params["segments"]
+    for segment in segments:
+        if segment.get("blending", "linear") not in SEGMENT_BLENDS:
+            raise BridgeError("INVALID_ARGUMENT", "unknown blending", {"allowed": sorted(SEGMENT_BLENDS)})
+        if segment.get("coloring", "rgb") not in SEGMENT_COLORINGS:
+            raise BridgeError("INVALID_ARGUMENT", "unknown coloring", {"allowed": sorted(SEGMENT_COLORINGS)})
+    rights = [s.get("right") for s in segments]
+    if any(r is not None for r in rights):
+        explicit = [r for r in rights[:-1]]
+        if None in explicit or explicit != sorted(explicit) or not all(0 < r < 1 for r in explicit):
+            raise BridgeError("INVALID_ARGUMENT", "segment ends must be increasing between 0 and 1 (last ends at 1)")
+    count = gradient.get_number_of_segments()
+    if count > 1:
+        gradient.segment_range_delete(1, count - 1)
+    if len(segments) > 1:
+        gradient.segment_range_split_uniform(0, 0, len(segments))
+    for i, segment in enumerate(segments):
+        if i < len(segments) - 1 and segment.get("right") is not None:
+            gradient.segment_set_right_pos(i, float(segment["right"]))
+    for i, segment in enumerate(segments):
+        gradient.segment_set_left_color(i, color(segment["left_color"]))
+        gradient.segment_set_right_color(i, color(segment["right_color"]))
+        gradient.segment_range_set_blending_function(i, i, SEGMENT_BLENDS[segment.get("blending", "linear")])
+        gradient.segment_range_set_coloring_type(i, i, SEGMENT_COLORINGS[segment.get("coloring", "rgb")])
+    return {**resource_summary("gradient", gradient), **_gradient_details(gradient)}
+
+
+@mutation
+def palette_edit(params):
+    palette = editable_resource("palette", params["name"])
+    if params.get("entries") is not None:
+        while palette.get_color_count():
+            palette.delete_entry(palette.get_color_count() - 1)
+        for entry in params["entries"]:
+            palette.add_entry(entry.get("name") or "", color(entry["color"]))
+    if params.get("columns") is not None:
+        palette.set_columns(int(params["columns"]))
+    return {**resource_summary("palette", palette), **_palette_details(palette)}
+
+
+@mutation
+def palette_import(params):
+    import shutil
+
+    source = params["file"]
+    folder = os.path.join(Gimp.directory(), "palettes")
+    os.makedirs(folder, exist_ok=True)
+    target = os.path.join(folder, os.path.basename(source))
+    if os.path.exists(target):
+        raise BridgeError("FILE_EXISTS", "%s is already in your palettes folder" % os.path.basename(source))
+    before = {p.get_name() for p in Gimp.palettes_get_list("")}
+    shutil.copyfile(source, target)
+    Gimp.palettes_refresh()
+    created = [p for p in Gimp.palettes_get_list("") if p.get_name() not in before]
+    if not created:
+        os.remove(target)
+        Gimp.palettes_refresh()
+        raise BridgeError("UNSUPPORTED_FORMAT", "GIMP could not read a palette from %s" % source, {"path": source})
+    return {**resource_summary("palette", created[0]), **_palette_details(created[0]), "file": target}
+
+
+def palette_export(params):
+    palette = get_resource("palette", params["name"])
+    path, fmt = params["file"], params["format"]
+    if fmt == "gpl":
+        entries = []
+        for i in range(palette.get_color_count()):
+            name = palette.get_entry_name(i)
+            entries.append((name[1] if isinstance(name, tuple) else name, tuple(_rgba(palette.get_entry_color(i))[:3])))
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(gmb_resources.write_gpl(palette.get_name(), palette.get_columns(), entries))
+    else:
+        pdb = Gimp.get_pdb()
+        name = "python-fu-palette-export-as-kpl" if fmt == "kpl" else PALETTE_EXPORTS[fmt]
+        procedure = pdb.lookup_procedure(name)
+        if procedure is None:
+            raise BridgeError("UNSUPPORTED", "GIMP's %s palette export is not available" % fmt)
+        config = procedure.create_config()
+        config.set_property("run-mode", Gimp.RunMode.NONINTERACTIVE)
+        Gimp.context_push()
+        try:
+            Gimp.context_set_palette(palette)
+            if fmt == "kpl":
+                config.set_property("palette", palette)
+                config.set_property("file", Gio.File.new_for_path(path))
+            else:
+                config.set_property("dirname", Gio.File.new_for_path(os.path.dirname(path)))
+                config.set_property("string", os.path.basename(path))
+            result = procedure.run(config)
+        finally:
+            Gimp.context_pop()
+        if result.index(0) != Gimp.PDBStatusType.SUCCESS or not os.path.exists(path):
+            raise BridgeError("WRITE_FAILED", "GIMP could not export the palette to %s" % path, {"path": path})
+    return {"file": path, "format": fmt, "bytes": os.path.getsize(path)}
+
+
 # -- text --------------------------------------------------------------------------------
 
 JUSTIFICATIONS = {"left": "LEFT", "right": "RIGHT", "center": "CENTER", "fill": "FILL"}
@@ -2862,6 +3182,17 @@ def build_operations():
         "filter.list": filter_list,
         "filter.remove": filter_remove,
         "filter.operations": filter_operations,
+        "resources.list": resources_list,
+        "resource.inspect": resource_inspect,
+        "resource.create": resource_create,
+        "resource.duplicate": resource_duplicate,
+        "resource.rename": resource_rename,
+        "resource.delete": resource_delete,
+        "brush.edit": brush_edit,
+        "gradient.edit": gradient_edit,
+        "palette.edit": palette_edit,
+        "palette.import": palette_import,
+        "palette.export": palette_export,
         "path.create": path_create,
         "path.add_stroke": path_add_stroke,
         "path.from_text": path_from_text,
