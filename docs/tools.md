@@ -629,11 +629,14 @@ are the same (absolute paths, `overwrite`); metadata is written only when listed
   | PSD, OpenRaster | `kept` | layers stay layers |
 
   The image itself is never changed.
-* `gimp_open_with_options(path, options={}, procedure?)`: PDF (`pages`: page numbers from 1 —
-  GIMP 3.2 cannot receive its page list from a plug-in, so every page is loaded and the others
-  removed; `width`, `height`, `keep-ratio`, `password`…), SVG (`width`, `height`), PSD (layers),
-  multi-page TIFF (pages as layers). Without options, a file no procedure matches by name (e.g. RAW
-  through darktable or RawTherapee, when installed) goes through GIMP's own format detection.
+* `gimp_open_with_options(path, options={}, procedure?)`: PDF (`pages`: page numbers from 1, only
+  those pages are loaded, in the order given, the last on top — `[2, 1]` puts page 1 on top; a page
+  beyond the end is `INVALID_ARGUMENT`; `width`, `height`, `keep-ratio`, `password`…), SVG
+  (`width`, `height`), PSD (layers), multi-page TIFF (pages as layers). Without options, a file no
+  procedure matches by name goes through GIMP's own format detection. RAW files: GIMP 3.2 hands them
+  to darktable or RawTherapee, which open their own editing window; the image reaches GIMP when the
+  user closes it, so RAW needs GIMP with its interface and a person at the screen. Without a RAW
+  developer GIMP's placeholder loader fails (`UNSUPPORTED_FORMAT`).
 * `gimp_export_layers(image, directory, extension="png", items?, template="{index:02d}-{name}",
   crop=true, options, overwrite)`: one file per top-level layer (or per given layer/group), cropped
   to the layer unless `crop=false`; names are made file-system safe. Refused as a whole

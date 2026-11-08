@@ -112,10 +112,18 @@ async def test_open_pdf_pages_svg_size_and_psd_layers(gimp: HeadlessGimp, tmp_pa
         assert one_page["procedure"] == "file-pdf-load" and one_page["layer_count"] == 1
         kept = (await call(client, "gimp_inspect_image", image=one_page["id"]))["layers"][0]
         assert kept["name"] == "2"
-        bad_page = await error(
-            client, "gimp_open_with_options", path=str(tmp_path / "pages.pdf"), options={"pages": [3]}
+        # pages are loaded natively by file-pdf-load (#86), in the order given, the last on top; filtering
+        # the pages after loading every page would keep the document's order (page 2 on top)
+        reordered = await call(
+            client, "gimp_open_with_options", path=str(tmp_path / "pages.pdf"), options={"pages": [2, 1]}
         )
-        assert bad_page["code"] == "INVALID_ARGUMENT"
+        names = [layer["name"] for layer in (await call(client, "gimp_inspect_image", image=reordered["id"]))["layers"]]
+        assert names == ["1", "2"]
+        for pages in ([3], [0], []):
+            bad_page = await error(
+                client, "gimp_open_with_options", path=str(tmp_path / "pages.pdf"), options={"pages": pages}
+            )
+            assert bad_page["code"] == "INVALID_ARGUMENT", pages
         both = await call(client, "gimp_open_with_options", path=str(tmp_path / "pages.pdf"))
         assert both["layer_count"] == 2
 
@@ -129,7 +137,7 @@ async def test_open_pdf_pages_svg_size_and_psd_layers(gimp: HeadlessGimp, tmp_pa
 
         psd = await call(client, "gimp_open_with_options", path=str(tmp_path / "layers.psd"))
         assert psd["layer_count"] == 2
-        for opened in (one_page, both, scaled, psd):
+        for opened in (one_page, reordered, both, scaled, psd):
             await call(client, "gimp_close_image", image=opened["id"], discard_changes=True)
 
 

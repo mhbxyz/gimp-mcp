@@ -218,8 +218,19 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   `file`, `options` (default) plus format options; exporters convert a copy as needed (RGB → GIF
   works). TIFF writes one page per layer (background first); PSD keeps layers; ICO writes one size
   per layer; PDF `layers-as-pages` defaults to false. `file-pdf-load`'s `pages` is a
-  `GimpInt32Array` that cannot be set from Python (setting a `GValue` of that type crashes the
-  plug-in); a PDF opens as one layer per page, the last page on top, named after the page number.
+  `GimpInt32Array` of 0-based page numbers: `set_property` refuses a list and a `GObject.Value`, but
+  accepts the boxed array (`v = GObject.Value(Gimp.Int32Array); Gimp.value_set_int32_array(v, [0, 2]);
+  config.set_property("pages", v.get_boxed())`, checked 2026-11-08). Pages load in the order given,
+  the last on top, each layer named after its page number; a page beyond the end makes the
+  procedure fail ("Page N is out of range", N 0-based). Without `pages` every page loads.
+* RAW (checked 2026-11-08, GIMP 3.2.6, darktable 5.6.2 in a container): `file-darktable` runs
+  `darktable --gimp file <path>` (darktable's darkroom window; the image comes back when it is
+  closed) and `file-rawtherapee` runs `rawtherapee -gimp <in> <out>` (its editor window): neither is
+  non-interactive (`plug-ins/file-raw/*.c` on the `gimp-3-2` branch). GIMP registers the darktable
+  loader only if `darktable --gimp version` writes nothing on stderr (or, before 4.6, `--version`
+  says "this is darktable" with Lua): darktable's sandbox and input warnings in a container are
+  enough to skip it, leaving `file-raw-placeholder-*-load`, which fails. `darktable-cli in.dng
+  out.png` itself decodes a linear DNG headless.
   The PDF exporter logs Gtk-CRITICAL warnings headless (harmless).
 * **Paint tools** (checked 2026-11-08): the PDB paint procedures (`gimp-paintbrush`, `-pencil`,
   `-airbrush`, `-eraser`, `-smudge`, `-dodgeburn`, `-clone`, `-heal`) take `strokes` as a

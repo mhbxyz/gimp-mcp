@@ -21,7 +21,7 @@ import gmb_resources  # noqa: E402
 import gmb_stats  # noqa: E402
 import gmb_text  # noqa: E402
 import gmb_undo  # noqa: E402
-from gi.repository import Babl, Gegl, Gimp, Gio  # noqa: E402
+from gi.repository import Babl, Gegl, Gimp, Gio, GObject  # noqa: E402
 from gmb_server import BridgeError  # noqa: E402
 
 # Session id of this GIMP process (set by the plug-in entry point).
@@ -3145,6 +3145,20 @@ def image_export_as(params):
     return _export_with(image, params["path"], name, procedure, params.get("options"), params.get("metadata") or [])
 
 
+def _int32_array(values):
+    """A GimpInt32Array for a procedure argument: Python lists are refused, a boxed value is accepted."""
+    value = GObject.Value(Gimp.Int32Array)
+    Gimp.value_set_int32_array(value, list(values))
+    return value.get_boxed()
+
+
+def _procedure_error(result):
+    try:
+        return str(result.index(1))
+    except Exception:
+        return "no message"
+
+
 @mutation
 def image_open_with(params):
     path = params["path"]
@@ -3158,29 +3172,24 @@ def image_open_with(params):
     name, procedure = _file_procedure("load", params)
     specs = _option_specs(procedure, LOAD_FIXED)
     values = _validated_options(name, specs, params.get("options"))
-    # GimpInt32Array options (PDF pages) cannot be set from Python: pages are picked after loading
     pages = values.pop("pages", None) if name == "file-pdf-load" else None
+    if pages is not None and (not pages or any(not isinstance(p, int) or p < 1 for p in pages)):
+        raise BridgeError("INVALID_ARGUMENT", "pages are page numbers from 1", {"pages": pages})
     for key in [k for k, v in values.items() if isinstance(v, list)]:
         raise BridgeError("UNSUPPORTED", "%s: option %s cannot be set from a plug-in" % (name, key))
     config = procedure.create_config()
     config.set_property("run-mode", Gimp.RunMode.NONINTERACTIVE)
     config.set_property("file", Gio.File.new_for_path(path))
     _apply_options(config, specs, values)
+    if pages is not None:
+        config.set_property("pages", _int32_array([page - 1 for page in pages]))  # 0-based in GIMP
     result = procedure.run(config)
     if result.index(0) != Gimp.PDBStatusType.SUCCESS:
+        if pages is not None:  # file-pdf-load refuses a page beyond the end of the document
+            raise BridgeError("INVALID_ARGUMENT", "%s could not load pages %s of %s: %s"
+                              % (name, pages, path, _procedure_error(result)), {"pages": pages})  # fmt: skip
         raise BridgeError("UNSUPPORTED_FORMAT", "%s could not open %s" % (name, path), {"path": path})
     image = result.index(1)
-    if pages is not None:
-        layers = image.get_layers()  # one layer per page, the last page on top
-        count = len(layers)
-        if not pages or any(not 1 <= page <= count for page in pages):
-            image.delete()
-            raise BridgeError("INVALID_ARGUMENT", "pages must be between 1 and %d" % count, {"pages": count})
-        image.undo_disable()
-        for index, layer in enumerate(layers):
-            if count - index not in pages:
-                image.remove_layer(layer)
-        image.undo_enable()
     shown = show(image)
     return {**image_ref(image, shown), "procedure": name}
 

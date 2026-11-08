@@ -285,8 +285,8 @@ CAPABILITIES: tuple[Capability, ...] = (
         tools=("gimp_open_with_options",),
         procedures=("file-pdf-load", "file-svg-load", "file-psd-load", "file-tiff-load", "gimp-file-load"),
         tests=("tests/e2e/test_formats.py",),
-        notes="PDF pages are filtered after loading (GimpInt32Array options cannot be set); RAW is not tested "
-        "(needs darktable or RawTherapee).",
+        notes="PDF pages load natively, in the order given. RAW opens in darktable's or RawTherapee's window (GIMP "
+        "with its interface); not tested yet (#129).",
     ),
     Capability(
         "Formats",
