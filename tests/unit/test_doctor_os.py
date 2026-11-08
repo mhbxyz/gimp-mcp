@@ -127,3 +127,21 @@ def test_troubleshooting_gives_each_os_its_fix():
     for label in ("Linux:", "macOS:", "Windows:"):
         assert label in page
     assert "/Applications/GIMP.app" in page and "GIMP_MCP_GIMP_CONSOLE" in page
+
+
+def test_the_doctor_cli_reports_instead_of_crashing_on_this_host(tmp_path):
+    """The real CLI on the runner's own OS, with a socket-style address (GIMP_MCP_SOCKET may be any path)
+    and no GIMP: failures are reported (exit 1), the doctor never stops on an OS-specific call (exit 2)."""
+    import json
+    import os
+    import subprocess
+    import sys
+
+    env = {**os.environ, "HOME": str(tmp_path), "USERPROFILE": str(tmp_path), "APPDATA": str(tmp_path / "Roaming"),
+           "LOCALAPPDATA": str(tmp_path / "Local"), "GIMP_MCP_SOCKET": str(tmp_path / "x.sock"),
+           "GIMP_MCP_GIMP_CONSOLE": str(tmp_path / "no-gimp")}  # fmt: skip
+    proc = subprocess.run([sys.executable, "-m", "gimp_mcp", "doctor", "--json"],
+                          capture_output=True, text=True, env=env, timeout=60)  # fmt: skip
+    assert proc.returncode == 1, proc.stderr
+    checks = {check["id"]: check["status"] for check in json.loads(proc.stdout)["checks"]}
+    assert checks["gimp"] == "fail" and checks["connection"] == "fail"

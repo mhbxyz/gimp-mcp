@@ -22,6 +22,7 @@ WINDOWS_PENDING_TESTS = {
     "test_a_second_bridge_cannot_take_the_pipe_name",
 }
 WINDOWS_PENDING = {
+    "test_doctor": "Linux doctor semantics need a POSIX host (uids, file modes); test_doctor_os runs each OS",
     "test_flatpak": "Flatpak is Linux only",
 }
 UNIX_ONLY_MARKERS = (

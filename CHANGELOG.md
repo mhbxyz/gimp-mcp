@@ -38,6 +38,8 @@ what is covered by the compatibility promise.
 - `gimp-mcp setup` and `uninstall` print `+`, `x` and `->` instead of `\u2713`-style escapes when their
   output goes to a console or file that cannot encode the symbols (Windows redirects in cp1252) (#103).
 - `gimp-mcp doctor` uses `%USERPROFILE%` as home on Windows, even when `HOME` is set (#103).
+- `gimp-mcp doctor` no longer stops (exit code 2) on Windows when `GIMP_MCP_SOCKET` is a file path: the
+  socket-permissions check is skipped there (#103).
 - macOS: the bridge plug-in no longer crashes while listing filters. Operations with a format, pointer or
   buffer parameter (read from GEGL, which the plug-in now initializes) are never instantiated: libgimp
   cannot carry those values, and doing it corrupted the plug-in on macOS. Of the 200 operations GIMP

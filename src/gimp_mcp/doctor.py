@@ -402,6 +402,8 @@ def check_plugin_registered(ctx: Context) -> Result:
 def check_socket_permissions(ctx: Context) -> Result:
     if ctx.probe.endpoint.is_pipe:
         return result("socket-permissions", Status.SKIP, "Windows named pipe: access is limited by its ACL")
+    if not hasattr(os, "getuid"):  # a socket path on Windows: no POSIX owner or modes to check
+        return result("socket-permissions", Status.SKIP, "no POSIX file ownership or modes on this OS")
     socket_dir = ctx.probe.endpoint.socket_path.parent
     token = ctx.probe.endpoint.token_path
     if not socket_dir.exists():
