@@ -4,7 +4,7 @@
 
 Inventory: GIMP **3.2.6**, 1030 PDB procedures (722 internal, 3 persistent, 244 plugin, 61 temporary), 200 GEGL operations available to filters.
 
-MCP tools: **81**. PDB procedures relied upon by tools: **138** (13.4% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
+MCP tools: **96**. PDB procedures relied upon by tools: **161** (15.6% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
 
 ## Capabilities
 
@@ -14,6 +14,10 @@ MCP tools: **81**. PDB procedures relied upon by tools: **138** (13.4% of the in
 | Session | Toolsets: list the tool groups, enable more during a session | tested | `gimp_list_toolsets`, `gimp_enable_toolsets` | `tests/unit/test_toolsets.py`, `tests/e2e/test_thumbnail_journey.py` | 3.2 | MCP-side only, no GIMP procedure; see docs/toolsets.md |
 | Inspection | Image properties and ordered layer tree (groups, masks) | tested | `gimp_inspect_image`, `gimp_inspect_item` | `tests/e2e/test_inspect.py` | 3.2 |  |
 | Preview | Composite preview as PNG (max 1024 px) | tested | `gimp_preview` | `tests/e2e/test_preview.py` | 3.2 | 8-bit sRGB rendering of the visible layers; larger renders go through export. |
+| Paths | Create paths (polylines, Bézier, ellipses, text outlines), inspect, rename, show, duplicate, delete | tested | `gimp_create_path`, `gimp_add_path_stroke`, `gimp_path_from_text`, `gimp_inspect_path`, `gimp_set_path`, `gimp_duplicate_path`, `gimp_delete_path` | `tests/e2e/test_paths.py` | 3.2 |  |
+| Paths | Edit strokes (translate, scale, rotate, flip, reverse, close, remove); length and point at distance | tested | `gimp_edit_path_stroke`, `gimp_path_point_at` | `tests/e2e/test_paths.py` | 3.2 |  |
+| Paths | Path to selection, selection to path, stroke (line or brush), fill | tested | `gimp_path_to_selection`, `gimp_selection_to_path`, `gimp_stroke_path`, `gimp_fill_path` | `tests/e2e/test_paths.py` | 3.2 |  |
+| Paths | SVG import (file or string) and export; paths kept in XCF | tested | `gimp_import_svg_paths`, `gimp_export_path_svg` | `tests/e2e/test_paths.py` | 3.2 |  |
 | Modes | Convert between RGB, grayscale and indexed (palette, colors, dithering) | tested | `gimp_convert_mode` | `tests/e2e/test_modes.py` | 3.2 |  |
 | Modes | Convert precision (8/16/32-bit integer, half/float/double, linear or not) | tested | `gimp_convert_precision` | `tests/e2e/test_modes.py` | 3.2 |  |
 | Modes | Color profiles: read, assign, convert (intent, BPC), remove, built-in or ICC file; embed on export | tested | `gimp_get_color_profile`, `gimp_set_color_profile` | `tests/e2e/test_modes.py` | 3.2 |  |
@@ -43,9 +47,9 @@ MCP tools: **81**. PDB procedures relied upon by tools: **138** (13.4% of the in
 
 | Family | Procedures in GIMP | Used by MCP tools |
 |---|---|---|
-| `gimp-image-*` | 137 | 35 |
+| `gimp-image-*` | 137 | 39 |
 | `gimp-context-*` | 121 | 15 |
-| `plug-in-*` | 68 | 0 |
+| `plug-in-*` | 68 | 1 |
 | `gimp-drawable-*` | 56 | 30 |
 | `gimp-text-*` | 50 | 14 |
 | `gimp-item-*` | 46 | 8 |
@@ -54,7 +58,7 @@ MCP tools: **81**. PDB procedures relied upon by tools: **138** (13.4% of the in
 | `gimp-gradient-*` | 28 | 0 |
 | `file-raw-*` | 27 | 0 |
 | `gimp-vector-*` | 27 | 0 |
-| `gimp-path-*` | 22 | 2 |
+| `gimp-path-*` | 22 | 20 |
 | `gimp-brush-*` | 18 | 0 |
 | `gimp-palette-*` | 17 | 0 |
 | `gimp-selection-*` | 14 | 7 |

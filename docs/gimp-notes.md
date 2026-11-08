@@ -161,5 +161,17 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   (stored 13/255); assigning a gray profile to an RGB image returns `False`.
   `Gimp.ColorProfile.new_from_file(GFile)` loads ICC files. `file-png-export`/`file-jpeg-export`
   take `include-color-profile`, **false by default** (GIMP does not embed the profile unless asked).
+* **Paths** (checked 2026-11-08): `Gimp.Path.new(image, name)` + `image.insert_path(path, None,
+  pos)`; `bezier_stroke_new_moveto(x, y)` returns the stroke number; `bezier_stroke_lineto`,
+  `cubicto`, `conicto`, `stroke_close`, `bezier_stroke_new_ellipse(cx, cy, rx, ry, angle)`.
+  `stroke_get_points(s)` → `(type, flat control points, closed)`, three control points per
+  anchor (in-handle, anchor, out-handle). `stroke_get_length(s, precision)`,
+  `stroke_get_point_at_dist(s, d, precision)` → `(ok, x, y, slope, valid)`. `stroke_translate`,
+  `stroke_scale` (around the origin), `stroke_rotate(s, cx, cy, degrees)`,
+  `stroke_flip(s, orientation, axis)`, `stroke_reverse`, `remove_stroke`, `path.copy()`.
+  `image.select_item(op, path)` selects the enclosed area. `plug-in-sel2path` traces the selection
+  into a new path named after the (localized) word "Selection". `import_paths_from_string(svg,
+  length, merge, scale)` → `(ok, paths)`; `export_path_to_string(path or None)` writes inches
+  from the image resolution. `Gimp.Path.new_from_text_layer(image, layer)`. Paths survive XCF.
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.

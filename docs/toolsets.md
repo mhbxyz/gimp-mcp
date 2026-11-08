@@ -55,6 +55,7 @@ Rules of thumb:
 * If your client caps the number of tools (counted across all MCP servers) or warns about too many
   tools, list only what your work needs, e.g. `files,layers,text` (21 tools with `core`). The agent
   can still enable more with `gimp_enable_toolsets` if the client refreshes its tool list.
+* Add `paths` for precise shapes, outlines, text on curves and SVG.
 * Add `modes` for grayscale/indexed images, 16/32-bit work and ICC profiles.
 * Add `color` for photo corrections (levels, curves, color balance, exposure…).
 * Add `effects` for any GEGL filter beyond brightness/contrast, hue/saturation and blur.
@@ -124,6 +125,13 @@ Not in the default. Measure pixels, read-only: `gimp_histogram`, `gimp_sample_co
 Not in the default. Color adjustments with photographers' ranges: `gimp_levels`, `gimp_curves`,
 `gimp_color_balance`, `gimp_colorize`, `gimp_desaturate`, `gimp_invert`, `gimp_threshold`,
 `gimp_posterize`, `gimp_exposure`, `gimp_shadows_highlights`, `gimp_auto_adjust`.
+
+### `paths`
+
+Not in the default. Paths (vectors): `gimp_create_path`, `gimp_add_path_stroke`, `gimp_path_from_text`,
+`gimp_inspect_path`, `gimp_set_path`, `gimp_duplicate_path`, `gimp_delete_path`,
+`gimp_edit_path_stroke`, `gimp_path_point_at`, `gimp_path_to_selection`, `gimp_selection_to_path`,
+`gimp_stroke_path`, `gimp_fill_path`, `gimp_import_svg_paths`, `gimp_export_path_svg`.
 
 ### `modes`
 
