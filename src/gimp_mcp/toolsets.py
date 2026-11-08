@@ -29,6 +29,8 @@ TOOLSETS: dict[str, str] = {
     "full-resolution crops.",
     "color": "Color adjustments: levels, curves, color balance, colorize, desaturate, invert, threshold, "
     "posterize, exposure, shadows-highlights, automatic corrections.",
+    "resources": "Brushes, gradients, patterns and palettes: list, inspect with previews, create, edit, "
+    "duplicate, rename, delete; palette import and export.",
     "paths": "Paths (vectors): create from points, Bézier segments, ellipses or text; edit strokes; stroke, "
     "fill, convert to and from selections; SVG import and export.",
     "modes": "Image mode (RGB, grayscale, indexed), precision (8 to 64 bits, linear or not) and ICC color profiles.",

@@ -27,6 +27,7 @@ from .tools import (
     pdb,
     preview,
     procedures,
+    resources,
     selection,
     session,
     text,
@@ -84,6 +85,7 @@ def build_server(
         effects,
         modes,
         paths,
+        resources,
     ):
         module.register(kit)
     return mcp

@@ -55,6 +55,7 @@ Rules of thumb:
 * If your client caps the number of tools (counted across all MCP servers) or warns about too many
   tools, list only what your work needs, e.g. `files,layers,text` (21 tools with `core`). The agent
   can still enable more with `gimp_enable_toolsets` if the client refreshes its tool list.
+* Add `resources` to make or pick brushes, gradients and palettes.
 * Add `paths` for precise shapes, outlines, text on curves and SVG.
 * Add `modes` for grayscale/indexed images, 16/32-bit work and ICC profiles.
 * Add `color` for photo corrections (levels, curves, color balance, exposure…).
@@ -125,6 +126,13 @@ Not in the default. Measure pixels, read-only: `gimp_histogram`, `gimp_sample_co
 Not in the default. Color adjustments with photographers' ranges: `gimp_levels`, `gimp_curves`,
 `gimp_color_balance`, `gimp_colorize`, `gimp_desaturate`, `gimp_invert`, `gimp_threshold`,
 `gimp_posterize`, `gimp_exposure`, `gimp_shadows_highlights`, `gimp_auto_adjust`.
+
+### `resources`
+
+Not in the default. Brushes, gradients, patterns and palettes: `gimp_list_resources`,
+`gimp_inspect_resource`, `gimp_create_resource`, `gimp_duplicate_resource`, `gimp_rename_resource`,
+`gimp_delete_resource`, `gimp_edit_brush`, `gimp_edit_gradient`, `gimp_edit_palette`,
+`gimp_import_palette`, `gimp_export_palette`.
 
 ### `paths`
 

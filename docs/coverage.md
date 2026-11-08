@@ -4,7 +4,7 @@
 
 Inventory: GIMP **3.2.6**, 1030 PDB procedures (722 internal, 3 persistent, 244 plugin, 61 temporary), 200 GEGL operations available to filters.
 
-MCP tools: **96**. PDB procedures relied upon by tools: **161** (15.6% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
+MCP tools: **107**. PDB procedures relied upon by tools: **182** (17.7% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
 
 ## Capabilities
 
@@ -14,6 +14,9 @@ MCP tools: **96**. PDB procedures relied upon by tools: **161** (15.6% of the in
 | Session | Toolsets: list the tool groups, enable more during a session | tested | `gimp_list_toolsets`, `gimp_enable_toolsets` | `tests/unit/test_toolsets.py`, `tests/e2e/test_thumbnail_journey.py` | 3.2 | MCP-side only, no GIMP procedure; see docs/toolsets.md |
 | Inspection | Image properties and ordered layer tree (groups, masks) | tested | `gimp_inspect_image`, `gimp_inspect_item` | `tests/e2e/test_inspect.py` | 3.2 |  |
 | Preview | Composite preview as PNG (max 1024 px) | tested | `gimp_preview` | `tests/e2e/test_preview.py` | 3.2 | 8-bit sRGB rendering of the visible layers; larger renders go through export. |
+| Resources | List and inspect brushes, gradients, patterns, palettes with previews | tested | `gimp_list_resources`, `gimp_inspect_resource` | `tests/e2e/test_resources.py`, `tests/unit/test_resource_helpers.py` | 3.2 |  |
+| Resources | Create, edit (generated brushes, gradients, palettes), duplicate, rename, delete user resources | tested | `gimp_create_resource`, `gimp_duplicate_resource`, `gimp_rename_resource`, `gimp_delete_resource`, `gimp_edit_brush`, `gimp_edit_gradient`, `gimp_edit_palette` | `tests/e2e/test_resources.py` | 3.2 | Patterns cannot be created from a plug-in in GIMP 3.2. |
+| Resources | Palette import (.gpl) and export (gpl, css, text, python, php, java, kpl) | partial | `gimp_import_palette`, `gimp_export_palette` | `tests/e2e/test_resources.py` | 3.2 | Import of .aco/.act/.ase/.pal is only in GIMP's dialog (#81). |
 | Paths | Create paths (polylines, Bézier, ellipses, text outlines), inspect, rename, show, duplicate, delete | tested | `gimp_create_path`, `gimp_add_path_stroke`, `gimp_path_from_text`, `gimp_inspect_path`, `gimp_set_path`, `gimp_duplicate_path`, `gimp_delete_path` | `tests/e2e/test_paths.py` | 3.2 |  |
 | Paths | Edit strokes (translate, scale, rotate, flip, reverse, close, remove); length and point at distance | tested | `gimp_edit_path_stroke`, `gimp_path_point_at` | `tests/e2e/test_paths.py` | 3.2 |  |
 | Paths | Path to selection, selection to path, stroke (line or brush), fill | tested | `gimp_path_to_selection`, `gimp_selection_to_path`, `gimp_stroke_path`, `gimp_fill_path` | `tests/e2e/test_paths.py` | 3.2 |  |
@@ -55,30 +58,30 @@ MCP tools: **96**. PDB procedures relied upon by tools: **161** (15.6% of the in
 | `gimp-item-*` | 46 | 8 |
 | `script-fu-*` | 43 | 0 |
 | `gimp-layer-*` | 34 | 16 |
-| `gimp-gradient-*` | 28 | 0 |
+| `gimp-gradient-*` | 28 | 3 |
 | `file-raw-*` | 27 | 0 |
 | `gimp-vector-*` | 27 | 0 |
 | `gimp-path-*` | 22 | 20 |
-| `gimp-brush-*` | 18 | 0 |
-| `gimp-palette-*` | 17 | 0 |
+| `gimp-brush-*` | 18 | 3 |
+| `gimp-palette-*` | 17 | 5 |
 | `gimp-selection-*` | 14 | 7 |
-| `gimp-resource-*` | 11 | 0 |
+| `gimp-resource-*` | 11 | 3 |
 | `gimp-channel-*` | 10 | 0 |
 | `gimp-edit-*` | 10 | 0 |
 | `gimp-help-*` | 10 | 0 |
-| `python-fu-*` | 10 | 0 |
+| `python-fu-*` | 10 | 1 |
 | `gimp-get-*` | 7 | 1 |
 | `file-heif-*` | 6 | 0 |
 | `gimp-buffer-*` | 6 | 0 |
 | `gimp-file-*` | 6 | 3 |
 | `file-psd-*` | 5 | 0 |
-| `gimp-brushes-*` | 5 | 0 |
+| `gimp-brushes-*` | 5 | 1 |
 | `gimp-display-*` | 5 | 1 |
 | `gimp-fonts-*` | 5 | 1 |
-| `gimp-gradients-*` | 5 | 0 |
+| `gimp-gradients-*` | 5 | 1 |
 | `gimp-online-*` | 5 | 0 |
-| `gimp-palettes-*` | 5 | 0 |
-| `gimp-patterns-*` | 5 | 0 |
+| `gimp-palettes-*` | 5 | 2 |
+| `gimp-patterns-*` | 5 | 1 |
 | `gimp-progress-*` | 5 | 0 |
 | `file-pdf-*` | 4 | 0 |
 | `gimp-floating-*` | 4 | 0 |
@@ -146,7 +149,7 @@ MCP tools: **96**. PDB procedures relied upon by tools: **161** (15.6% of the in
 | `gimp-group-*` | 2 | 1 |
 | `gimp-heal-*` | 2 | 0 |
 | `gimp-paintbrush-*` | 2 | 0 |
-| `gimp-pattern-*` | 2 | 0 |
+| `gimp-pattern-*` | 2 | 1 |
 | `gimp-smudge-*` | 2 | 0 |
 | `gimp-xcf-*` | 2 | 0 |
 | `file-aa-*` | 1 | 0 |
