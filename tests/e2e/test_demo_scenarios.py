@@ -109,12 +109,28 @@ def screenshot_annotation(out: Path, report: Report) -> None:
     assert not {b"tEXt", b"iTXt", b"zTXt", b"eXIf", b"tIME"} & set(chunks), chunks
 
 
+def web_photo_batch(out: Path, report: Report) -> None:
+    from demo.scenarios.web_photo_batch import PHOTOS
+
+    web = out / "web"
+    assert sorted(p.name for p in web.iterdir()) == sorted(f"{n}-web.{e}" for n in PHOTOS for e in ("jpg", "webp"))
+    for name, (w, h, _, _) in PHOTOS.items():
+        with Image.open(web / f"{name}-web.jpg") as jpeg:
+            assert max(jpeg.size) == 1600, (name, jpeg.size)
+            assert w == h or (jpeg.width > jpeg.height) == (w > h), (name, jpeg.size)  # landscape stays landscape
+            exif = jpeg.getexif()
+            assert not exif.get_ifd(0x8825) and exif.get(0x8298) == "(c) 2026 Ana Lima", name
+            r, g, b = jpeg.convert("RGB").getpixel((20, 20))  # type: ignore[misc]
+            assert r > 170 and g < 90 and b < 90, (name, (r, g, b))  # upright: the red marker is top-left
+
+
 INDEPENDENT: dict[str, Callable[[Path, Report], None]] = {
     "thumbnail": thumbnail,
     "old-photo-restoration": old_photo_restoration,
     "product-cutout": product_cutout,
     "social-media-kit": social_media_kit,
     "screenshot-annotation": screenshot_annotation,
+    "web-photo-batch": web_photo_batch,
 }
 
 
@@ -123,11 +139,15 @@ def test_every_scenario_has_independent_verifications():
 
 
 @pytest.mark.parametrize("name", scenario_names())
-async def test_scenario_produces_verified_outputs(name: str, gimp: HeadlessGimp, tmp_path: Path):
+async def test_scenario_produces_verified_outputs(name: str, gimp_factory, tmp_path: Path, monkeypatch):
+    # its own GIMP, in English like `demo/run.py` (metadata values are localized: #161)
+    monkeypatch.setenv("LANG", "C.UTF-8")
+    monkeypatch.setenv("LC_ALL", "C.UTF-8")
+    gimp: HeadlessGimp = gimp_factory()
     scenario = load(name)
     report = await run_scenario(scenario, tmp_path, server_params(gimp))
     failed = [check for check in report.checks if not check.passed]
-    assert not failed, failed
+    assert not failed, "\n".join(f"{'ok ' if c.passed else 'FAIL'} {c.description}: {c.detail}" for c in report.checks)
     assert {call.tool for call in report.calls} <= report.listed_tools
     for output in scenario.outputs:
         assert (tmp_path / output).is_file(), output
