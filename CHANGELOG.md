@@ -8,6 +8,9 @@ what is covered by the compatibility promise.
 
 ### Added
 
+- Demo: print-ready A5 flyer (#114). `uv run demo/run.py print-flyer` lays out an A5 flyer with 3 mm
+  bleed and safe-margin guides at 300 dpi and exports a PDF (page size checked with pypdf) and a TIFF;
+  its agent version is an evaluation task.
 - Demo: animated sticker (#113). `uv run demo/run.py animated-sticker` builds 12 frames where a logo
   slides and fades in, with per-frame timing and disposal, optimizes them and exports GIF and animated
   WebP under 500 KB, each frame checked; its agent version is an evaluation task.
