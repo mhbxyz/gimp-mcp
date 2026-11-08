@@ -9,6 +9,7 @@ import re
 import sys
 
 SOCKET_ENV = "GIMP_MCP_SOCKET"
+TOKEN_ENV = "GIMP_MCP_TOKEN_FILE"
 
 
 def os_kind(name=None):
@@ -32,7 +33,8 @@ def bridge_address(env, kind=None, uid=None, runtime_exists=os.path.isdir):
     if kind == "windows":
         local = env.get("LOCALAPPDATA") or _home(env, kind) + "\\AppData\\Local"
         user = re.sub(r"[^A-Za-z0-9._-]", "_", env.get("USERNAME") or "user")
-        return ("pipe", env.get(SOCKET_ENV) or "\\\\.\\pipe\\gimp-mcp-" + user, local + "\\gimp-mcp\\bridge.token")
+        token = env.get(TOKEN_ENV) or local + "\\gimp-mcp\\bridge.token"
+        return ("pipe", env.get(SOCKET_ENV) or "\\\\.\\pipe\\gimp-mcp-" + user, token)
     path = env.get(SOCKET_ENV)
     if not path and kind == "macos":
         path = _home(env, kind) + "/Library/Application Support/gimp-mcp/bridge.sock"
@@ -45,7 +47,7 @@ def bridge_address(env, kind=None, uid=None, runtime_exists=os.path.isdir):
             path = runtime + "/gimp-mcp/bridge.sock"
         else:
             path = "/tmp/gimp-mcp-%d/bridge.sock" % (os.getuid() if uid is None else uid)
-    return ("unix", path, path + ".token")
+    return ("unix", path, env.get(TOKEN_ENV) or path + ".token")
 
 
 def process_start(pid, kind=None):

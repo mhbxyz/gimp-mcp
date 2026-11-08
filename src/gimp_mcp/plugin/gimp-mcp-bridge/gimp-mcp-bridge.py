@@ -18,6 +18,7 @@ from gi.repository import Gimp, GLib  # noqa: E402
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import gmb_platform  # noqa: E402
 import gmb_server  # noqa: E402
 
 try:  # PyGObject >= 3.52 moved Unix helpers to GLibUnix
@@ -26,7 +27,7 @@ try:  # PyGObject >= 3.52 moved Unix helpers to GLibUnix
 
     fd_add_full = GLibUnix.fd_add_full
 except (ImportError, ValueError, AttributeError):
-    fd_add_full = GLib.unix_fd_add_full
+    fd_add_full = getattr(GLib, "unix_fd_add_full", None)  # absent on Windows (named pipe instead)
 
 PROCEDURE = "extension-gimp-mcp-bridge"
 
@@ -43,10 +44,15 @@ def _installed_version():
 BRIDGE_VERSION = _installed_version()
 
 
+def _once(fn, args):
+    fn(*args)
+    return False  # GLib.SOURCE_REMOVE
+
+
 def run_bridge(procedure, config, data):
     procedure.persistent_ready()
     plug_in = procedure.get_plug_in()
-    socket_path = gmb_server.default_socket_path(os.environ)
+    kind, socket_path, token_path = gmb_platform.bridge_address(os.environ)
     try:
         import gmb_ops
 
@@ -63,9 +69,14 @@ def run_bridge(procedure, config, data):
                 "pid": os.getppid(),
                 "bridge_version": BRIDGE_VERSION,
             },
+            token_path=token_path,
         )
         gmb_ops.attach(server)
-        server.start()
+        if kind == "pipe":
+            # pipe I/O runs in threads; requests are handed to this (GIMP's main) thread
+            server.start_pipe(lambda fn, *args: GLib.idle_add(_once, fn, args))
+        else:
+            server.start()
     except Exception as exc:  # keep GIMP usable even if the bridge cannot start
         gmb_server.log("bridge disabled: %s" % exc)
         while True:
@@ -87,7 +98,8 @@ def run_bridge(procedure, config, data):
             fd_add_full(GLib.PRIORITY_DEFAULT, conn.fileno(), condition, on_client, conn)
         return True
 
-    fd_add_full(GLib.PRIORITY_DEFAULT, server.fileno(), GLib.IOCondition.IN, on_accept)
+    if kind != "pipe":
+        fd_add_full(GLib.PRIORITY_DEFAULT, server.fileno(), GLib.IOCondition.IN, on_accept)
     try:
         loop.run()
     finally:

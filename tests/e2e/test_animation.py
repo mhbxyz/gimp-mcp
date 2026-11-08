@@ -106,7 +106,7 @@ async def test_animated_exports_are_read_back_frame_by_frame(gimp: HeadlessGimp,
         await call(client, "gimp_close_image", image=image, discard_changes=True)
 
 
-async def test_optimize_and_unoptimize_make_new_images(gimp: HeadlessGimp):
+async def test_optimize_and_unoptimize_make_new_images(gimp: HeadlessGimp, tmp_path: Path):
     async with mcp_client(gimp) as client:
         image, _ = await three_frames(client)
         optimized = await call(client, "gimp_optimize_animation", image=image)
@@ -117,7 +117,7 @@ async def test_optimize_and_unoptimize_make_new_images(gimp: HeadlessGimp):
         ]
         assert sizes == [(20, 20)] * 3  # every frame complete again
         assert len((await call(client, "gimp_inspect_image", image=image))["layers"]) == 3  # original unchanged
-        refused = await error(client, "gimp_export_animation", image=image, path="/tmp/x.png")
+        refused = await error(client, "gimp_export_animation", image=image, path=str(tmp_path / "x.png"))
         assert refused["code"] in ("UNSUPPORTED_FORMAT", "FILE_EXISTS")
         for each in (image, optimized["image"], full["image"]):
             await call(client, "gimp_close_image", image=each, discard_changes=True)

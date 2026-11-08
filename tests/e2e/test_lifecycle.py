@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import time
 from collections.abc import Callable
 
 import pytest
 
+from gimp_mcp import platforms
 from gimp_mcp.headless import HeadlessGimp
 
 from .conftest import mcp_client
@@ -33,8 +35,12 @@ def test_stopping_gimp_leaves_no_process_and_no_temporary_file(gimp_factory: Cal
     assert gimp.config_dir.is_relative_to(root)  # isolated profile, never ~/.config/GIMP
     gimp.stop()
     assert not root.exists()
-    with pytest.raises(ProcessLookupError):
-        os.killpg(group, 0)
+    if platforms.CURRENT == "windows":  # no process groups: GIMP itself must be gone
+        listed = subprocess.run(["tasklist", "/FI", f"PID eq {group}"], capture_output=True, text=True).stdout
+        assert str(group) not in listed
+    else:
+        with pytest.raises(ProcessLookupError):
+            os.killpg(group, 0)  # type: ignore[attr-defined]
 
 
 def test_isolated_profile_does_not_touch_the_user_gimp_directory(gimp_factory: Callable[..., HeadlessGimp]):

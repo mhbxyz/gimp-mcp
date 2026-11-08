@@ -345,7 +345,8 @@ def check_plugin_registered(ctx: Context) -> Result:
     pluginrc = ctx.active_profile() / "pluginrc"
     if not pluginrc.exists():
         return result("plugin-registered", Status.SKIP, "GIMP has not been started with this profile yet")
-    if f"{PLUGIN_NAME}/{PLUGIN_NAME}.py".encode() in pluginrc.read_bytes():
+    # the path separator is "/" on Linux and macOS, "\\" (escaped in the file) on Windows
+    if re.search(rf"{PLUGIN_NAME}[/\\\\]+{PLUGIN_NAME}\.py".encode(), pluginrc.read_bytes()):
         return result("plugin-registered", Status.OK, f"listed in {pluginrc}")
     return result(
         "plugin-registered",
@@ -355,6 +356,8 @@ def check_plugin_registered(ctx: Context) -> Result:
 
 
 def check_socket_permissions(ctx: Context) -> Result:
+    if ctx.probe.endpoint.is_pipe:
+        return result("socket-permissions", Status.SKIP, "Windows named pipe: access is limited by its ACL")
     socket_dir = ctx.probe.endpoint.socket_path.parent
     token = ctx.probe.endpoint.token_path
     if not socket_dir.exists():
@@ -404,7 +407,8 @@ def _connection_failure(ctx: Context, error: GimpMcpError) -> Result:
             SPECS["plugin-version"].fix,
         )
     pids = ", ".join(str(pid) for pid, _ in running)
-    if error.code == "GIMP_NOT_RUNNING" and endpoint.socket_path.exists():
+    # (a Unix socket file can stay behind; a Windows pipe cannot, and statting it would connect to it)
+    if error.code == "GIMP_NOT_RUNNING" and not endpoint.is_pipe and endpoint.socket_path.exists():
         # nothing listens on this socket: the GIMP that created it exited, whatever else runs
         message = f"stale socket {endpoint.socket_path}: the GIMP that created it exited"
         fix = "Start GIMP."

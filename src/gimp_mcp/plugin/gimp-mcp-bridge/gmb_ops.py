@@ -2670,7 +2670,7 @@ def palette_import(params):
         shutil.copyfile(source, target)
     else:
         rows = [(e["name"], tuple(e["rgb"])) for e in entries]
-        with open(target, "w", encoding="utf-8") as handle:
+        with open(target, "w", encoding="utf-8", newline="\n") as handle:  # GIMP keeps a CR in names
             handle.write(gmb_resources.write_gpl(params["name"], 0, rows))
     Gimp.palettes_refresh()
     created = [p for p in Gimp.palettes_get_list("") if p.get_name() not in before]
@@ -2689,7 +2689,7 @@ def palette_export(params):
         for i in range(palette.get_color_count()):
             name = palette.get_entry_name(i)
             entries.append((name[1] if isinstance(name, tuple) else name, tuple(_rgba(palette.get_entry_color(i))[:3])))
-        with open(path, "w", encoding="utf-8") as handle:
+        with open(path, "w", encoding="utf-8", newline="\n") as handle:
             handle.write(gmb_resources.write_gpl(palette.get_name(), palette.get_columns(), entries))
     else:
         pdb = Gimp.get_pdb()

@@ -8,7 +8,7 @@ from typing import Any
 
 from mcp import Client
 
-from gimp_mcp.bridge import BridgeClient, BridgeEndpoint
+from gimp_mcp.bridge import BridgeClient
 from gimp_mcp.server import build_server
 
 from .fake_bridge import FakeBridge, Op, running_fake_bridge
@@ -27,7 +27,7 @@ def tid(n: int) -> str:
 @asynccontextmanager
 async def tool_client(ops: dict[str, Op]) -> AsyncIterator[tuple[Client, FakeBridge]]:
     with running_fake_bridge(ops) as bridge:
-        server = build_server(BridgeClient(BridgeEndpoint.for_socket(bridge.socket_path)), toolsets="all")
+        server = build_server(BridgeClient(bridge.endpoint), toolsets="all")
         async with Client(server) as client:
             yield client, bridge
 
