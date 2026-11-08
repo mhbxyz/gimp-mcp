@@ -216,5 +216,16 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   `GimpInt32Array` that cannot be set from Python (setting a `GValue` of that type crashes the
   plug-in); a PDF opens as one layer per page, the last page on top, named after the page number.
   The PDF exporter logs Gtk-CRITICAL warnings headless (harmless).
+* **Paint tools** (checked 2026-11-08): the PDB paint procedures (`gimp-paintbrush`, `-pencil`,
+  `-airbrush`, `-eraser`, `-smudge`, `-dodgeburn`, `-clone`, `-heal`) take `strokes` as a
+  `GimpDoubleArray`, which a procedure config cannot receive from Python ("could not convert");
+  libgimp's functions `Gimp.paintbrush(drawable, fade_out, strokes, method, gradient_length)`,
+  `Gimp.pencil`, `Gimp.airbrush`, `Gimp.clone(drawable, source, type, x, y, strokes)`, `Gimp.heal`,
+  `Gimp.dodgeburn`, `Gimp.smudge`, `Gimp.eraser` accept a Python list. There is no `gimp-ink`:
+  stroke a path with `context_set_paint_method("gimp-ink")` + `StrokeMethod.PAINT_METHOD`. Heal
+  keeps the colors around the stroke (a uniform area is unchanged). Dynamics names are translated;
+  `context_set_dynamics_name("Dynamics Off")` works with the internal name.
+  `drawable.edit_gradient_fill(type, offset, supersample, depth, threshold, dither, x1, y1, x2, y2)`
+  and `drawable.edit_bucket_fill(fill_type, x, y)` use the context gradient/threshold/criterion.
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.

@@ -26,6 +26,7 @@ from .tools import (
     layers,
     modes,
     paint,
+    painting,
     paths,
     pdb,
     preview,
@@ -92,6 +93,7 @@ def build_server(
         compose,
         document,
         formats,
+        painting,
     ):
         module.register(kit)
     return mcp
