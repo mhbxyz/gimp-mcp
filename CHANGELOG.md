@@ -43,6 +43,8 @@ what is covered by the compatibility promise.
   untouched; pastes never leave a floating selection), merge down/group/visible, flatten, new layer
   from visible, alpha channel and alpha to selection, layer boundary and crop to content, align and
   distribute layers.
+- Document toolset (#60): guides and sample points (with their colors), Exif/XMP/IPTC metadata and
+  comment, resolution and print size with units (`gimp_inspect_image` reports the unit).
 
 ### Fixed
 
@@ -51,6 +53,8 @@ what is covered by the compatibility promise.
 
 ### Changed
 
+- Exports write no metadata unless asked: new `metadata` list in `png_options` / `jpeg_options`
+  (default empty, which is what v0.2.0 did implicitly).
 - The default tool list no longer includes the `procedures` toolset (`gimp_search_procedures`,
   `gimp_describe_procedure`, `gimp_list_callable_procedures`, `gimp_call_procedure`): add it with
   `--toolsets default,procedures` or `gimp_enable_toolsets`.

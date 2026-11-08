@@ -4,7 +4,7 @@
 
 Inventory: GIMP **3.2.6**, 1030 PDB procedures (722 internal, 3 persistent, 244 plugin, 61 temporary), 200 GEGL operations available to filters.
 
-MCP tools: **117**. PDB procedures relied upon by tools: **201** (19.5% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
+MCP tools: **124**. PDB procedures relied upon by tools: **214** (20.8% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
 
 ## Capabilities
 
@@ -14,6 +14,9 @@ MCP tools: **117**. PDB procedures relied upon by tools: **201** (19.5% of the i
 | Session | Toolsets: list the tool groups, enable more during a session | tested | `gimp_list_toolsets`, `gimp_enable_toolsets` | `tests/unit/test_toolsets.py`, `tests/e2e/test_thumbnail_journey.py` | 3.2 | MCP-side only, no GIMP procedure; see docs/toolsets.md |
 | Inspection | Image properties and ordered layer tree (groups, masks) | tested | `gimp_inspect_image`, `gimp_inspect_item` | `tests/e2e/test_inspect.py` | 3.2 |  |
 | Preview | Composite preview as PNG (max 1024 px) | tested | `gimp_preview` | `tests/e2e/test_preview.py` | 3.2 | 8-bit sRGB rendering of the visible layers; larger renders go through export. |
+| Document | Guides and sample points (add, list with values, remove) | tested | `gimp_list_guides`, `gimp_add_guide`, `gimp_add_sample_point`, `gimp_remove_guide` | `tests/e2e/test_document.py` | 3.2 |  |
+| Document | Exif/XMP/IPTC metadata and comment; exports keep only what is asked | tested | `gimp_get_metadata`, `gimp_set_metadata` | `tests/e2e/test_document.py` | 3.2 |  |
+| Document | Resolution, unit and print size | tested | `gimp_set_print_size` | `tests/e2e/test_document.py` | 3.2 |  |
 | Composition | Copy/cut (layers, selection, visible) and paste into a layer, as a layer or a new image | tested | `gimp_copy`, `gimp_paste` | `tests/e2e/test_compose.py` | 3.2 |  |
 | Composition | Merge down, merge group, merge visible, flatten, new layer from visible | tested | `gimp_merge_layers`, `gimp_flatten_image`, `gimp_new_layer_from_visible` | `tests/e2e/test_compose.py` | 3.2 |  |
 | Composition | Alpha channel, alpha to selection, layer boundary, crop to content, align and distribute | tested | `gimp_set_alpha_channel`, `gimp_alpha_to_selection`, `gimp_fit_layer`, `gimp_crop_to_content`, `gimp_align_layers` | `tests/e2e/test_compose.py`, `tests/unit/test_align.py` | 3.2 |  |
@@ -53,7 +56,7 @@ MCP tools: **117**. PDB procedures relied upon by tools: **201** (19.5% of the i
 
 | Family | Procedures in GIMP | Used by MCP tools |
 |---|---|---|
-| `gimp-image-*` | 137 | 43 |
+| `gimp-image-*` | 137 | 56 |
 | `gimp-context-*` | 121 | 15 |
 | `plug-in-*` | 68 | 1 |
 | `gimp-drawable-*` | 56 | 30 |

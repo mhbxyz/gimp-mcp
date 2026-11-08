@@ -55,6 +55,7 @@ Rules of thumb:
 * If your client caps the number of tools (counted across all MCP servers) or warns about too many
   tools, list only what your work needs, e.g. `files,layers,text` (21 tools with `core`). The agent
   can still enable more with `gimp_enable_toolsets` if the client refreshes its tool list.
+* Add `document` for layout guides, metadata and print resolution.
 * Add `compose` for copy/paste between images, merging, alpha and alignment.
 * Add `resources` to make or pick brushes, gradients and palettes.
 * Add `paths` for precise shapes, outlines, text on curves and SVG.
@@ -127,6 +128,12 @@ Not in the default. Measure pixels, read-only: `gimp_histogram`, `gimp_sample_co
 Not in the default. Color adjustments with photographers' ranges: `gimp_levels`, `gimp_curves`,
 `gimp_color_balance`, `gimp_colorize`, `gimp_desaturate`, `gimp_invert`, `gimp_threshold`,
 `gimp_posterize`, `gimp_exposure`, `gimp_shadows_highlights`, `gimp_auto_adjust`.
+
+### `document`
+
+Not in the default. Guides, sample points, metadata and print size: `gimp_list_guides`,
+`gimp_add_guide`, `gimp_add_sample_point`, `gimp_remove_guide`, `gimp_get_metadata`,
+`gimp_set_metadata`, `gimp_set_print_size`.
 
 ### `compose`
 

@@ -16,6 +16,7 @@ from .tools import (
     analysis,
     color,
     compose,
+    document,
     effects,
     files,
     filters,
@@ -88,6 +89,7 @@ def build_server(
         paths,
         resources,
         compose,
+        document,
     ):
         module.register(kit)
     return mcp

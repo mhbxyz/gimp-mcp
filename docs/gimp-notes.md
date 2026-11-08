@@ -198,5 +198,14 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   alpha), `layer.add_alpha()`, `resize_to_image_size()`, `resize(w, h, offx, offy)`,
   `image.autocrop(None)` and `image.autocrop_selected_layers(layer)` exist; `plug-in-autocrop`
   does not in 3.2.
+* **Guides, metadata, units** (checked 2026-11-08): `image.add_hguide(y)`/`add_vguide(x)` return
+  ids; `find_next_guide(0)` iterates (newest first); `get_guide_orientation`, `get_guide_position`,
+  `delete_guide`. `add_sample_point(x, y)`, `find_next_sample_point`, `get_sample_point_position`
+  → `(x, y)` (no ok flag), `delete_sample_point`. `image.get_metadata()` is a `Gimp.Metadata`
+  (a GExiv2 metadata: `get_exif_tags`, `get_tag_interpreted_string`, `try_set_tag_string`,
+  `clear_tag`), stored back with `image.set_metadata`. The comment is the `gimp-comment`
+  parasite; the JPEG exporter writes it with a trailing NUL. Exporters take `include-exif`,
+  `include-xmp`, `include-iptc`, `include-comment`, `include-thumbnail`. `Gimp.Unit.inch()/mm()/
+  point()/pica()` with `get_factor()` (units per inch); `image.set_unit`, `set_resolution`.
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.
