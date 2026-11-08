@@ -41,6 +41,7 @@ def register(kit: Toolkit) -> None:
         return encode_layer(codec, data)
 
     @kit.tool(
+        toolset="layers",
         name="gimp_create_layer",
         title="Create layer",
         description=(
@@ -87,6 +88,7 @@ def register(kit: Toolkit) -> None:
         return await layer_result(codec, data)
 
     @kit.tool(
+        toolset="layers",
         name="gimp_create_group",
         title="Create layer group",
         description="Add an empty layer group at an explicit parent and position. One undo step.",
@@ -105,6 +107,7 @@ def register(kit: Toolkit) -> None:
         return await layer_result(codec, data)
 
     @kit.tool(
+        toolset="layers",
         name="gimp_import_layer",
         title="Import file as layer",
         description=(
@@ -142,6 +145,7 @@ def register(kit: Toolkit) -> None:
         return await layer_result(codec, data)
 
     @kit.tool(
+        toolset="layers",
         name="gimp_duplicate_layer",
         title="Duplicate layer",
         description=(
@@ -168,6 +172,7 @@ def register(kit: Toolkit) -> None:
         return await layer_result(codec, data)
 
     @kit.tool(
+        toolset="layers",
         name="gimp_set_layer_properties",
         title="Set layer properties",
         description=(
@@ -208,6 +213,7 @@ def register(kit: Toolkit) -> None:
         return await layer_result(codec, data)
 
     @kit.tool(
+        toolset="layers",
         name="gimp_move_layer",
         title="Move layer in the stack",
         description=(
@@ -227,6 +233,7 @@ def register(kit: Toolkit) -> None:
         return await layer_result(codec, data)
 
     @kit.tool(
+        toolset="layers",
         name="gimp_delete_layer",
         title="Delete layer",
         description=(

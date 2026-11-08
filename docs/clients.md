@@ -25,5 +25,8 @@ Notes:
 * A client configuration that is not valid JSON is never overwritten: setup
   reports it and exits with code 1.
 
+To load fewer tools (or more, like `procedures`), add `--toolsets` to the server arguments: see
+[toolsets](toolsets.md#per-client).
+
 For another client, use the snippet setup prints (stdio command
 `<absolute path>/gimp-mcp serve`).

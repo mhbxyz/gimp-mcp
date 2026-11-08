@@ -4,13 +4,14 @@
 
 Inventory: GIMP **3.2.6**, 1030 PDB procedures (722 internal, 3 persistent, 244 plugin, 61 temporary), 200 GEGL operations available to filters.
 
-MCP tools: **52**. PDB procedures relied upon by tools: **117** (11.4% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
+MCP tools: **54**. PDB procedures relied upon by tools: **117** (11.4% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
 
 ## Capabilities
 
 | Area | Capability | Status | MCP tools | Verified by | Min. GIMP | Notes |
 |---|---|---|---|---|---|---|
 | Session | Connection diagnostics, open images | tested | `gimp_status` | `tests/e2e/test_connection.py`, `tests/e2e/test_lifecycle.py`, `tests/e2e/test_restart.py` | 3.2 |  |
+| Session | Toolsets: list the tool groups, enable more during a session | tested | `gimp_list_toolsets`, `gimp_enable_toolsets` | `tests/unit/test_toolsets.py`, `tests/e2e/test_thumbnail_journey.py` | 3.2 | MCP-side only, no GIMP procedure; see docs/toolsets.md |
 | Inspection | Image properties and ordered layer tree (groups, masks) | tested | `gimp_inspect_image`, `gimp_inspect_item` | `tests/e2e/test_inspect.py` | 3.2 |  |
 | Preview | Composite preview as PNG (max 1024 px) | tested | `gimp_preview` | `tests/e2e/test_preview.py` | 3.2 | 8-bit sRGB rendering of the visible layers; larger renders go through export. |
 | Files | Create, open, save XCF, export PNG/JPEG, close | tested | `gimp_create_image`, `gimp_open_image`, `gimp_save_image`, `gimp_export_image`, `gimp_close_image` | `tests/e2e/test_files.py` | 3.2 | Other export formats (WebP, TIFF, PSD...) are reachable in the PDB but not exposed. |

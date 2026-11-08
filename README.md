@@ -86,9 +86,10 @@ adds the server to Claude Code, Claude Desktop, VS Code and Cursor, asking befor
 | **Text** | editable text layers: font, size, color, alignment, spacing |
 | **Adjust** | brightness/contrast, hue/saturation, blur, as destructive or editable filters |
 | **History** | undo groups (one Ctrl+Z in GIMP) and checkpoints the assistant can restore |
-| **Everything else** | about 420 more GIMP procedures, allowlisted |
+| **Everything else** | about 420 more GIMP procedures, allowlisted (`procedures` toolset, opt-in) |
 
-52 tools in all: see the [tool reference](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/tools.md) and the
+54 tools in all, grouped into [toolsets](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/toolsets.md) so your client
+only loads what it needs: see the [tool reference](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/tools.md) and the
 [coverage matrix](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/coverage.md).
 
 ## How it works

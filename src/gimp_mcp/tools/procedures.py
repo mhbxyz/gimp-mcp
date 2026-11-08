@@ -45,6 +45,7 @@ class ProcedureDetails(BaseModel):
 
 def register(kit: Toolkit) -> None:
     @kit.tool(
+        toolset="procedures",
         name="gimp_search_procedures",
         title="Search GIMP procedures",
         description=(
@@ -60,6 +61,7 @@ def register(kit: Toolkit) -> None:
         return SearchResult(**await kit.call("pdb.search", {"query": query, "limit": limit}))
 
     @kit.tool(
+        toolset="procedures",
         name="gimp_describe_procedure",
         title="Describe a GIMP procedure",
         description=(

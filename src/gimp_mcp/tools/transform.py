@@ -36,6 +36,7 @@ def register(kit: Toolkit) -> None:
         return encode_layer(codec, data)
 
     @kit.tool(
+        toolset="transform",
         name="gimp_resize_image",
         title="Scale image",
         description=(
@@ -50,6 +51,7 @@ def register(kit: Toolkit) -> None:
         return await image_call("image.scale", image, width=width, height=height, interpolation=interpolation)
 
     @kit.tool(
+        toolset="transform",
         name="gimp_resize_canvas",
         title="Resize canvas",
         description=(
@@ -65,6 +67,7 @@ def register(kit: Toolkit) -> None:
         return await image_call("image.resize", image, width=width, height=height, offset_x=offset_x, offset_y=offset_y)
 
     @kit.tool(
+        toolset="transform",
         name="gimp_crop_image",
         title="Crop image",
         description=(
@@ -77,6 +80,7 @@ def register(kit: Toolkit) -> None:
         return await image_call("image.crop", image, x=x, y=y, width=width, height=height)
 
     @kit.tool(
+        toolset="transform",
         name="gimp_set_layer_offsets",
         title="Move layer (offsets)",
         description=(
@@ -89,6 +93,7 @@ def register(kit: Toolkit) -> None:
         return await layer_call("layer.offsets", item, x=x, y=y)
 
     @kit.tool(
+        toolset="transform",
         name="gimp_scale_layer",
         title="Scale layer",
         description=(
@@ -109,6 +114,7 @@ def register(kit: Toolkit) -> None:
         )
 
     @kit.tool(
+        toolset="transform",
         name="gimp_rotate_layer",
         title="Rotate layer",
         description=(
@@ -127,6 +133,7 @@ def register(kit: Toolkit) -> None:
         return await layer_call("layer.rotate", item, angle=angle, clip=clip, interpolation=interpolation)
 
     @kit.tool(
+        toolset="transform",
         name="gimp_flip_layer",
         title="Flip layer",
         description="Mirror a layer or group horizontally or vertically around its center. Lossless. One undo step.",

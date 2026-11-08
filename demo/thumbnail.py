@@ -32,6 +32,8 @@ from mcp import Client, StdioServerParameters
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "assets" / "lake-sunset.png"
 WIDTH, HEIGHT = 1280, 720
+# Only the toolsets the demo calls (docs/toolsets.md): the server lists nothing else.
+TOOLSETS = "files,layers,transform,selection,paint,filters,text,history"
 FIRST_TITLE = "Sunset over the Lake"
 FINAL_TITLE = "Golden Hour at the Lake"
 
@@ -56,6 +58,7 @@ class Check:
 class Report:
     out_dir: Path
     calls: list[CallRecord] = field(default_factory=list)
+    listed_tools: set[str] = field(default_factory=set)
     checks: list[Check] = field(default_factory=list)
     previews: list[tuple[str, str]] = field(default_factory=list)
     started: float = field(default_factory=time.monotonic)
@@ -392,9 +395,17 @@ async def build(gimp: Session, report: Report) -> dict[str, Any]:
 async def run_demo(out_dir: Path, server: StdioServerParameters) -> Report:
     out_dir.mkdir(parents=True, exist_ok=True)
     report = Report(out_dir=out_dir)
+    server = server.model_copy(update={"env": {**(server.env or {}), "GIMP_MCP_TOOLSETS": TOOLSETS}})
     try:
         async with Client(server, read_timeout_seconds=180) as client:
+            report.listed_tools = {tool.name for tool in (await client.list_tools()).tools}
             await build(Session(client, report), report)
+            called = {call.tool for call in report.calls}
+            report.check(
+                f"the server listed only the demo's toolsets ({len(report.listed_tools)} tools)",
+                called <= report.listed_tools and "gimp_call_procedure" not in report.listed_tools,
+                TOOLSETS,
+            )
     except Exception as exc:  # the report must show what failed
         report.check("demo ran to completion", False, f"{type(exc).__name__}: {exc}")
     (out_dir / "report.md").write_text(report.markdown(), encoding="utf-8")

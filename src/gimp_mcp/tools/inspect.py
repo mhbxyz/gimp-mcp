@@ -15,6 +15,7 @@ ItemId = Annotated[str, Field(description="Item id (layer, group, mask...) e.g. 
 
 def register(kit: Toolkit) -> None:
     @kit.tool(
+        toolset="core",
         name="gimp_inspect_image",
         title="Inspect image",
         description=(
@@ -30,6 +31,7 @@ def register(kit: Toolkit) -> None:
         return encode_image(codec, data)
 
     @kit.tool(
+        toolset="core",
         name="gimp_inspect_item",
         title="Inspect item",
         description=(

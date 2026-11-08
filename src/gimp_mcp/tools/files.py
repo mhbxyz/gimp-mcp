@@ -70,6 +70,7 @@ def image_ref(codec, data) -> ImageRef:
 
 def register(kit: Toolkit) -> None:
     @kit.tool(
+        toolset="files",
         name="gimp_create_image",
         title="Create image",
         description=(
@@ -107,6 +108,7 @@ def register(kit: Toolkit) -> None:
         return image_ref(codec, data)
 
     @kit.tool(
+        toolset="files",
         name="gimp_open_image",
         title="Open image",
         description=(
@@ -124,6 +126,7 @@ def register(kit: Toolkit) -> None:
         return image_ref(codec, data)
 
     @kit.tool(
+        toolset="files",
         name="gimp_save_image",
         title="Save project (XCF)",
         description=(
@@ -155,6 +158,7 @@ def register(kit: Toolkit) -> None:
         return SaveResult(**{**data, "image": image})
 
     @kit.tool(
+        toolset="files",
         name="gimp_export_image",
         title="Export PNG/JPEG",
         description=(
@@ -192,6 +196,7 @@ def register(kit: Toolkit) -> None:
         return ExportResult(image=image, format=kind, options=options, **data)
 
     @kit.tool(
+        toolset="files",
         name="gimp_close_image",
         title="Close image",
         description=(

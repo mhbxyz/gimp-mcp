@@ -50,6 +50,7 @@ class DeleteCheckpointResult(BaseModel):
 
 def register(kit: Toolkit) -> None:
     @kit.tool(
+        toolset="history",
         name="gimp_begin_undo_group",
         title="Begin undo group",
         description=(
@@ -68,6 +69,7 @@ def register(kit: Toolkit) -> None:
         return UndoGroupState(image=image, depth=data["depth"])
 
     @kit.tool(
+        toolset="history",
         name="gimp_end_undo_group",
         title="End undo group",
         description="Close the innermost undo group this client opened on the image (NO_OPEN_GROUP otherwise).",
@@ -89,6 +91,7 @@ def register(kit: Toolkit) -> None:
         )
 
     @kit.tool(
+        toolset="history",
         name="gimp_create_checkpoint",
         title="Create checkpoint",
         description=(
@@ -106,6 +109,7 @@ def register(kit: Toolkit) -> None:
         return checkpoint_model(codec, data)
 
     @kit.tool(
+        toolset="history",
         name="gimp_list_checkpoints",
         title="List checkpoints",
         description="Checkpoints of an image, oldest first.",
@@ -117,6 +121,7 @@ def register(kit: Toolkit) -> None:
         return CheckpointList(image=image, checkpoints=[checkpoint_model(codec, c) for c in data["checkpoints"]])
 
     @kit.tool(
+        toolset="history",
         name="gimp_restore_checkpoint",
         title="Restore checkpoint (undo/redo)",
         description=(
@@ -140,6 +145,7 @@ def register(kit: Toolkit) -> None:
         return RestoreResult(**{**ref.model_dump(), "image": ref.id, "previous_image": image})
 
     @kit.tool(
+        toolset="history",
         name="gimp_delete_checkpoint",
         title="Delete checkpoint",
         description="Free a checkpoint's memory. Closing an image deletes its checkpoints too.",

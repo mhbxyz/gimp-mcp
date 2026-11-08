@@ -26,6 +26,21 @@ Opaque strings bound to the GIMP session: `image:<n>@<session>` and
   exist in several images. Always target objects by id.
 * Tools never depend on GIMP's active image/layer/selection in the UI.
 
+## Toolsets
+
+Tools are grouped into toolsets; the server lists only the enabled ones (default selection,
+`gimp-mcp serve --toolsets`, `GIMP_MCP_TOOLSETS`). See [toolsets.md](toolsets.md).
+
+### `gimp_list_toolsets`
+
+Read-only. `toolsets[]`: `name`, `description`, `enabled`, `tools[]` (every toolset, enabled or not).
+
+### `gimp_enable_toolsets(toolsets)`
+
+Adds the tools of the given toolsets for the rest of the session → `enabled[]`, `added_tools[]`
+(empty when they were already enabled). Notifies the client that its tool list changed.
+`INVALID_ARGUMENT` (nothing enabled) for an unknown name.
+
 ## Session
 
 ### `gimp_status`
