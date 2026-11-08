@@ -207,5 +207,14 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   parasite; the JPEG exporter writes it with a trailing NUL. Exporters take `include-exif`,
   `include-xmp`, `include-iptc`, `include-comment`, `include-thumbnail`. `Gimp.Unit.inch()/mm()/
   point()/pica()` with `get_factor()` (units per inch); `image.set_unit`, `set_resolution`.
+* **File procedures** (checked 2026-11-08): `pdb.lookup_procedure("file-png-export")` is a plain
+  `GimpPDBProcedure` in another plug-in: no `get_extensions()`/`get_mime_types()`, so extensions
+  are not discoverable (61 `file-*-export` procedures in 3.2.6). Export configs take `image`,
+  `file`, `options` (default) plus format options; exporters convert a copy as needed (RGB → GIF
+  works). TIFF writes one page per layer (background first); PSD keeps layers; ICO writes one size
+  per layer; PDF `layers-as-pages` defaults to false. `file-pdf-load`'s `pages` is a
+  `GimpInt32Array` that cannot be set from Python (setting a `GValue` of that type crashes the
+  plug-in); a PDF opens as one layer per page, the last page on top, named after the page number.
+  The PDF exporter logs Gtk-CRITICAL warnings headless (harmless).
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.

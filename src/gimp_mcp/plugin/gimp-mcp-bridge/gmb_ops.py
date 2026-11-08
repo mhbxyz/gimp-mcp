@@ -14,6 +14,7 @@ gi.require_version("Babl", "0.1")
 import gmb_align  # noqa: E402
 import gmb_color  # noqa: E402
 import gmb_filters  # noqa: E402
+import gmb_formats  # noqa: E402
 import gmb_policy  # noqa: E402
 import gmb_resources  # noqa: E402
 import gmb_stats  # noqa: E402
@@ -2887,6 +2888,245 @@ def image_set_print(params):
     return {"image": image.get_id(), **print_info(image)}
 
 
+# -- file formats (#58) ------------------------------------------------------------------
+
+_FILE_PROCEDURES = {}  # kind -> {procedure name: [extensions]}
+LOAD_FIXED = {"run-mode", "file"}
+
+
+def _file_procedures(kind):
+    if kind not in _FILE_PROCEDURES:
+        found = {}
+        for name in _all_names("^file-.*-%s$" % ("export" if kind == "export" else "load")):
+            extensions = gmb_formats.extensions_for(name)
+            if extensions:
+                found[name] = extensions
+        _FILE_PROCEDURES[kind] = found
+    return _FILE_PROCEDURES[kind]
+
+
+def _file_procedure(kind, params):
+    procedures = _file_procedures(kind)
+    name = params.get("procedure") or gmb_formats.procedure_for(params["path"], procedures)
+    if name is None or name not in procedures:
+        raise BridgeError(
+            "UNSUPPORTED_FORMAT",
+            "no GIMP %s procedure for %s" % (kind, params.get("procedure") or os.path.basename(params["path"])),
+            {"path": params["path"]},
+        )
+    return name, Gimp.get_pdb().lookup_procedure(name)
+
+
+def _option_specs(procedure, fixed):
+    config = procedure.create_config()
+    specs = []
+    for pspec in procedure.get_arguments():
+        if pspec.name in fixed or pspec.name in gmb_formats.METADATA_ARGUMENTS:
+            continue
+        kind = _param_kind(pspec)
+        if pspec.value_type.name == "GimpInt32Array":
+            kind = "integer-list"
+        spec = {"name": pspec.name, "kind": kind if kind != "integer-list" else "unsupported",
+                "description": pspec.get_blurb()}  # fmt: skip
+        if kind in ("number", "integer"):
+            spec["min"], spec["max"] = pspec.minimum, pspec.maximum
+        elif kind == "choice":
+            spec["choices"] = list(Gimp.param_spec_choice_get_choice(pspec).list_nicks())
+        elif kind == "enum":
+            spec["choices"] = [v.value_nick for v in pspec.enum_class.__enum_values__.values()]
+        elif kind == "unsupported":
+            spec["type"] = pspec.value_type.name
+        if kind == "integer-list":
+            spec["kind"] = "integer-list"
+        try:
+            spec["default"] = _config_value(config.get_property(pspec.name)) if spec["kind"] != "unsupported" else None
+        except Exception:
+            spec["default"] = None
+        specs.append(spec)
+    return specs
+
+
+def file_formats(params):
+    kind = params.get("mode", "export")
+    pdb = Gimp.get_pdb()
+    formats = []
+    for name, extensions in sorted(_file_procedures(kind).items()):
+        procedure = pdb.lookup_procedure(name)
+        formats.append({"procedure": name, "name": procedure.get_menu_label() or procedure.get_blurb() or name,
+                        "extensions": extensions})  # fmt: skip
+    return {"mode": kind, "formats": formats}
+
+
+def file_format_describe(params):
+    kind = params.get("mode", "export")
+    name, procedure = _file_procedure(kind, {"path": params.get("path") or "", "procedure": params.get("procedure")})
+    fixed = gmb_formats.FIXED_ARGUMENTS if kind == "export" else LOAD_FIXED
+    return {
+        "procedure": name,
+        "name": procedure.get_menu_label() or procedure.get_blurb() or name,
+        "extensions": _file_procedures(kind)[name],
+        "options": _option_specs(procedure, fixed),
+    }
+
+
+def _apply_options(config, specs, values):
+    by_name = {spec["name"]: spec for spec in specs}
+    for name, value in values.items():
+        kind = by_name[name]["kind"]
+        if kind == "color":
+            value = color(value)
+        elif kind == "enum":
+            value = _config_enum(config, name, value)
+        config.set_property(name, value)
+
+
+def _validated_options(name, specs, options):
+    plain = [s for s in specs if s["kind"] != "integer-list"]
+    lists = {s["name"] for s in specs if s["kind"] == "integer-list"}
+    values = {k: v for k, v in (options or {}).items() if k not in lists}
+    try:
+        checked = gmb_filters.validate(plain, values)
+    except gmb_filters.InvalidParameter as error:
+        raise BridgeError("INVALID_ARGUMENT", "%s: %s" % (name, error)) from None
+    for key in lists & set(options or {}):
+        value = options[key]
+        if not isinstance(value, list) or not all(isinstance(v, int) and not isinstance(v, bool) for v in value):
+            raise BridgeError("INVALID_ARGUMENT", "%s: %s must be a list of integers" % (name, key))
+        checked[key] = value
+    return checked
+
+
+def _export_with(image, path, name, procedure, options, metadata):
+    specs = _option_specs(procedure, gmb_formats.FIXED_ARGUMENTS)
+    values = _validated_options(name, specs, options)
+    config = procedure.create_config()
+    config.set_property("run-mode", Gimp.RunMode.NONINTERACTIVE)
+    config.set_property("image", image)
+    config.set_property("file", Gio.File.new_for_path(path))
+    for flag in gmb_formats.METADATA_ARGUMENTS:
+        if config.find_property(flag) is not None:
+            kind = flag[len("include-") :]
+            config.set_property(
+                flag, kind in metadata or (kind == "color-profile" and image.get_color_profile() is not None)
+            )
+    _apply_options(config, specs, values)
+    effective = {spec["name"]: _config_value(config.get_property(spec["name"])) for spec in specs
+                 if spec["kind"] not in ("unsupported", "integer-list")}  # fmt: skip
+    result = procedure.run(config)
+    if result.index(0) != Gimp.PDBStatusType.SUCCESS or not os.path.exists(path):
+        message = ""
+        try:
+            message = str(result.index(1))
+        except Exception:
+            pass
+        raise BridgeError("WRITE_FAILED", "%s could not write %s %s" % (name, path, message), {"path": path})
+    return {"path": path, "procedure": name, "bytes": os.path.getsize(path), "options": effective,
+            **gmb_formats.behaviour(name, effective)}  # fmt: skip
+
+
+@mutation
+def image_export_as(params):
+    image = get_image(params)
+    name, procedure = _file_procedure("export", params)
+    return _export_with(image, params["path"], name, procedure, params.get("options"), params.get("metadata") or [])
+
+
+@mutation
+def image_open_with(params):
+    path = params["path"]
+    known = gmb_formats.procedure_for(path, _file_procedures("load"))
+    if not params.get("procedure") and not params.get("options") and known is None:
+        # no procedure known by name (e.g. RAW through darktable/RawTherapee): let GIMP choose
+        image = Gimp.file_load(Gimp.RunMode.NONINTERACTIVE, Gio.File.new_for_path(path))
+        if image is None:
+            raise BridgeError("UNSUPPORTED_FORMAT", "GIMP could not open %s" % path, {"path": path})
+        return {**image_ref(image, show(image)), "procedure": "gimp-file-load"}
+    name, procedure = _file_procedure("load", params)
+    specs = _option_specs(procedure, LOAD_FIXED)
+    values = _validated_options(name, specs, params.get("options"))
+    # GimpInt32Array options (PDF pages) cannot be set from Python: pages are picked after loading
+    pages = values.pop("pages", None) if name == "file-pdf-load" else None
+    for key in [k for k, v in values.items() if isinstance(v, list)]:
+        raise BridgeError("UNSUPPORTED", "%s: option %s cannot be set from a plug-in" % (name, key))
+    config = procedure.create_config()
+    config.set_property("run-mode", Gimp.RunMode.NONINTERACTIVE)
+    config.set_property("file", Gio.File.new_for_path(path))
+    _apply_options(config, specs, values)
+    result = procedure.run(config)
+    if result.index(0) != Gimp.PDBStatusType.SUCCESS:
+        raise BridgeError("UNSUPPORTED_FORMAT", "%s could not open %s" % (name, path), {"path": path})
+    image = result.index(1)
+    if pages is not None:
+        layers = image.get_layers()  # one layer per page, the last page on top
+        count = len(layers)
+        if not pages or any(not 1 <= page <= count for page in pages):
+            image.delete()
+            raise BridgeError("INVALID_ARGUMENT", "pages must be between 1 and %d" % count, {"pages": count})
+        image.undo_disable()
+        for index, layer in enumerate(layers):
+            if count - index not in pages:
+                image.remove_layer(layer)
+        image.undo_enable()
+    shown = show(image)
+    return {**image_ref(image, shown), "procedure": name}
+
+
+def _export_copy(source_image, layer, path, name, procedure, params):
+    """Export one layer (or a region of the composite) through a temporary image."""
+    copy = Gimp.Image.new(source_image.get_width(), source_image.get_height(), source_image.get_base_type())
+    try:
+        copy.undo_disable()
+        if source_image.get_base_type() == Gimp.ImageBaseType.INDEXED:
+            copy.set_palette(source_image.get_palette())
+        layer_copy = Gimp.Layer.new_from_drawable(layer, copy)
+        copy.insert_layer(layer_copy, None, 0)
+        if params.get("crop", True):
+            _ok, x, y = layer.get_offsets()
+            copy.crop(layer.get_width(), layer.get_height(), x, y)
+        return _export_with(copy, path, name, procedure, params.get("options"), params.get("metadata") or [])
+    finally:
+        copy.delete()
+
+
+@mutation
+def image_export_layers(params):
+    image = get_image(params)
+    layers = [get_layer({"item": n}) for n in params["items"]] if params.get("items") else image.get_layers()
+    if any(layer.get_image().get_id() != image.get_id() for layer in layers):
+        raise BridgeError("IMAGE_MISMATCH", "every layer must belong to the image")
+    directory, extension = params["directory"], params["extension"]
+    name, procedure = _file_procedure("export", {"path": "x." + extension, "procedure": params.get("procedure")})
+    files = []
+    for index, layer in enumerate(layers):
+        filename = gmb_formats.layer_filename(
+            params.get("template", "{index:02d}-{name}"), index, layer.get_name(), extension
+        )
+        path = os.path.join(directory, filename)
+        if os.path.exists(path) and not params.get("overwrite"):
+            raise BridgeError("FILE_EXISTS", "%s exists (overwrite=false)" % path, {"path": path})
+        files.append((layer, path))
+    exported = [
+        dict(_export_copy(image, layer, path, name, procedure, params), item=layer.get_id()) for layer, path in files
+    ]
+    return {"files": exported}
+
+
+@mutation
+def image_export_region(params):
+    image = get_image(params)
+    x, y, w, h = (int(params["region"][k]) for k in ("x", "y", "width", "height"))
+    if x < 0 or y < 0 or w < 1 or h < 1 or x + w > image.get_width() or y + h > image.get_height():
+        raise BridgeError("INVALID_ARGUMENT", "the region must lie inside the canvas")
+    name, procedure = _file_procedure("export", params)
+    copy = image.duplicate()
+    try:
+        copy.undo_disable()
+        copy.crop(w, h, x, y)
+        return _export_with(copy, params["path"], name, procedure, params.get("options"), params.get("metadata") or [])
+    finally:
+        copy.delete()
+
+
 # -- text --------------------------------------------------------------------------------
 
 JUSTIFICATIONS = {"left": "LEFT", "right": "RIGHT", "center": "CENTER", "fill": "FILL"}
@@ -3563,6 +3803,12 @@ def build_operations():
         "filter.list": filter_list,
         "filter.remove": filter_remove,
         "filter.operations": filter_operations,
+        "formats.list": file_formats,
+        "formats.describe": file_format_describe,
+        "image.export_as": image_export_as,
+        "image.open_with": image_open_with,
+        "image.export_layers": image_export_layers,
+        "image.export_region": image_export_region,
         "guides.list": guides_list,
         "guide.add": guide_add,
         "sample_point.add": sample_point_add,
