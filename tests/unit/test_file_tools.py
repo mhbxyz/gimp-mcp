@@ -37,7 +37,7 @@ async def test_export_options_are_explicit_and_validated_before_gimp(tmp_path):
 async def test_png_defaults_are_sent(tmp_path):
     async with tool_client({"image.export": export_op}) as (client, bridge):
         await client.call_tool("gimp_export_image", {"image": iid(1), "path": str(tmp_path / "a.png")})
-    assert bridge.calls[0][1]["options"] == {"compression": 9, "interlaced": False}
+    assert bridge.calls[0][1]["options"] == {"compression": 9, "interlaced": False, "color_profile": None}
 
 
 async def test_path_problems_never_reach_gimp(tmp_path):

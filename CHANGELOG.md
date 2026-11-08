@@ -26,6 +26,11 @@ what is covered by the compatibility promise.
   `gimp_desaturate`, `gimp_invert`, `gimp_threshold`, `gimp_posterize`, `gimp_exposure`,
   `gimp_shadows_highlights` and `gimp_auto_adjust` (white balance, equalize, stretch contrast), with
   the ranges of GIMP's dialogs, editable or destructive.
+- Modes toolset (#49): `gimp_convert_mode` (RGB, grayscale, indexed with generated, web, mono or
+  custom palettes and dithering), `gimp_convert_precision` (8 to 64 bits, linear or not),
+  `gimp_get_color_profile` and `gimp_set_color_profile` (assign, convert with rendering intent and
+  black point compensation, remove; built-in or ICC file). PNG and JPEG exports take
+  `color_profile` (default: embed only a profile the image has; GIMP's own default never embeds).
 
 ### Fixed
 

@@ -55,6 +55,7 @@ Rules of thumb:
 * If your client caps the number of tools (counted across all MCP servers) or warns about too many
   tools, list only what your work needs, e.g. `files,layers,text` (21 tools with `core`). The agent
   can still enable more with `gimp_enable_toolsets` if the client refreshes its tool list.
+* Add `modes` for grayscale/indexed images, 16/32-bit work and ICC profiles.
 * Add `color` for photo corrections (levels, curves, color balance, exposure…).
 * Add `effects` for any GEGL filter beyond brightness/contrast, hue/saturation and blur.
 * Add `analysis` when the agent should check its edits with numbers (histograms, comparisons).
@@ -123,6 +124,11 @@ Not in the default. Measure pixels, read-only: `gimp_histogram`, `gimp_sample_co
 Not in the default. Color adjustments with photographers' ranges: `gimp_levels`, `gimp_curves`,
 `gimp_color_balance`, `gimp_colorize`, `gimp_desaturate`, `gimp_invert`, `gimp_threshold`,
 `gimp_posterize`, `gimp_exposure`, `gimp_shadows_highlights`, `gimp_auto_adjust`.
+
+### `modes`
+
+Not in the default. Image mode, precision and color profiles: `gimp_convert_mode`,
+`gimp_convert_precision`, `gimp_get_color_profile`, `gimp_set_color_profile`.
 
 ### `effects`
 
