@@ -1,5 +1,8 @@
 """Nothing in GIMP's process tree (GIMP, its plug-ins, the bridge) listens on a network socket (ADR 0008).
 
+Listening means a TCP socket in the LISTEN state or a bound UDP socket. Outgoing connections are not
+listening (GIMP itself checks for updates over HTTPS).
+
 The bridge is a Unix socket (Linux, macOS) or a named pipe (Windows); this checks it from the OS side,
 with each OS's own view of sockets, once the bridge has answered.
 """
@@ -41,12 +44,13 @@ def process_tree(root: int) -> set[int]:
 
 
 def network_sockets(pids: set[int]) -> list[str]:
-    """Network sockets (any TCP/UDP endpoint) owned by these processes, as the OS reports them."""
+    """Listening network sockets (TCP in LISTEN, UDP) owned by these processes, as the OS reports them."""
     if platforms.CURRENT == "windows":
         ids = ",".join(str(p) for p in pids)
         script = (
             f"$ids = @({ids}); "
-            "Get-NetTCPConnection -ErrorAction SilentlyContinue | Where-Object { $ids -contains $_.OwningProcess } "
+            "Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue "
+            "| Where-Object { $ids -contains $_.OwningProcess } "
             "| ForEach-Object { 'tcp ' + $_.LocalAddress + ':' + $_.LocalPort + ' ' + $_.State }; "
             "Get-NetUDPEndpoint -ErrorAction SilentlyContinue | Where-Object { $ids -contains $_.OwningProcess } "
             "| ForEach-Object { 'udp ' + $_.LocalAddress + ':' + $_.LocalPort }"
@@ -54,14 +58,19 @@ def network_sockets(pids: set[int]) -> list[str]:
         out = subprocess.run(["powershell", "-NoProfile", "-Command", script], capture_output=True, text=True)
         return [line for line in out.stdout.splitlines() if line.strip()]
     if platforms.CURRENT == "macos":
-        out = subprocess.run(
-            ["lsof", "-nP", "-a", "-p", ",".join(str(p) for p in pids), "-i"], capture_output=True, text=True
-        )
-        return out.stdout.splitlines()[1:]  # header removed; lsof exits 1 when nothing matches
+        found = []
+        for selector in (["-iTCP", "-sTCP:LISTEN"], ["-iUDP"]):
+            out = subprocess.run(
+                ["lsof", "-nP", "-a", "-p", ",".join(str(p) for p in pids), *selector], capture_output=True, text=True
+            )
+            found += out.stdout.splitlines()[1:]  # header removed; lsof exits 1 when nothing matches
+        return found
     inodes: dict[str, str] = {}
     for kind in ("tcp", "tcp6", "udp", "udp6"):
         for line in Path(f"/proc/net/{kind}").read_text(encoding="ascii").splitlines()[1:]:
             fields = line.split()
+            if kind.startswith("tcp") and fields[3] != "0A":  # 0A: LISTEN; others are connections
+                continue
             inodes[fields[9]] = f"{kind} {fields[1]} state {fields[3]}"
     found = []
     for pid in pids:

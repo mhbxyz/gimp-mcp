@@ -13,7 +13,7 @@ import gimp_mcp
 from gimp_mcp import platforms
 from gimp_mcp.headless import HeadlessGimp, find_gimp_console
 
-from .dist_helpers import ROOT, install_distribution, run, venv_script
+from .dist_helpers import ROOT, install_distribution, run, venv_python, venv_script
 
 
 def previous_release_ref() -> str | None:
@@ -50,7 +50,7 @@ async def test_upgrade_from_the_previous_release_then_uninstall(tmp_path: Path):
     installed = install_distribution(tmp_path)  # the new version, in its own venv
     old_venv = tmp_path / "old-venv"
     assert run("uv", "venv", "--quiet", str(old_venv), cwd=installed.work).returncode == 0
-    assert run("uv", "pip", "install", "--quiet", "--python", str(old_venv / "bin/python"), str(previous),
+    assert run("uv", "pip", "install", "--quiet", "--python", str(venv_python(old_venv)), str(previous),
                cwd=installed.work, env=installed.env).returncode == 0  # fmt: skip
     claude = Path(platforms.config_home({"HOME": str(installed.home)})) / "Claude"  # this OS's location
     claude.mkdir(parents=True)

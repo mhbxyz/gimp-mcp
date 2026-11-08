@@ -33,7 +33,9 @@ def test_doctor_passes_on_a_working_installation(gimp_factory: Callable[..., Hea
     assert code == 0 and failures == {}
     for key in ("gimp", "gimp-python", "plugin", "plugin-version", "plugin-registered", "socket-permissions",
                 "connection"):  # fmt: skip
-        assert checks[key]["status"] == "ok", (key, checks[key])
+        # a Windows named pipe has no directory permissions to check: its ACL is tested in test_windows_pipe
+        expected = "skip" if key == "socket-permissions" and platforms.CURRENT == "windows" else "ok"
+        assert checks[key]["status"] == expected, (key, checks[key])
 
 
 def test_doctor_explains_a_missing_plugin_and_a_stale_socket(gimp_factory: Callable[..., HeadlessGimp], tmp_path: Path):
