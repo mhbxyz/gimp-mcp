@@ -384,6 +384,13 @@ METADATA_OFF = {
 }
 
 
+def _embed_profile(image, options):
+    """Explicit choice, else embed only a profile the image has (GIMP's own default is never)."""
+    if options.get("color_profile") is not None:
+        return bool(options["color_profile"])
+    return image.get_color_profile() is not None
+
+
 @mutation
 def image_export(params):
     image = get_image(params)
@@ -391,6 +398,7 @@ def image_export(params):
     if kind == "png":
         settings = dict(METADATA_OFF)
         settings.update({"compression": options["compression"], "interlaced": options["interlaced"], "bkgd": False})
+        settings["include-color-profile"] = _embed_profile(image, options)
         _run_export("file-png-export", image, path, settings)
     elif kind == "jpeg":
         settings = dict(METADATA_OFF)
@@ -400,6 +408,7 @@ def image_export(params):
                 "progressive": options["progressive"],
                 "optimize": options["optimize"],
                 "smoothing": options["smoothing"],
+                "include-color-profile": _embed_profile(image, options),
             }
         )
         Gimp.context_push()
@@ -1687,6 +1696,161 @@ def color_curves(params):
     }
 
 
+# -- image mode, precision, color profiles (#49) ------------------------------------------
+
+DITHERS = {
+    "none": Gimp.ConvertDitherType.NONE,
+    "floyd-steinberg": Gimp.ConvertDitherType.FS,
+    "floyd-steinberg-low-bleed": Gimp.ConvertDitherType.FS_LOWBLEED,
+    "positioned": Gimp.ConvertDitherType.FIXED,
+}
+PALETTES = {
+    "generate": Gimp.ConvertPaletteType.GENERATE,
+    "web": Gimp.ConvertPaletteType.WEB,
+    "mono": Gimp.ConvertPaletteType.MONO,
+    "custom": Gimp.ConvertPaletteType.CUSTOM,
+}
+PRECISIONS = {v.value_nick: v for v in Gimp.Precision.__enum_values__.values()}
+INTENTS = {v.value_nick: v for v in Gimp.ColorRenderingIntent.__enum_values__.values()}
+BUILTIN_PROFILES = {
+    "srgb": ("rgb", Gimp.ColorProfile.new_rgb_srgb),
+    "srgb-linear": ("rgb", Gimp.ColorProfile.new_rgb_srgb_linear),
+    "gray": ("gray", Gimp.ColorProfile.new_d65_gray_srgb_trc),
+    "gray-linear": ("gray", Gimp.ColorProfile.new_d65_gray_linear),
+}
+
+
+def mode_info(image):
+    palette = image.get_palette() if image.get_base_type() == Gimp.ImageBaseType.INDEXED else None
+    return {
+        "image": image.get_id(),
+        "base_type": image.get_base_type().value_nick,
+        "precision": image.get_precision().value_nick,
+        "palette_colors": palette.get_color_count() if palette is not None else None,
+        "dirty": bool(image.is_dirty()),
+    }
+
+
+@mutation
+def image_convert_mode(params):
+    image = get_image(params)
+    mode = params["mode"]
+    current = image.get_base_type().value_nick
+    if mode == current:
+        return {**mode_info(image), "changed": False}
+    if mode == "indexed":
+        if image.get_precision() != Gimp.Precision.U8_NON_LINEAR:
+            raise BridgeError(
+                "INVALID_ARGUMENT",
+                "indexed images are 8-bit: convert the precision to u8-non-linear first (now %s)"
+                % image.get_precision().value_nick,
+            )
+        palette_type = params.get("palette", "generate")
+        name = params.get("palette_name") or ""
+        if palette_type == "custom" and Gimp.Palette.get_by_name(name) is None:
+            raise BridgeError("NOT_FOUND", "GIMP has no palette named %r" % name, {"palette": name})
+        ok = image.convert_indexed(
+            DITHERS[params.get("dither", "none")],
+            PALETTES[palette_type],
+            int(params.get("colors", 256)),
+            bool(params.get("dither_alpha", False)),
+            bool(params.get("remove_unused", True)),
+            name,
+        )
+    elif mode == "gray":
+        ok = image.convert_grayscale()
+    else:
+        ok = image.convert_rgb()
+    if not ok:
+        raise BridgeError("GIMP_ERROR", "GIMP could not convert the image to %s" % mode)
+    return {**mode_info(image), "changed": True}
+
+
+@mutation
+def image_convert_precision(params):
+    image = get_image(params)
+    precision = PRECISIONS.get(params["precision"])
+    if precision is None:
+        raise BridgeError(
+            "INVALID_ARGUMENT", "unknown precision %r" % params["precision"], {"allowed": sorted(PRECISIONS)}
+        )
+    if image.get_base_type() == Gimp.ImageBaseType.INDEXED:
+        raise BridgeError("INVALID_ARGUMENT", "indexed images stay 8-bit: convert to rgb or gray first")
+    if image.get_precision() == precision:
+        return {**mode_info(image), "changed": False}
+    if not image.convert_precision(precision):
+        raise BridgeError("GIMP_ERROR", "GIMP could not convert the precision to %s" % params["precision"])
+    return {**mode_info(image), "changed": True}
+
+
+def profile_info(profile):
+    return {
+        "label": profile.get_label(),
+        "description": profile.get_description(),
+        "model": "gray" if profile.is_gray() else "rgb" if profile.is_rgb() else "other",
+        "linear": bool(profile.is_linear()),
+        "icc_bytes": len(profile.get_icc_profile()),
+    }
+
+
+def color_profile_get(params):
+    image = get_image(params)
+    assigned = image.get_color_profile()
+    return {
+        "image": image.get_id(),
+        "assigned": profile_info(assigned) if assigned is not None else None,
+        "effective": profile_info(image.get_effective_color_profile()),
+    }
+
+
+def _load_profile(params):
+    """-> (model, profile) for a built-in name or an ICC file, checked before anything changes."""
+    source = params["profile"]
+    if source in BUILTIN_PROFILES:
+        model, make = BUILTIN_PROFILES[source]
+        return model, make()
+    path = params.get("path")
+    if source != "file" or not path:
+        raise BridgeError("INVALID_ARGUMENT", "profile must be srgb, srgb-linear, gray, gray-linear or file (+ path)")
+    try:
+        profile = Gimp.ColorProfile.new_from_file(Gio.File.new_for_path(path))
+    except Exception as error:
+        raise BridgeError(
+            "UNSUPPORTED_FORMAT", "%s is not a usable ICC profile: %s" % (path, error), {"path": path}
+        ) from None
+    if profile is None:
+        raise BridgeError("UNSUPPORTED_FORMAT", "%s is not a usable ICC profile" % path, {"path": path})
+    return ("gray" if profile.is_gray() else "rgb" if profile.is_rgb() else "other"), profile
+
+
+@mutation
+def color_profile_set(params):
+    image = get_image(params)
+    action = params["action"]
+    if action == "remove":
+        with undo_step(image):
+            ok = image.set_color_profile(None)
+    else:
+        model, profile = _load_profile(params)
+        wanted = "gray" if image.get_base_type() == Gimp.ImageBaseType.GRAY else "rgb"
+        if model != wanted:
+            raise BridgeError(
+                "INVALID_ARGUMENT",
+                "a %s profile does not fit a %s image" % (model, image.get_base_type().value_nick),
+                {"profile_model": model, "image": image.get_base_type().value_nick},
+            )
+        if action == "assign":
+            ok = image.set_color_profile(profile)
+        else:
+            intent = INTENTS.get(params.get("intent", "perceptual"))
+            if intent is None:
+                raise BridgeError("INVALID_ARGUMENT", "unknown rendering intent", {"allowed": sorted(INTENTS)})
+            ok = image.convert_color_profile(profile, intent, bool(params.get("black_point_compensation", True)))
+    if not ok:
+        raise BridgeError("GIMP_ERROR", "GIMP refused to %s the color profile" % action)
+    return color_profile_get(params)
+
+
 # -- text --------------------------------------------------------------------------------
 
 JUSTIFICATIONS = {"left": "LEFT", "right": "RIGHT", "center": "CENTER", "fill": "FILL"}
@@ -2363,6 +2527,10 @@ def build_operations():
         "filter.list": filter_list,
         "filter.remove": filter_remove,
         "filter.operations": filter_operations,
+        "image.convert_mode": image_convert_mode,
+        "image.convert_precision": image_convert_precision,
+        "profile.get": color_profile_get,
+        "profile.set": color_profile_set,
         "color.adjust": color_adjust,
         "color.curves": color_curves,
         "filter.describe": filter_operation_describe,

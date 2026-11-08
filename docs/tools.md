@@ -388,6 +388,53 @@ image dirty. Procedure names, arguments and availability depend on the GIMP
 version; check with `gimp_list_callable_procedures` (the committed matrix lists
 422 callable procedures on GIMP 3.2.6).
 
+## Image mode, precision and color profiles (toolset `modes`)
+
+### `gimp_convert_mode(image, mode, palette="generate", palette_name?, colors=256, dither="none", dither_alpha=false, remove_unused=true)`
+
+`mode`: `rgb`, `gray`, `indexed` (`changed: false` when the image already is). RGB → gray uses
+relative luminance (sRGB red → 130). Indexed: `palette` `generate` (optimal palette of at most
+`colors`), `web` (216 web-safe colors), `mono` (black and white) or `custom` (a GIMP palette by
+name, `NOT_FOUND` otherwise); `dither` `none`, `floyd-steinberg`, `floyd-steinberg-low-bleed`,
+`positioned`; `remove_unused` drops palette entries no pixel uses. Indexed images are 8-bit:
+convert the precision to `u8-non-linear` first (`INVALID_ARGUMENT` otherwise). Returns
+`base_type`, `precision`, `palette_colors`. Lossy (gray, indexed); one undo step.
+
+### `gimp_convert_precision(image, precision)`
+
+`precision`: `u8`, `u16`, `u32` (integer), `half`, `float`, `double` (floating point), each
+`-linear`, `-non-linear` (sRGB curve) or `-perceptual`, e.g. `u16-non-linear`, `float-linear`.
+`gimp_inspect_image` reports it (`precision`). Not for indexed images. PNG exports keep 16 bits
+(`format` auto). One undo step.
+
+### `gimp_get_color_profile(image)` / `gimp_set_color_profile(image, action, profile?, path?, intent="perceptual", black_point_compensation=true)`
+
+`assigned` (`null` when the image has none) and `effective` (what GIMP uses: the built-in sRGB or
+gray profile when none is assigned): `label`, `description`, `model` (`rgb`/`gray`), `linear`,
+`icc_bytes`.
+
+* `assign`: tags the pixels with the profile without changing their values (colors look different).
+* `convert`: transforms the pixels so colors look the same (`intent`: `perceptual`,
+  `relative-colorimetric`, `saturation`, `absolute-colorimetric`; black point compensation).
+* `remove`: back to the built-in profile.
+
+`profile`: `srgb`, `srgb-linear`, `gray`, `gray-linear` (built in) or `file` with an ICC `path`
+(`FILE_NOT_FOUND`, or `UNSUPPORTED_FORMAT` for a file that is not a usable profile). A gray profile
+on an RGB image (or the reverse) is `INVALID_ARGUMENT`. Exports embed the profile when the image
+has one assigned (`png_options.color_profile` / `jpeg_options.color_profile`: `true` always embeds,
+even GIMP's built-in sRGB; `false` never).
+
+### How colors are interpreted
+
+Every tool that takes a color (`#rrggbb[aa]`) means **sRGB**. GIMP converts it into the image:
+
+* RGB image with another profile (e.g. linear sRGB): the color is converted, so it *looks* the
+  same; the stored values differ (`#404040` is stored as 13/255 in a linear-light image).
+* Grayscale image: the color's luminance (`#ff0000` → 130).
+* Indexed image: the nearest palette entry (`#ff0000` in a palette of orange and blue → orange).
+
+Values *returned* by the analysis tools are sRGB too, whatever the image's profile.
+
 ## Color adjustments (toolset `color`)
 
 Dedicated tools with the ranges of GIMP's dialogs. **Editable** mode (default, `destructive=false`)

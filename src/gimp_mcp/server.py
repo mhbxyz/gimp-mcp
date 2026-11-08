@@ -21,6 +21,7 @@ from .tools import (
     history,
     inspect,
     layers,
+    modes,
     paint,
     pdb,
     preview,
@@ -80,6 +81,7 @@ def build_server(
         analysis,
         color,
         effects,
+        modes,
     ):
         module.register(kit)
     return mcp

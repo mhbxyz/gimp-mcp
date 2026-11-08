@@ -149,5 +149,17 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   `gimp_drawable_curves_explicit` asserts `num_values >= 256`. `levels_stretch()` (Auto White
   Balance) leaves a 50/200 two-tone image at 3/255, not 0/255. `equalize(False)` maps a two-tone
   image to 128/255. `gimp:curves` needs a `GimpCurve` object, which plug-ins cannot build.
+* **Modes, precision, profiles** (checked 2026-11-08): `image.convert_grayscale()` turns sRGB red
+  into 130 (luminance); filling a gray image with red gives 130 too. `convert_indexed(dither,
+  palette_type, num_cols, alpha_dither, remove_unused, palette_name)`: with `remove_unused` a
+  uniform image keeps 1 color; a `CUSTOM` palette name that does not exist makes it return
+  `False` silently (check `Gimp.Palette.get_by_name` first); filling an indexed image picks the
+  nearest palette entry. `convert_precision(Gimp.Precision.X)` keeps the look. Profiles:
+  `get_color_profile()` is `None` until one is assigned, `get_effective_color_profile()` is then
+  "GIMP built-in sRGB"; `set_color_profile(Gimp.ColorProfile.new_rgb_srgb_linear())` keeps the
+  values (64 now reads 137 in sRGB), `convert_color_profile(p, intent, bpc)` keeps the look
+  (stored 13/255); assigning a gray profile to an RGB image returns `False`.
+  `Gimp.ColorProfile.new_from_file(GFile)` loads ICC files. `file-png-export`/`file-jpeg-export`
+  take `include-color-profile`, **false by default** (GIMP does not embed the profile unless asked).
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.
