@@ -143,6 +143,17 @@ def animated_sticker(out: Path, report: Report) -> None:
     assert (out / "sticker.gif").stat().st_size < 500 * 1024 and (out / "sticker.webp").stat().st_size < 500 * 1024
 
 
+def print_flyer(out: Path, report: Report) -> None:
+    from pypdf import PdfReader
+
+    box = PdfReader(out / "flyer.pdf").pages[0].mediabox
+    assert abs(float(box.width) * 25.4 / 72 - 154) < 0.5 and abs(float(box.height) * 25.4 / 72 - 216) < 0.5
+    with Image.open(out / "flyer.tif") as tiff:
+        assert tiff.size == (1819, 2551) and tuple(round(float(v)) for v in tiff.info["dpi"]) == (300, 300)
+        assert tiff.convert("RGB").getpixel((0, 0)) != (255, 255, 255)  # the photo covers the bleed corner
+    assert (out / "flyer.xcf").read_bytes().startswith(b"gimp xcf")
+
+
 INDEPENDENT: dict[str, Callable[[Path, Report], None]] = {
     "thumbnail": thumbnail,
     "old-photo-restoration": old_photo_restoration,
@@ -151,6 +162,7 @@ INDEPENDENT: dict[str, Callable[[Path, Report], None]] = {
     "screenshot-annotation": screenshot_annotation,
     "web-photo-batch": web_photo_batch,
     "animated-sticker": animated_sticker,
+    "print-flyer": print_flyer,
 }
 
 
