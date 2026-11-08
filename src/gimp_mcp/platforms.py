@@ -12,6 +12,7 @@ from __future__ import annotations
 import os
 import re
 import sys
+import unicodedata
 from collections.abc import Callable, Mapping
 from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 from typing import Literal, NamedTuple
@@ -41,6 +42,44 @@ def _pure(kind: OsKind) -> type[PurePath]:
 
 def _kind(kind: OsKind | None) -> OsKind:
     return CURRENT if kind is None else kind
+
+
+_RESERVED = re.compile(r"(CON|PRN|AUX|NUL|COM[1-9\u00b9\u00b2\u00b3]|LPT[1-9\u00b9\u00b2\u00b3])", re.IGNORECASE)
+
+
+def path_refusal(path: str, kind: OsKind | None = None) -> str | None:
+    """Why file tools refuse ``path`` on this OS, or None for a local path (docs/security.md).
+
+    Windows: UNC paths (``\\\\server\\share``) would make GIMP connect to another machine with the user's
+    credentials, and device namespaces (``\\\\?\\``, ``\\\\.\\``) and reserved names (``CON``, ``NUL``,
+    ``COM1``...) are not files. Elsewhere every path is local: network file systems are mounted by the user.
+    """
+    if _kind(kind) != "windows":
+        return None
+    if path[:2] in ("\\\\", "//", "\\/", "/\\"):
+        return "is a network (UNC) or device path"
+    for part in PureWindowsPath(path).parts[1:]:
+        # Windows ignores the extension and trailing spaces and dots of a reserved name
+        if _RESERVED.fullmatch(part.split(".", 1)[0].rstrip(" ")):
+            return f"names the Windows device {part!r}"
+    return None
+
+
+def same_file_name(a: str, b: str, kind: OsKind | None = None) -> bool:
+    """Whether two paths name the same file for this OS's usual file systems, before either exists.
+
+    NTFS and APFS ignore case by default, and APFS also ignores the Unicode normalization form; the
+    comparison takes the safe side (a case-sensitive volume is treated as insensitive).
+    """
+    if _kind(kind) == "linux":
+        return a == b
+
+    def key(path: str) -> str:
+        return unicodedata.normalize("NFD", unicodedata.normalize("NFD", path).casefold())
+
+    if _kind(kind) == "windows":
+        a, b = str(PureWindowsPath(a)), str(PureWindowsPath(b))
+    return key(a) == key(b)
 
 
 def home(env: Mapping[str, str], kind: OsKind | None = None) -> PurePath:
