@@ -935,10 +935,9 @@ def describe_argument(pspec):
             data["choices"] = list(Gimp.param_spec_choice_get_choice(pspec).list_nicks())
         except Exception:
             data["choices"] = None
-    enum_class = getattr(pspec, "enum_class", None)
-    if enum_class is not None:
+    if getattr(pspec, "enum_class", None) is not None:
         try:
-            data["choices"] = [v.value_nick for v in enum_class.__enum_values__.values()]
+            data["choices"] = _enum_nicks(pspec)
         except Exception:
             pass
     return data
@@ -1464,6 +1463,24 @@ def _config_value(value):
     return nick if nick is not None else None
 
 
+_ENUM_MEMBERS = {}
+
+
+def _enum_members(pspec, sample=None):
+    """The members of an enum parameter's type, looked up once per type, from the class of ``sample`` (a
+    value of that type) when there is one: `pspec.enum_class` crashes the plug-in on macOS after a few
+    hundred lookups (docs/gimp-notes.md)."""
+    name = pspec.value_type.name
+    if name not in _ENUM_MEMBERS:
+        cls = type(sample) if hasattr(sample, "value_nick") else pspec.enum_class
+        _ENUM_MEMBERS[name] = list(cls.__enum_values__.values())
+    return _ENUM_MEMBERS[name]
+
+
+def _enum_nicks(pspec, sample=None):
+    return [member.value_nick for member in _enum_members(pspec, sample)]
+
+
 def _describe_filter_params(config):
     specs = []
     for pspec in config.list_properties():
@@ -1477,8 +1494,7 @@ def _describe_filter_params(config):
         elif kind == "choice":
             spec["choices"] = list(Gimp.param_spec_choice_get_choice(pspec).list_nicks())
         elif kind == "enum":
-            _trace("  param %s enum_class" % pspec.name)
-            spec["choices"] = [v.value_nick for v in pspec.enum_class.__enum_values__.values()]
+            spec["choices"] = _enum_nicks(pspec, config.get_property(pspec.name))
         elif kind == "unsupported":
             spec["type"] = pspec.value_type.name
         _trace("  param %s value" % pspec.name)
@@ -1527,8 +1543,11 @@ def filter_catalog():
             _ok, keys, values = Gimp.DrawableFilter.operation_get_details(name)
             details = {key: values.index(i) for i, key in enumerate(keys)}
             categories = [c for c in (details.get("categories") or "").split(":") if c]
-            untransferable = gmb_filters.untransferable_parameters(_gegl_pspecs(name))
-            if untransferable:  # never instantiated: libgimp cannot carry these values (crash on macOS)
+            refused_by_name = not gmb_filters.operation_status(name, categories, [])[0]
+            untransferable = [] if refused_by_name else gmb_filters.untransferable_parameters(_gegl_pspecs(name))
+            if refused_by_name:  # denied, auxiliary or internal: nothing to introspect
+                params, broken = [], None
+            elif untransferable:  # never instantiated: libgimp cannot carry these values (crash on macOS)
                 params, broken = [], "%s (%s)" % (gmb_filters.UNTRANSFERABLE_REASON, ", ".join(untransferable))
             else:
                 _trace("catalog %s new" % name)
@@ -1597,7 +1616,7 @@ def _set_config(drawable_filter, entry, values):
             value = color(value)
         elif kind == "enum":
             pspec = config.find_property(name)
-            value = next(v for v in pspec.enum_class.__enum_values__.values() if v.value_nick == value)
+            value = next(v for v in _enum_members(pspec, config.get_property(name)) if v.value_nick == value)
         config.set_property(name, value)
 
 
@@ -1767,10 +1786,11 @@ HISTOGRAM_CHANNELS = {v.value_nick: v for v in Gimp.HistogramChannel.__enum_valu
 
 def _config_enum(config, name, nick):
     pspec = config.find_property(name)
-    for value in pspec.enum_class.__enum_values__.values():
+    members = _enum_members(pspec, config.get_property(name))
+    for value in members:
         if value.value_nick == nick:
             return value
-    allowed = [v.value_nick for v in pspec.enum_class.__enum_values__.values()]
+    allowed = [v.value_nick for v in members]
     raise BridgeError("INVALID_ARGUMENT", "%s must be one of %s" % (name, ", ".join(allowed)), {"allowed": allowed})
 
 
@@ -3123,8 +3143,7 @@ def _option_specs(procedure, fixed):
         elif kind == "choice":
             spec["choices"] = list(Gimp.param_spec_choice_get_choice(pspec).list_nicks())
         elif kind == "enum":
-            _trace("  param %s enum_class" % pspec.name)
-            spec["choices"] = [v.value_nick for v in pspec.enum_class.__enum_values__.values()]
+            spec["choices"] = _enum_nicks(pspec, config.get_property(pspec.name))
         elif kind == "unsupported":
             spec["type"] = pspec.value_type.name
         if kind == "integer-list":
@@ -4252,7 +4271,7 @@ def pdb_callable(params):
 
 
 def _enum_value(pspec, nick):
-    for value in pspec.enum_class.__enum_values__.values():
+    for value in _enum_members(pspec):
         if value.value_nick == nick:
             return value
     raise BridgeError("INVALID_ARGUMENT", "argument %r: unknown value %r" % (pspec.name, nick))
