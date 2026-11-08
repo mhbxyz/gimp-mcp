@@ -46,7 +46,7 @@ def _kind(kind: OsKind | None) -> OsKind:
 def home(env: Mapping[str, str], kind: OsKind | None = None) -> PurePath:
     kind = _kind(kind)
     if kind == "windows":
-        return PureWindowsPath(env.get("USERPROFILE") or env.get("HOME") or "~")
+        return PureWindowsPath(env.get("USERPROFILE") or env.get("HOME") or os.path.expanduser("~"))
     return PurePosixPath(env.get("HOME") or os.path.expanduser("~"))
 
 

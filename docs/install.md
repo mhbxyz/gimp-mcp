@@ -30,7 +30,7 @@ From a release (wheel attached to the GitHub release):
 
 ```sh
 uv tool install ./gimp_mcp-X.Y.Z-py3-none-any.whl   # or: pipx install ./gimp_mcp-X.Y.Z-py3-none-any.whl
-gimp-mcp install-plugin      # copies the plug-in into ~/.config/GIMP/3.2/plug-ins/
+gimp-mcp install-plugin      # copies the plug-in into the GIMP 3.2 profile's plug-ins/ (see clients.md for each OS)
 ```
 
 From a checkout:

@@ -70,6 +70,10 @@ def install_distribution(tmp_path: Path) -> Installed:
     env = {k: v for k, v in os.environ.items() if k not in ("VIRTUAL_ENV", "PYTHONPATH", "XDG_CONFIG_HOME")}
     env["PATH"] = system_path(env.get("PATH", ""))
     env["HOME"] = str(home)
+    # never the runner's real profiles or client configurations, on any OS
+    env["USERPROFILE"] = str(home)
+    env["APPDATA"] = str(home / "AppData" / "Roaming")
+    env["LOCALAPPDATA"] = str(home / "AppData" / "Local")
     target = package_to_install(tmp_path)
     venv = tmp_path / "venv"
     assert run("uv", "venv", "--quiet", "--python", sys.executable, str(venv), cwd=work).returncode == 0
