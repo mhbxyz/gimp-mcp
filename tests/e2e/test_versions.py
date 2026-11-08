@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 
@@ -24,6 +25,7 @@ async def test_older_plugin_is_reported_with_the_fix(tmp_path):
             [sys.executable, "-m", "gimp_mcp", "doctor", "--socket", str(gimp.socket_path),
              "--gimp-dir", str(gimp.config_dir)],
             capture_output=True, text=True, timeout=60,
+            env={**os.environ, "GIMP_MCP_TOKEN_FILE": str(gimp.token_path)},  # a pipe's token is not next to it
         )  # fmt: skip
     finally:
         gimp.stop()

@@ -25,6 +25,7 @@ from typing import Any
 
 from . import __version__, platforms
 from .errors import INSTALL_HINT, GimpMcpError
+from .plugin_modules import load as load_plugin_module
 from .versions import Compatibility, check_plugin_version
 
 log = logging.getLogger(__name__)
@@ -42,6 +43,11 @@ class BridgeEndpoint:
     socket_path: Path
     token_path: Path
 
+    @property
+    def is_pipe(self) -> bool:
+        r"""A Windows named pipe (``\\.\pipe\...``) rather than a Unix socket."""
+        return str(self.socket_path).replace("/", "\\").lower().startswith("\\\\.\\pipe\\")
+
     @classmethod
     def for_socket(cls, socket_path: Path) -> BridgeEndpoint:
         return cls(socket_path=socket_path, token_path=Path(str(socket_path) + ".token"))
@@ -56,6 +62,27 @@ def default_socket_path(environ: dict[str, str] | None = None) -> Path:
     """Address shared by the plug-in and the server (``platforms.bridge_address``; a Flatpak GIMP's
     socket is used when only it exists)."""
     return Path(platforms.bridge_address(os.environ if environ is None else environ).path)
+
+
+async def open_pipe_connection(name: str, limit: int) -> tuple[asyncio.StreamReader, asyncio.StreamWriter]:
+    """Connect to the bridge's Windows named pipe (asyncio's Proactor loop) and check that the
+    process serving it belongs to the current user (ADR 0008)."""
+    loop = asyncio.get_running_loop()
+    reader = asyncio.StreamReader(limit=limit, loop=loop)
+    protocol = asyncio.StreamReaderProtocol(reader, loop=loop)
+    transport, _ = await loop.create_pipe_connection(lambda: protocol, name)  # type: ignore[attr-defined]
+    writer = asyncio.StreamWriter(transport, protocol, reader, loop)
+    gmb_pipe = load_plugin_module("gmb_pipe")
+    try:
+        owner = gmb_pipe.process_user_sid(gmb_pipe.server_process_id(transport.get_extra_info("pipe").handle))
+        mine = gmb_pipe.process_user_sid()
+    except OSError as exc:
+        writer.close()
+        raise GimpMcpError("BRIDGE_UNAVAILABLE", f"cannot identify the process serving {name}: {exc}") from exc
+    if owner != mine:
+        writer.close()
+        raise GimpMcpError("BRIDGE_UNAVAILABLE", f"{name} is served by another user's process; refusing it")
+    return reader, writer
 
 
 @dataclass(frozen=True)
@@ -157,12 +184,14 @@ class BridgeClient:
             return
         await self.close()
         socket_path = self.endpoint.socket_path
-        if not socket_path.exists():
+        if not self.endpoint.is_pipe and not socket_path.exists():
             raise GimpMcpError(
                 "GIMP_NOT_RUNNING",
                 f"no GIMP bridge socket at {socket_path}",
                 hint=INSTALL_HINT,
             )
+        if self.endpoint.is_pipe and not self.endpoint.token_path.exists():
+            raise GimpMcpError("GIMP_NOT_RUNNING", f"no GIMP bridge serves {socket_path}", hint=INSTALL_HINT)
         try:
             token = self.endpoint.token_path.read_text(encoding="ascii").strip()
         except OSError as exc:
@@ -172,10 +201,12 @@ class BridgeClient:
                 hint=INSTALL_HINT,
             ) from exc
         try:
-            reader, writer = await asyncio.wait_for(
-                asyncio.open_unix_connection(str(socket_path), limit=MAX_RESPONSE_BYTES),
-                timeout=self.connect_timeout,
+            opening = (
+                open_pipe_connection(str(socket_path), MAX_RESPONSE_BYTES)
+                if self.endpoint.is_pipe
+                else asyncio.open_unix_connection(str(socket_path), limit=MAX_RESPONSE_BYTES)
             )
+            reader, writer = await asyncio.wait_for(opening, timeout=self.connect_timeout)
         except TimeoutError as exc:
             raise GimpMcpError(
                 "BRIDGE_UNAVAILABLE",

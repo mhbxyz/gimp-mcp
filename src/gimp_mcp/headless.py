@@ -6,6 +6,8 @@ so personal settings, plug-ins and recent files are never read or modified.
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import os
 import shutil
@@ -15,6 +17,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
@@ -79,18 +82,21 @@ class HeadlessGimp:
         self.install_plugin = install_plugin
         self.root = Path(tempfile.mkdtemp(prefix="gimp-mcp-", dir=_short_base_dir()))
         self.config_dir = self.root / "config"
-        self.socket_path = self.root / "bridge.sock"
+        self.pipe = platforms.CURRENT == "windows"  # Windows serves a named pipe (ADR 0008)
+        self.socket_path = Path(r"\\.\pipe\gimp-mcp-" + self.root.name) if self.pipe else self.root / "bridge.sock"
+        self.token_path = self.root / "bridge.token" if self.pipe else Path(str(self.socket_path) + ".token")
         self.log_path = self.root / "gimp.log"
         self.process: subprocess.Popen[bytes] | None = None
 
     @property
     def endpoint(self) -> BridgeEndpoint:
-        return BridgeEndpoint.for_socket(self.socket_path)
+        return BridgeEndpoint(socket_path=self.socket_path, token_path=self.token_path)
 
     def environment(self) -> dict[str, str]:
         env = dict(os.environ)
         env["GIMP3_DIRECTORY"] = str(self.config_dir)
         env["GIMP_MCP_SOCKET"] = str(self.socket_path)
+        env["GIMP_MCP_TOKEN_FILE"] = str(self.token_path)
         env.pop("DISPLAY", None)
         env.pop("WAYLAND_DISPLAY", None)
         env["PATH"] = system_path(env.get("PATH", ""))
@@ -133,7 +139,7 @@ class HeadlessGimp:
                     f"gimp-console exited with code {self.process.returncode}",
                     details={"log_tail": self.log_tail()},
                 )
-            if self.socket_path.exists():
+            if self.token_path.exists() if self.pipe else self.socket_path.exists():
                 try:
                     self.sync_call("hello")
                     if self._expected_images_open():
@@ -150,16 +156,13 @@ class HeadlessGimp:
     def sync_call(self, method: str, params: dict[str, Any] | None = None, timeout: float = 30.0) -> Any:
         """Blocking bridge call (readiness probe and test setup helpers)."""
         token = self.endpoint.token_path.read_text(encoding="utf-8").strip()
-        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
-            sock.settimeout(timeout)
-            sock.connect(str(self.socket_path))
-            reader = sock.makefile("rb")
+        with self._sync_channel(timeout) as (send, reader):
             requests = [{"id": 1, "method": "hello", "params": {"token": token}}]
             if method != "hello":
                 requests.append({"id": 2, "method": method, "params": params or {}})
             result: Any = None
             for request in requests:
-                sock.sendall(json.dumps(request).encode() + b"\n")
+                send(json.dumps(request).encode() + b"\n")
                 line = reader.readline()
                 if not line:
                     raise GimpMcpError("BRIDGE_UNAVAILABLE", "bridge closed the connection")
@@ -169,6 +172,31 @@ class HeadlessGimp:
                     raise GimpMcpError(error["code"], error["message"], details=error.get("details") or {})
                 result = response["result"]
             return result
+
+    @contextlib.contextmanager
+    def _sync_channel(self, timeout: float) -> Iterator[tuple[Callable[[bytes], Any], Any]]:
+        """A blocking line channel to the bridge: the Unix socket, or the Windows named pipe."""
+        if self.pipe:
+            deadline = time.monotonic() + timeout
+            while True:
+                try:
+                    pipe = open(str(self.socket_path), "r+b", buffering=0)  # noqa: SIM115
+                    break
+                except OSError as exc:  # 231: every instance is busy for a moment
+                    if getattr(exc, "winerror", None) != 231 or time.monotonic() > deadline:
+                        raise
+                    time.sleep(0.05)
+            with pipe:
+
+                def send(data: bytes) -> None:
+                    pipe.write(data)
+
+                yield send, io.BufferedReader(pipe)  # type: ignore[arg-type]
+            return
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:  # type: ignore[attr-defined]
+            sock.settimeout(timeout)
+            sock.connect(str(self.socket_path))
+            yield sock.sendall, sock.makefile("rb")
 
     def _expected_images_open(self) -> bool:
         if not self.open_files:
@@ -184,14 +212,26 @@ class HeadlessGimp:
         return "\n".join(text.splitlines()[-lines:])
 
     def kill(self) -> None:
-        """Simulate a crash: SIGKILL the whole GIMP process group."""
+        """Simulate a crash: kill GIMP and its plug-ins at once (SIGKILL the group; taskkill on Windows)."""
         if self.process is not None and self.process.poll() is None:
-            os.killpg(self.process.pid, signal.SIGKILL)
+            if self.pipe:
+                subprocess.run(
+                    ["taskkill", "/T", "/F", "/PID", str(self.process.pid)], capture_output=True, check=False
+                )
+            else:
+                os.killpg(self.process.pid, signal.SIGKILL)  # type: ignore[attr-defined]
             self.process.wait(timeout=10)
 
     def _terminate(self) -> None:
         process, self.process = self.process, None
         if process is None:
+            return
+        if self.pipe:  # Windows: end GIMP and its plug-in processes (no process groups)
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(process.pid)], capture_output=True, check=False)
+            try:
+                process.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                pass
             return
         if process.poll() is None:
             try:

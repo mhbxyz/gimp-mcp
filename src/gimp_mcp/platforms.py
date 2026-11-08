@@ -20,6 +20,7 @@ OsKind = Literal["linux", "macos", "windows"]
 GIMP_SERIES = "3.2"
 FLATPAK_APP = "org.gimp.GIMP"
 SOCKET_ENV = "GIMP_MCP_SOCKET"
+TOKEN_ENV = "GIMP_MCP_TOKEN_FILE"
 
 
 def os_kind(name: str | None = None) -> OsKind:
@@ -99,7 +100,7 @@ def bridge_address(
     kind = _kind(kind)
     if kind == "windows":
         local = PureWindowsPath(env.get("LOCALAPPDATA") or home(env, kind) / "AppData" / "Local")
-        token = str(local / "gimp-mcp" / "bridge.token")
+        token = env.get(TOKEN_ENV) or str(local / "gimp-mcp" / "bridge.token")
         return BridgeAddress("pipe", env.get(SOCKET_ENV) or r"\\.\pipe\gimp-mcp-" + _user_tag(env), token)
     explicit = env.get(SOCKET_ENV)
     if explicit:
@@ -108,7 +109,7 @@ def bridge_address(
         path = str(home(env, kind) / "Library" / "Application Support" / "gimp-mcp" / "bridge.sock")
     else:
         path = _linux_socket(env, uid, runtime_exists, path_exists)
-    return BridgeAddress("unix", path, path + ".token")
+    return BridgeAddress("unix", path, env.get(TOKEN_ENV) or path + ".token")
 
 
 def _linux_socket(env, uid, runtime_exists, path_exists) -> str:

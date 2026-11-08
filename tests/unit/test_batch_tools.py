@@ -8,7 +8,7 @@ from pathlib import Path
 from gmb_server import BridgeError  # type: ignore[import-not-found]
 from mcp import Client
 
-from gimp_mcp.bridge import BridgeClient, BridgeEndpoint
+from gimp_mcp.bridge import BridgeClient
 from gimp_mcp.server import build_server
 
 from .fake_bridge import running_fake_bridge
@@ -161,7 +161,7 @@ async def test_invalid_recipes_are_refused_before_any_file_is_opened(tmp_path):
 async def test_tools_of_disabled_toolsets_are_refused_with_a_hint(tmp_path):
     (a,) = inputs(tmp_path / "in", "a.png")
     with running_fake_bridge(Gimp().ops()) as bridge:
-        server = build_server(BridgeClient(BridgeEndpoint.for_socket(bridge.socket_path)), toolsets="core,batch")
+        server = build_server(BridgeClient(bridge.endpoint), toolsets="core,batch")
         async with Client(server) as client:
             result = await client.call_tool("gimp_run_batch", {"files": [str(a)], "recipe": [FLIP]})
     assert error_code(result) == "INVALID_ARGUMENT"

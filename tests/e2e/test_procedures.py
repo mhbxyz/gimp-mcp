@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -37,6 +38,7 @@ def test_inventory_command_writes_a_complete_inventory(gimp: HeadlessGimp, tmp_p
         capture_output=True,
         text=True,
         timeout=300,
+        env={**os.environ, "GIMP_MCP_TOKEN_FILE": str(gimp.token_path)},  # a pipe's token is not next to it
     )
     assert proc.returncode == 0, proc.stderr
     data = json.loads(out.read_text())

@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -16,6 +17,11 @@ from . import __version__
 from .bridge import BridgeClient, BridgeEndpoint
 from .errors import GimpMcpError
 from .installer import default_gimp_config_dir, install_plugin, uninstall_plugin
+
+
+def _endpoint(socket: str | None) -> BridgeEndpoint:
+    """The bridge endpoint; an explicit --socket keeps this OS's token rule (and GIMP_MCP_TOKEN_FILE)."""
+    return BridgeEndpoint.default({**os.environ, "GIMP_MCP_SOCKET": socket} if socket else None)
 
 
 def _configure_logging(verbose: bool) -> None:
@@ -31,7 +37,11 @@ def cmd_serve(args: argparse.Namespace) -> int:
     from .server import build_server
     from .toolsets import ToolsetError
 
-    endpoint = BridgeEndpoint.for_socket(Path(args.socket)) if args.socket else BridgeEndpoint.default()
+    endpoint = (
+        BridgeEndpoint.default({**os.environ, "GIMP_MCP_SOCKET": args.socket})
+        if args.socket
+        else BridgeEndpoint.default()
+    )
     try:
         server = build_server(BridgeClient(endpoint, request_timeout=args.timeout), toolsets=args.toolsets)
     except ToolsetError as error:
@@ -75,7 +85,11 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     if args.troubleshooting:
         sys.stdout.write(render_troubleshooting())
         return 0
-    endpoint = BridgeEndpoint.for_socket(Path(args.socket)) if args.socket else BridgeEndpoint.default()
+    endpoint = (
+        BridgeEndpoint.default({**os.environ, "GIMP_MCP_SOCKET": args.socket})
+        if args.socket
+        else BridgeEndpoint.default()
+    )
     probe = Probe(env=dict(os.environ), endpoint=endpoint, gimp_dir=Path(args.gimp_dir) if args.gimp_dir else None)
     try:
         code, output = asyncio.run(run_doctor(probe, as_json=args.json))
@@ -89,7 +103,11 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 def cmd_inventory(args: argparse.Namespace) -> int:
     import json
 
-    endpoint = BridgeEndpoint.for_socket(Path(args.socket)) if args.socket else BridgeEndpoint.default()
+    endpoint = (
+        BridgeEndpoint.default({**os.environ, "GIMP_MCP_SOCKET": args.socket})
+        if args.socket
+        else BridgeEndpoint.default()
+    )
 
     async def fetch() -> dict[str, object]:
         client = BridgeClient(endpoint, request_timeout=args.timeout)
@@ -130,7 +148,11 @@ def cmd_setup(args: argparse.Namespace) -> int:
 
     from .setup import CLIENT_KEYS, SetupOptions, run_setup
 
-    endpoint = BridgeEndpoint.for_socket(Path(args.socket)) if args.socket else BridgeEndpoint.default()
+    endpoint = (
+        BridgeEndpoint.default({**os.environ, "GIMP_MCP_SOCKET": args.socket})
+        if args.socket
+        else BridgeEndpoint.default()
+    )
     clients: set[str]
     if args.clients in (None, "all"):
         clients = set(CLIENT_KEYS)

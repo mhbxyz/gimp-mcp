@@ -72,7 +72,13 @@ async def test_upgrade_from_the_previous_release_then_uninstall(tmp_path: Path):
 
         gimp.start()
         params = StdioServerParameters(
-            command=str(installed.exe), args=["serve"], env={**installed.env, "GIMP_MCP_SOCKET": str(gimp.socket_path)}
+            command=str(installed.exe),
+            args=["serve"],
+            env={
+                **installed.env,
+                "GIMP_MCP_SOCKET": str(gimp.socket_path),
+                "GIMP_MCP_TOKEN_FILE": str(gimp.token_path),
+            },
         )
         async with Client(params, read_timeout_seconds=60) as client:
             status = await client.call_tool("gimp_status", {})

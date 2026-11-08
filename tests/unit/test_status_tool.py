@@ -23,7 +23,7 @@ def images_op(params):
 
 async def test_status_reports_gimp_version_and_open_images():
     with running_fake_bridge({"session.images": images_op}) as bridge:
-        server = build_server(BridgeClient(BridgeEndpoint.for_socket(bridge.socket_path)))
+        server = build_server(BridgeClient(bridge.endpoint))
         async with Client(server) as client:
             tools = {tool.name for tool in (await client.list_tools()).tools}
             assert "gimp_status" in tools

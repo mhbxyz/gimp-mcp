@@ -12,7 +12,7 @@ from PIL import Image
 import gimp_mcp
 from gimp_mcp.headless import HeadlessGimp, find_gimp_console
 
-from .dist_helpers import REQUIREMENT, ROOT, install_distribution, run
+from .dist_helpers import REQUIREMENT, ROOT, install_distribution, run, venv_python
 
 
 async def test_installed_wheel_installs_the_plugin_and_serves_mcp(tmp_path: Path):
@@ -27,7 +27,7 @@ async def test_installed_wheel_installs_the_plugin_and_serves_mcp(tmp_path: Path
     if REQUIREMENT:  # installed from an index: `uvx` must work too
         uvx = run("uvx", "--from", REQUIREMENT, "gimp-mcp", "--version", cwd=work, env=env)
         assert uvx.stdout.strip() == f"gimp-mcp {expected}", uvx.stderr
-    location = run(str(venv / "bin" / "python"), "-c", "import gimp_mcp; print(gimp_mcp.__file__)", cwd=work, env=env)
+    location = run(str(venv_python(venv)), "-c", "import gimp_mcp; print(gimp_mcp.__file__)", cwd=work, env=env)
     assert str(venv) in location.stdout and str(ROOT) not in location.stdout  # not the source tree
 
     gimp = HeadlessGimp(install_plugin=False)
@@ -38,14 +38,24 @@ async def test_installed_wheel_installs_the_plugin_and_serves_mcp(tmp_path: Path
         assert (gimp.config_dir / "plug-ins" / "gimp-mcp-bridge" / "gimp-mcp-bridge.py").exists()
         gimp.start()
         doctor = run(
-            str(exe), "doctor", "--socket", str(gimp.socket_path), "--gimp-dir", str(gimp.config_dir), cwd=work, env=env
+            str(exe),
+            "doctor",
+            "--socket",
+            str(gimp.socket_path),
+            "--gimp-dir",
+            str(gimp.config_dir),
+            cwd=work,
+            env={**env, "GIMP_MCP_TOKEN_FILE": str(gimp.token_path)},
         )
         assert doctor.returncode == 0, doctor.stderr
         assert "0 failure(s)" in doctor.stderr and "answers" in doctor.stderr
 
         out = work / "smoke.png"
         params = StdioServerParameters(
-            command=str(exe), args=["serve"], env={**env, "GIMP_MCP_SOCKET": str(gimp.socket_path)}, cwd=str(work)
+            command=str(exe),
+            args=["serve"],
+            env={**env, "GIMP_MCP_SOCKET": str(gimp.socket_path), "GIMP_MCP_TOKEN_FILE": str(gimp.token_path)},
+            cwd=str(work),
         )
         async with Client(params, read_timeout_seconds=120) as client:
             status = await client.call_tool("gimp_status", {})

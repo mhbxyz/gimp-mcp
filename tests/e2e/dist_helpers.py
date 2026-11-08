@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 
+from gimp_mcp import platforms
 from gimp_mcp.headless import system_path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -47,6 +48,17 @@ def package_to_install(tmp_path: Path) -> str:
     return str(next(dist.glob("*.whl")))
 
 
+def venv_script(venv: Path, name: str) -> Path:
+    """A console script of a virtual environment (Scripts\\*.exe on Windows, bin/* elsewhere)."""
+    if platforms.CURRENT == "windows":
+        return venv / "Scripts" / f"{name}.exe"
+    return venv / "bin" / name
+
+
+def venv_python(venv: Path) -> Path:
+    return venv_script(venv, "python")
+
+
 def install_distribution(tmp_path: Path) -> Installed:
     import shutil
 
@@ -61,8 +73,6 @@ def install_distribution(tmp_path: Path) -> Installed:
     target = package_to_install(tmp_path)
     venv = tmp_path / "venv"
     assert run("uv", "venv", "--quiet", "--python", sys.executable, str(venv), cwd=work).returncode == 0
-    installed = run(
-        "uv", "pip", "install", "--quiet", "--python", str(venv / "bin" / "python"), target, cwd=work, env=env
-    )
+    installed = run("uv", "pip", "install", "--quiet", "--python", str(venv_python(venv)), target, cwd=work, env=env)
     assert installed.returncode == 0, installed.stderr
-    return Installed(venv, venv / "bin" / "gimp-mcp", work, home, env)
+    return Installed(venv, venv_script(venv, "gimp-mcp"), work, home, env)
