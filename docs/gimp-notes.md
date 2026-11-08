@@ -249,3 +249,6 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   pixels; opening it re-reads the file, a missing file leaves the saved pixels.
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.
+* Vector layers (3.2.6): fill and stroke **patterns** can be read (`get_fill_pattern`,
+  `get_stroke_pattern`) but neither libgimp nor the PDB has a setter (no
+  `gimp-vector-layer-set-fill-pattern`; `tests/e2e/test_vector_layers.py`), so gimp-mcp sets colors only.

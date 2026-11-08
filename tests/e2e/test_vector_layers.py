@@ -122,3 +122,14 @@ async def test_destructive_tools_refuse_vector_and_link_layers(gimp: HeadlessGim
         missing = await client.call_tool("gimp_create_link_layer", {"image": image, "file": str(tmp_path / "none.png")})
         assert missing.is_error
         await call(client, "gimp_close_image", image=image, discard_changes=True)
+
+
+async def test_gimp_3_2_cannot_set_a_pattern_on_vector_layers(gimp: HeadlessGimp):
+    """Fill and stroke patterns can be read (inspection reports them) but GIMP 3.2 has no setter."""
+    async with mcp_client(gimp) as client:
+        found = await call(client, "gimp_search_procedures", query="gimp-vector-layer-", limit=100)
+        names = {p["name"] for p in found["procedures"]}
+        assert {"gimp-vector-layer-get-fill-pattern", "gimp-vector-layer-set-fill-color"} <= names
+        setters = {name for name in names if name.startswith("gimp-vector-layer-set")}
+        assert "gimp-vector-layer-set-stroke-dash-pattern" in setters  # dashes, not a fill pattern
+        assert not {"gimp-vector-layer-set-fill-pattern", "gimp-vector-layer-set-stroke-pattern"} & setters
