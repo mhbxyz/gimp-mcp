@@ -4,7 +4,7 @@
 
 Inventory: GIMP **3.2.6**, 1030 PDB procedures (722 internal, 3 persistent, 244 plugin, 61 temporary), 200 GEGL operations available to filters.
 
-MCP tools: **130**. PDB procedures relied upon by tools: **228** (22.1% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
+MCP tools: **133**. PDB procedures relied upon by tools: **243** (23.6% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
 
 ## Capabilities
 
@@ -14,6 +14,8 @@ MCP tools: **130**. PDB procedures relied upon by tools: **228** (22.1% of the i
 | Session | Toolsets: list the tool groups, enable more during a session | tested | `gimp_list_toolsets`, `gimp_enable_toolsets` | `tests/unit/test_toolsets.py`, `tests/e2e/test_thumbnail_journey.py` | 3.2 | MCP-side only, no GIMP procedure; see docs/toolsets.md |
 | Inspection | Image properties and ordered layer tree (groups, masks) | tested | `gimp_inspect_image`, `gimp_inspect_item` | `tests/e2e/test_inspect.py` | 3.2 |  |
 | Preview | Composite preview as PNG (max 1024 px) | tested | `gimp_preview` | `tests/e2e/test_preview.py` | 3.2 | 8-bit sRGB rendering of the visible layers; larger renders go through export. |
+| Painting | Paint along strokes: paintbrush, pencil, airbrush, ink, eraser, smudge, dodge/burn, clone, heal | tested | `gimp_paint_stroke` | `tests/e2e/test_painting.py` | 3.2 |  |
+| Painting | Gradient fill (named or inline, shapes, repeat, offset) and bucket fill (color, pattern, gradient) | tested | `gimp_gradient_fill`, `gimp_bucket_fill` | `tests/e2e/test_painting.py` | 3.2 |  |
 | Formats | Export to every GIMP format with introspected options (WebP, AVIF/HEIF, TIFF, BMP, GIF, ICO, PDF, PSD…) | tested | `gimp_list_file_formats`, `gimp_describe_file_format`, `gimp_export_as` | `tests/e2e/test_formats.py`, `tests/unit/test_formats.py` | 3.2 |  |
 | Formats | Open PDF (pages, size), SVG (size), PSD layers, multi-page TIFF, RAW through GIMP's detection | partial | `gimp_open_with_options` | `tests/e2e/test_formats.py` | 3.2 | PDF pages are filtered after loading (GimpInt32Array options cannot be set); RAW is not tested (needs darktable or RawTherapee). |
 | Formats | Export layers or groups to separate files, and regions (slices) | tested | `gimp_export_layers`, `gimp_export_region` | `tests/e2e/test_formats.py` | 3.2 |  |
@@ -59,10 +61,10 @@ MCP tools: **130**. PDB procedures relied upon by tools: **228** (22.1% of the i
 
 | Family | Procedures in GIMP | Used by MCP tools |
 |---|---|---|
-| `gimp-image-*` | 137 | 56 |
-| `gimp-context-*` | 121 | 15 |
+| `gimp-image-*` | 137 | 57 |
+| `gimp-context-*` | 121 | 19 |
 | `plug-in-*` | 68 | 1 |
-| `gimp-drawable-*` | 56 | 30 |
+| `gimp-drawable-*` | 56 | 32 |
 | `gimp-text-*` | 50 | 14 |
 | `gimp-item-*` | 46 | 8 |
 | `script-fu-*` | 43 | 0 |
@@ -146,20 +148,20 @@ MCP tools: **130**. PDB procedures relied upon by tools: **228** (22.1% of the i
 | `file-xpm-*` | 2 | 0 |
 | `file-xwd-*` | 2 | 0 |
 | `file-xz-*` | 2 | 0 |
-| `gimp-airbrush-*` | 2 | 0 |
-| `gimp-clone-*` | 2 | 0 |
+| `gimp-airbrush-*` | 2 | 1 |
+| `gimp-clone-*` | 2 | 1 |
 | `gimp-convolve-*` | 2 | 0 |
 | `gimp-debug-*` | 2 | 0 |
 | `gimp-displays-*` | 2 | 1 |
-| `gimp-dodgeburn-*` | 2 | 0 |
+| `gimp-dodgeburn-*` | 2 | 1 |
 | `gimp-dynamics-*` | 2 | 0 |
-| `gimp-eraser-*` | 2 | 0 |
+| `gimp-eraser-*` | 2 | 1 |
 | `gimp-gimprc-*` | 2 | 0 |
 | `gimp-group-*` | 2 | 2 |
-| `gimp-heal-*` | 2 | 0 |
-| `gimp-paintbrush-*` | 2 | 0 |
+| `gimp-heal-*` | 2 | 1 |
+| `gimp-paintbrush-*` | 2 | 1 |
 | `gimp-pattern-*` | 2 | 1 |
-| `gimp-smudge-*` | 2 | 0 |
+| `gimp-smudge-*` | 2 | 1 |
 | `gimp-xcf-*` | 2 | 0 |
 | `file-aa-*` | 1 | 0 |
 | `file-apng-*` | 1 | 0 |
@@ -194,7 +196,7 @@ MCP tools: **130**. PDB procedures relied upon by tools: **228** (22.1% of the i
 | `gimp-detach-*` | 1 | 0 |
 | `gimp-font-*` | 1 | 1 |
 | `gimp-getpid-*` | 1 | 0 |
-| `gimp-pencil-*` | 1 | 0 |
+| `gimp-pencil-*` | 1 | 1 |
 | `gimp-plug-*` | 1 | 0 |
 | `gimp-quit-*` | 1 | 0 |
 | `gimp-temp-*` | 1 | 0 |

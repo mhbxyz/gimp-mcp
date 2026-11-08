@@ -29,6 +29,8 @@ TOOLSETS: dict[str, str] = {
     "full-resolution crops.",
     "color": "Color adjustments: levels, curves, color balance, colorize, desaturate, invert, threshold, "
     "posterize, exposure, shadows-highlights, automatic corrections.",
+    "painting": "GIMP's paint tools along strokes (paintbrush, pencil, airbrush, ink, eraser, smudge, dodge/burn, "
+    "clone, heal) with explicit brush settings, gradient fills and bucket fill.",
     "formats": "Every file format GIMP reads and writes: options introspected from GIMP, open with options "
     "(PDF pages, SVG size), export layers to separate files and regions.",
     "document": "Guides and sample points, Exif/XMP/IPTC metadata and comment, resolution and print size.",

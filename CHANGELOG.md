@@ -49,6 +49,10 @@ what is covered by the compatibility promise.
   PSD, JPEG XL…) with options introspected from GIMP and a report of lossless/lossy and what happens to
   layers; open PDF (pages, size), SVG (size), PSD and multi-page TIFF with options; export layers to
   separate files and regions (slices).
+- Painting toolset (#53): paint strokes with GIMP's paintbrush, pencil, airbrush, ink, eraser, smudge,
+  dodge/burn, clone and heal (brush, size, hardness, spacing, dynamics all explicit; GIMP's context is
+  restored), gradient fills (named or inline gradients, every shape and repeat mode) and bucket fill
+  by similar colors or selection with a color, pattern or gradient.
 
 ### Fixed
 
