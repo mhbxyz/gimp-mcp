@@ -45,6 +45,10 @@ what is covered by the compatibility promise.
   distribute layers.
 - Document toolset (#60): guides and sample points (with their colors), Exif/XMP/IPTC metadata and
   comment, resolution and print size with units (`gimp_inspect_image` reports the unit).
+- Formats toolset (#58): export to every format GIMP writes (WebP, AVIF/HEIF, TIFF, BMP, GIF, ICO, PDF,
+  PSD, JPEG XL…) with options introspected from GIMP and a report of lossless/lossy and what happens to
+  layers; open PDF (pages, size), SVG (size), PSD and multi-page TIFF with options; export layers to
+  separate files and regions (slices).
 
 ### Fixed
 
