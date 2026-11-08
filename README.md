@@ -97,6 +97,8 @@ and Windows, and an agent version (one plain-language request) in the evaluation
   budget ([walk-through](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/demos/animated-sticker.md)).
 * **Print-ready flyer**: A5 at 300 dpi with bleed, trim and safe-margin guides, PDF and TIFF at print size
   ([walk-through](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/demos/print-flyer.md)).
+* **Sky replacement**: a new sky masked in, the foreground graded with an editable filter, no halo
+  ([walk-through](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/demos/sky-replacement.md)).
 * **YouTube thumbnail** from one photo, with an editable title
   ([guide](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/guide-thumbnail.md)).
 
