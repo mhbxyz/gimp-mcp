@@ -66,6 +66,11 @@ async def test_frames_are_built_listed_and_previewed(gimp: HeadlessGimp):
         last = await client.call_tool("gimp_preview_frame", {"image": image, "index": 2})
         assert last.structured_content["frames_shown"] == [2]  # the square frame is replaced
         assert (await error(client, "gimp_preview_frame", image=image, index=3))["code"] == "INVALID_ARGUMENT"
+
+        # reorder: frames play bottom-up, so the top layer is the last frame
+        await call(client, "gimp_move_layer", item=items[0], parent=None, position=0)
+        frames = (await call(client, "gimp_list_frames", image=image))["frames"]
+        assert [(f["name"], f["duration_ms"]) for f in frames] == [("Square", 100), ("Blue", 300), ("Red", 200)]
         await call(client, "gimp_close_image", image=image, discard_changes=True)
 
 
