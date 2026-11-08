@@ -71,8 +71,10 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: |
           for attempt in $(seq 1 40); do
+            # both installers used next: for v0.5.0 pip was served the release while uv, seconds later, was not
             if uv run --no-project --with pip python -m pip download --quiet --no-deps --no-cache-dir \
-                --dest "$RUNNER_TEMP/probe" "gimp-mcp==$VERSION"; then
+                --dest "$RUNNER_TEMP/probe" "gimp-mcp==$VERSION" &&
+              uvx --no-cache --from "gimp-mcp==$VERSION" gimp-mcp --version; then
               echo "GIMP_MCP_DIST_REQUIREMENT=gimp-mcp==$VERSION" >> "$GITHUB_ENV"
               echo "served after $attempt attempt(s)"; exit 0
             fi
