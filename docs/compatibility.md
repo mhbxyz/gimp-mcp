@@ -72,6 +72,9 @@ digest) and drives the distribution's own GIMP over MCP (`ci/run-distro.sh <id>`
 | macOS | 15 | arm64 (Apple Silicon) | 3.2.6 (gimp.org `.dmg`) | CI job `e2e-macos` (full e2e suite) |
 | Windows | Server 2025 | x86_64 | 3.2.6 (gimp.org installer) | CI job `e2e-windows` (full e2e suite) |
 
+GIMP **with its interface** is verified on the same three platforms by `tests/gui` (CI jobs
+`gui-linux`, `gui-macos`, `gui-windows`; `docs/testing.md`).
+
 ## Not supported (not verified)
 
 * **Windows 10/11 desktops** and Windows on ARM — not verified directly (CI uses Windows Server 2025, x86_64).
