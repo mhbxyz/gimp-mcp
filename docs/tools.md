@@ -57,7 +57,7 @@ Read-only. Returns `id`, `name`, `file`, `xcf_file`, `imported_file`,
 `exported_file`, `width`, `height` (pixels), `base_type` (`rgb`/`gray`/`indexed`),
 `precision` (e.g. `u8-non-linear`), `resolution` (`x`, `y` in ppi), `dirty`
 and `layers`: the layer tree, **top-most first**. Each node: `id`, `name`,
-`kind` (`layer`/`group`/`text`), `parent` (group id or null), `visible`,
+`kind` (`layer`/`group`/`text`/`vector`/`link`), `parent` (group id or null), `visible`,
 `opacity` (0–100), `mode` (GIMP layer-mode nick: `normal`, `multiply`…), `x`,
 `y` (offset of the top-left corner, image pixels), `width`, `height`,
 `has_alpha`, `locks` (`content`, `position`, `visibility`, `alpha`), `mask`
@@ -67,7 +67,7 @@ Errors: `INVALID_ID`, `NOT_FOUND`, `SESSION_CHANGED`.
 
 ### `gimp_inspect_item(item)`
 
-Read-only. `id`, `image`, `kind` (`layer`/`group`/`text`/`mask`/`channel`/`path`),
+Read-only. `id`, `image`, `kind` (`layer`/`group`/`text`/`vector`/`link`/`mask`/`channel`/`path`),
 `name`, `parent` (parent group, or the owning layer for a mask), `position`
 (index in the parent, 0 = top-most; null for masks), `visible`, and for
 layers the same properties as a tree node with `children` as a list of ids.
@@ -387,6 +387,23 @@ destructive. When an image is involved the call is one undo step and marks the
 image dirty. Procedure names, arguments and availability depend on the GIMP
 version; check with `gimp_list_callable_procedures` (the committed matrix lists
 422 callable procedures on GIMP 3.2.6).
+
+## Vector and link layers (toolset `vector`, GIMP 3.2)
+
+Both appear in `gimp_inspect_image` with their own `kind` (`vector`, `link`) and are kept in XCF.
+Painting tools, `gimp_fill` and destructive filters refuse them (`WRONG_KIND`) instead of turning
+them into pixels, as for text layers; layer tools (properties, move, duplicate, delete, transforms)
+work on them.
+
+* `gimp_create_vector_layer(path, name?, fill?, stroke?, position)`: renders a path with
+  `fill` (`enabled`, `color`) and `stroke` (`enabled`, `color`, `width`, `cap`, `join`,
+  `miter_limit`, `dash` in multiples of the width, `dash_offset`). `gimp_set_vector_layer` changes
+  only the given values; `gimp_inspect_vector_layer` returns the path id and every setting.
+* `gimp_create_link_layer(image, file, name?, position)`, `gimp_set_link_layer(item, file)`,
+  `gimp_inspect_link_layer` (file, MIME type). The XCF stores the file's path **and** the last
+  pixels: when the XCF is opened GIMP reads the file again (a changed file shows its new
+  content), and when the file is gone the layer keeps the pixels saved in the XCF
+  (`tests/e2e/test_vector_layers.py`).
 
 ## Advanced selections and channels (toolset `channels`)
 

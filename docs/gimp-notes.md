@@ -241,5 +241,11 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   `script-fu-selection-round` (`drawables` through `config.set_core_object_array`, `adjustment` %).
   `Gimp.Selection.save(image)` stores the selection as a channel; `Gimp.Channel.new_from_component`
   must be inserted by hand; `channel.combine_masks(other, op, dx, dy)`. Channels survive XCF.
+* **Vector and link layers** (checked 2026-11-08): `Gimp.VectorLayer.new(image, path)` (white fill,
+  6 px stroke by default) then `insert_layer`; `set_fill_color`, `set_enable_fill`,
+  `set_stroke_*` (`get_stroke_dash_pattern()` returns `(ok, pattern)`), then `refresh()` to render.
+  `Gimp.LinkLayer.new(image, GFile)`, `set_file`, `get_file`, `get_mime_type`. Both subclass
+  `Gimp.Layer` (test them before `Layer` in type checks). An XCF keeps a link layer's path and
+  pixels; opening it re-reads the file, a missing file leaves the saved pixels.
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.
