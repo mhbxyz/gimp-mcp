@@ -33,8 +33,9 @@ def test_a_scenario_declares_what_it_needs_and_what_an_agent_is_asked(name):
 @pytest.mark.parametrize("name", NAMES)
 def test_the_agent_finds_every_input_its_prompt_names(name, tmp_path):
     scenario = load(name)
-    files = {path.name for path in agent_inputs(scenario, tmp_path)}
-    named = set(re.findall(r"~/inputs/([\w.-]+)", scenario.prompt))
+    paths = [path.relative_to(tmp_path) for path in agent_inputs(scenario, tmp_path)]
+    files = {str(p) for p in paths} | {str(p.parent) for p in paths}  # a prompt may name a folder
+    named = {n.rstrip("/") for n in re.findall(r"~/inputs/([\w./-]+)", scenario.prompt)}
     assert named and named <= files, (named, files)
 
 
@@ -104,3 +105,14 @@ def test_the_screenshot_checks_reject_an_unredacted_copy(tmp_path):
     assert "the e-mail keeps no detail (no glyph pixel left)" in failed
     assert "the avatar keeps no detail (flatter, eyes and mouth gone)" in failed
     assert "the PNG carries no metadata (no text, Exif, time or profile chunk)" in failed  # the planted tEXt
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [("right, top", 6), ("left, bottom", 8), ("bottom, left", 8), ("Left, Bottom", 8), ("6", 6), ("8", 8),
+     ("top, left", 1), ("", 1)],
+)  # fmt: skip
+def test_the_batch_demo_reads_exif_orientation_from_interpreted_values(value, expected):
+    from demo.scenarios.web_photo_batch import orientation_of
+
+    assert orientation_of(value) == expected

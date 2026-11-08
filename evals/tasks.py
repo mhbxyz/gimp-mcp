@@ -504,7 +504,9 @@ def scenario_task(name: str) -> Task:
         return [Check(c.description, c.passed, c.detail) for c in agent_check(out, answer)]
 
     toolsets = tuple(t for t in scenario.toolsets if t != "core")
-    return Task(name, toolsets, scenario.prompt, make_inputs, check, scenario.agent_reference)
+    return Task(
+        name, toolsets, scenario.prompt, make_inputs, check, scenario.agent_reference, out_dirs=scenario.agent_out_dirs
+    )
 
 
 SCENARIO_TASKS: tuple[Task, ...] = tuple(scenario_task(n) for n in scenario_names() if load(n).agent_check is not None)

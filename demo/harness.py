@@ -181,6 +181,7 @@ class Scenario:
     # (tests/unit/test_evals.py proves the checks with it); both make it a task of the evaluation suite
     agent_check: Callable[[Path, str], list[Check]] | None = None
     agent_reference: Callable[[Path, Path], None] | None = None
+    agent_out_dirs: tuple[str, ...] = ()  # folders of ~/out the agent writes into (tools never create folders)
 
 
 def agent_inputs(scenario: Scenario, directory: Path) -> list[Path]:
@@ -251,7 +252,9 @@ async def run_scenario(scenario: Scenario, out_dir: Path, server: StdioServerPar
                 called <= report.listed_tools and "gimp_call_procedure" not in report.listed_tools,
                 toolsets,
             )
-    except Exception as exc:  # the report must show what failed
+    except Exception as exc:  # the report must show what failed (the cause, not the task group around it)
+        while isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1:
+            exc = exc.exceptions[0]  # type: ignore[assignment]
         report.check("scenario ran to completion", False, f"{type(exc).__name__}: {exc}")
     (out_dir / "report.md").write_text(report.markdown(), encoding="utf-8")
     return report

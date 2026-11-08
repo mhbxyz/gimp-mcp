@@ -27,6 +27,7 @@ wait_for() { # wait_for SECONDS CMD...
 
 desktop() {
   mkdir -p "$XDG_RUNTIME_DIR" "$HOME/out" && chmod 700 "$XDG_RUNTIME_DIR"
+  for dir in ${DEMO_OUT_DIRS:-}; do mkdir -p "$HOME/out/$dir"; done  # tools never create folders
   Xvfb :99 -screen 0 ${WIDTH}x${HEIGHT}x24 -nolisten tcp >/tmp/xvfb.log 2>&1 &
   wait_for 20 test -e /tmp/.X11-unix/X99
 

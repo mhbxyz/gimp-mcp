@@ -8,6 +8,10 @@ what is covered by the compatibility promise.
 
 ### Added
 
+- Demo: prepare a folder of photos for a website (#112). `uv run demo/run.py web-photo-batch` turns
+  twenty photos upright from EXIF, fits them to 1600 px, converts them to sRGB, watermarks them, removes
+  GPS but keeps the copyright, exports WebP and JPEG, and reports the corrupt file; its agent version is
+  an evaluation task. The demos run GIMP in English (`LANG=C.UTF-8`): metadata values are localized.
 - Demo: annotate a screenshot and redact private data (#111). `uv run demo/run.py screenshot-annotation`
   pixelates an e-mail address and an avatar, draws a box, an arrow and numbered callouts, and exports a
   PNG without metadata, every other pixel identical to the input; its agent version is an evaluation task.
