@@ -255,6 +255,12 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   automatic direction (first strong character) wins, so Hebrew renders right to left anyway; the
   `ttb-*` directions make the layout vertical. `layer.resize(w, h)` fixes the text box. There is no
   "text along path" procedure in the 3.2 PDB.
+* **Animations** (checked 2026-11-08): `file-gif-export` (`as-animation`, `loop`,
+  `default-delay`, `default-dispose`, `force-delay`, `force-dispose`) and `file-webp-export`
+  (`animation`, `animation-loop`, `default-delay`, `force-delay`) read `(NNms)` and
+  `(combine|replace)` from layer names. `plug-in-animationoptimize`, `-optimize-diff` and
+  `-unoptimize` return a new image (`result.index(1)`). There is `file-apng-load` but no APNG
+  exporter. Pillow 13 does not report WebP frame durations: read the `ANMF` chunks.
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.
 * Vector layers (3.2.6): fill and stroke **patterns** can be read (`get_fill_pattern`,

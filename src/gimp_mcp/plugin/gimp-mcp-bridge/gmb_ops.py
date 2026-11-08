@@ -12,6 +12,7 @@ import gi
 
 gi.require_version("Babl", "0.1")
 import gmb_align  # noqa: E402
+import gmb_anim  # noqa: E402
 import gmb_color  # noqa: E402
 import gmb_filters  # noqa: E402
 import gmb_formats  # noqa: E402
@@ -3879,6 +3880,124 @@ def text_style_set(params):
     return text_style(layer)
 
 
+# -- animation (#59) ---------------------------------------------------------------------
+
+DISPOSALS = ("combine", "replace")
+ANIMATION_PLUGINS = {
+    "optimize": "plug-in-animationoptimize",
+    "optimize-difference": "plug-in-animationoptimize-diff",
+    "unoptimize": "plug-in-animationunoptimize",
+}
+
+
+def _frames(image, default_delay=100):
+    return gmb_anim.frames([(layer.get_id(), layer.get_name()) for layer in image.get_layers()], default_delay)
+
+
+def anim_frames(params):
+    image = get_image(params)
+    return {"image": image.get_id(), "frames": _frames(image, int(params.get("default_delay", 100)))}
+
+
+def _frame_layer(params):
+    layer = get_layer(params)
+    if layer.get_parent() is not None:
+        raise BridgeError("INVALID_ARGUMENT", "frames are top-level layers; %r is inside a group" % layer.get_name())
+    return layer
+
+
+@mutation
+def anim_set_frame(params):
+    layer = _frame_layer(params)
+    disposal = params.get("disposal")
+    if disposal is not None and disposal not in DISPOSALS:
+        raise BridgeError("INVALID_ARGUMENT", "disposal must be combine or replace")
+    base, duration, current = gmb_anim.parse_frame_name(layer.get_name())
+    name = gmb_anim.frame_name(
+        params.get("name") or base,
+        params["duration_ms"] if params.get("duration_ms") is not None else duration,
+        disposal if disposal is not None else current,
+    )
+    with undo_step(layer.get_image()):
+        layer.set_name(name)
+    return anim_frames({"image": layer.get_image().get_id()})
+
+
+@mutation
+def anim_add_frame(params):
+    image = get_image(params)
+    count = len(image.get_layers())
+    index = int(params.get("index", count))  # playing order: 0 = first frame (bottom layer)
+    if not 0 <= index <= count:
+        raise BridgeError("INVALID_ARGUMENT", "index must be between 0 and %d" % count)
+    disposal = params.get("disposal")
+    if disposal is not None and disposal not in DISPOSALS:
+        raise BridgeError("INVALID_ARGUMENT", "disposal must be combine or replace")
+    source = _frame_layer({"item": params["duplicate_of"]}) if params.get("duplicate_of") is not None else None
+    if source is not None and source.get_image().get_id() != image.get_id():
+        raise BridgeError("IMAGE_MISMATCH", "the frame to duplicate belongs to another image")
+    base = params.get("name") or (
+        gmb_anim.parse_frame_name(source.get_name())[0] if source else "Frame %d" % (index + 1)
+    )
+    name = gmb_anim.frame_name(base, params.get("duration_ms"), disposal)
+    with undo_step(image):
+        if source is not None:
+            layer = source.copy()
+        else:
+            layer = Gimp.Layer.new(image, name, image.get_width(), image.get_height(), Gimp.ImageType.RGBA_IMAGE,
+                                   100.0, Gimp.LayerMode.NORMAL)  # fmt: skip
+        image.insert_layer(layer, None, count - index)
+        layer.set_name(name)
+        if source is None and params.get("fill") is not None:
+            with paint_context({"color": params["fill"]}):
+                layer.edit_fill(Gimp.FillType.FOREGROUND)
+    return {**anim_frames({"image": image.get_id()}), "added": layer.get_id()}
+
+
+def anim_preview(params):
+    import base64
+
+    image = get_image(params)
+    frames = _frames(image)
+    try:
+        visible = set(gmb_anim.visible_frames(frames, int(params["index"])))
+    except IndexError as error:
+        raise BridgeError("INVALID_ARGUMENT", str(error)) from None
+    copy = image.duplicate()
+    try:
+        copy.undo_disable()
+        for frame, layer in zip(frames, reversed(copy.get_layers()), strict=True):
+            layer.set_visible(frame["index"] in visible)
+        pw, ph = _fit(copy.get_width(), copy.get_height(), int(params.get("max_size", 512)))
+        pixbuf = copy.get_thumbnail(pw, ph, Gimp.PixbufTransparency.KEEP_ALPHA)
+        if pixbuf is None:
+            raise BridgeError("GIMP_ERROR", "GIMP could not render the frame")
+        _ok, data = pixbuf.save_to_bufferv("png", [], [])
+    finally:
+        copy.delete()
+    return {"png_base64": base64.b64encode(bytes(data)).decode("ascii"), "width": pw, "height": ph,
+            "frames_shown": sorted(visible)}  # fmt: skip
+
+
+@mutation
+def anim_optimize(params):
+    image = get_image(params)
+    procedure = Gimp.get_pdb().lookup_procedure(ANIMATION_PLUGINS[params["mode"]])
+    if procedure is None:
+        raise BridgeError("UNSUPPORTED", "GIMP's animation plug-in is not available")
+    config = procedure.create_config()
+    config.set_property("run-mode", Gimp.RunMode.NONINTERACTIVE)
+    config.set_property("image", image)
+    config.set_core_object_array("drawables", image.get_layers()[:1])
+    result = procedure.run(config)
+    if result.index(0) != Gimp.PDBStatusType.SUCCESS:
+        raise BridgeError("GIMP_ERROR", "GIMP could not %s the animation" % params["mode"])
+    created = result.index(1)
+    if created is None or not isinstance(created, Gimp.Image):
+        raise BridgeError("GIMP_ERROR", "GIMP returned no image")
+    return {**image_ref(created, show(created)), "frames": _frames(created)}
+
+
 # -- text --------------------------------------------------------------------------------
 
 JUSTIFICATIONS = {"left": "LEFT", "right": "RIGHT", "center": "CENTER", "fill": "FILL"}
@@ -4555,6 +4674,11 @@ def build_operations():
         "filter.list": filter_list,
         "filter.remove": filter_remove,
         "filter.operations": filter_operations,
+        "anim.frames": anim_frames,
+        "anim.set_frame": anim_set_frame,
+        "anim.add_frame": anim_add_frame,
+        "anim.preview": anim_preview,
+        "anim.optimize": anim_optimize,
         "text.style_get": text_style_get,
         "text.style_set": text_style_set,
         "vector.create": vector_create,
