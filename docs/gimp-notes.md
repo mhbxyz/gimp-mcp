@@ -362,3 +362,9 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   on it gets `NOT_FOUND`; Ctrl+Q with nothing unsaved quits GIMP, the next call fails, and the same MCP
   session works again once GIMP is started again. On Xvfb without a window manager, GIMP accepts
   `xdotool key --window` (synthetic events).
+* RAW through darktable in the GUI (#129, GIMP 3.2.6, darktable 5.6.2, Xvfb): GIMP registers one loader
+  per RAW family (`file-darktable-dng-load`, `-canon-`, `-nikon-`…, 25 of them) next to the
+  `file-raw-placeholder-*` ones. Opening a DNG starts darktable's darkroom; quitting darktable (Ctrl+Q)
+  hands the developed image to GIMP (64x64, quadrants red, green, blue, gray kept). Without a window
+  manager darktable ignores synthetic key events (`xdotool key --window`): focus its window and type with
+  XTEST; destroying its window (`xdotool windowclose`) leaves GIMP waiting.
