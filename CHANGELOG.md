@@ -60,6 +60,9 @@ what is covered by the compatibility promise.
   from alpha, text, paths and channels; grow, shrink, border, feather, sharpen, round, remove holes,
   translate; channels (empty, saved selection, color component) that can be changed, combined and
   deleted. `gimp_inspect_image` lists the image's channels.
+- Vector toolset (#57): GIMP 3.2 vector layers (a path rendered with editable fill and stroke) and link
+  layers (an external image file); both have their own `kind` in inspection and are refused by
+  painting and destructive filters instead of being rasterized.
 
 ### Fixed
 

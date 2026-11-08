@@ -8,8 +8,8 @@ from pydantic import BaseModel, Field
 
 from .ids import IdCodec
 
-LayerKind = Literal["layer", "group", "text"]
-ItemKind = Literal["layer", "group", "text", "mask", "channel", "path"]
+LayerKind = Literal["layer", "group", "text", "vector", "link"]
+ItemKind = Literal["layer", "group", "text", "vector", "link", "mask", "channel", "path"]
 
 
 class Locks(BaseModel):

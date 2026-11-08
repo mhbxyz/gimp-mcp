@@ -90,6 +90,9 @@ def get_item(params, key="item"):
     return Gimp.Item.get_by_id(number)
 
 
+LAYER_KINDS = ("layer", "group", "text", "vector", "link")
+
+
 def item_kind(item):
     if isinstance(item, Gimp.LayerMask):
         return "mask"
@@ -97,6 +100,10 @@ def item_kind(item):
         return "text"
     if isinstance(item, Gimp.GroupLayer):
         return "group"
+    if isinstance(item, Gimp.VectorLayer):
+        return "vector"
+    if isinstance(item, Gimp.LinkLayer):
+        return "link"
     if isinstance(item, Gimp.Layer):
         return "layer"
     if isinstance(item, Gimp.Channel):
@@ -108,7 +115,7 @@ def item_kind(item):
 
 def get_layer(params, key="item"):
     item = get_item(params, key)
-    if item_kind(item) not in ("layer", "group", "text"):
+    if item_kind(item) not in LAYER_KINDS:
         raise BridgeError(
             "WRONG_KIND",
             "item %d is a %s, not a layer" % (item.get_id(), item_kind(item)),
@@ -208,7 +215,7 @@ def image_details(image):
 def item_details(item):
     kind = item_kind(item)
     image = item.get_image()
-    if kind in ("layer", "group", "text"):
+    if kind in LAYER_KINDS:
         data = layer_node(item, recurse=False)
         data["position"] = image.get_item_position(item)
     elif kind == "mask":
@@ -784,7 +791,7 @@ def _transform_target(params):
         return image.get_selection(), image, "selection"
     item = get_item(params)
     kind = item_kind(item)
-    if kind in ("layer", "group", "text"):
+    if kind in LAYER_KINDS:
         require_unlocked(item, position=True, content=True)
     elif kind not in ("path", "channel"):
         raise BridgeError("WRONG_KIND", "a %s cannot be transformed" % kind)
@@ -817,7 +824,7 @@ def item_transform(params):
     if result is None:
         raise BridgeError("GIMP_ERROR", "GIMP refused the transform")
     data = {"kind": kind, "image": image.get_id()}
-    if kind in ("layer", "group", "text"):
+    if kind in LAYER_KINDS:
         data["layer"] = layer_node(result, recurse=False)
     elif kind == "selection":
         data["selection"] = selection_state(image)
@@ -1120,11 +1127,11 @@ def get_paintable(params):
     kind = item_kind(item)
     if kind == "group":
         raise BridgeError("WRONG_KIND", "groups have no pixels: paint on one of their layers", {"item": item.get_id()})
-    if kind == "text":
+    if kind in ("text", "vector", "link"):
         raise BridgeError(
             "WRONG_KIND",
-            "painting on a text layer would silently turn it into pixels; paint on another layer",
-            {"item": item.get_id()},
+            "painting on a %s layer would silently turn it into pixels; paint on another layer" % kind,
+            {"item": item.get_id(), "kind": kind},
         )
     if kind not in ("layer", "mask", "channel"):
         raise BridgeError("WRONG_KIND", "item %d is a %s, it cannot be painted" % (item.get_id(), kind))
@@ -3507,7 +3514,7 @@ def select_by_color(params):
 def select_item_shape(params):
     item = get_item(params)
     kind = item_kind(item)
-    if kind not in ("layer", "group", "text", "path", "channel", "mask"):
+    if kind not in (*LAYER_KINDS, "path", "channel", "mask"):
         raise BridgeError("WRONG_KIND", "a %s cannot be turned into a selection" % kind)
     image = item.get_image()
     with sample_context(params):
@@ -3630,6 +3637,143 @@ def channel_delete(params):
     number = channel.get_id()
     channel.get_image().remove_channel(channel)
     return {"deleted": number}
+
+
+# -- vector and link layers (#57) -------------------------------------------------------
+
+CAP_STYLES = {v.value_nick: v for v in Gimp.CapStyle.__enum_values__.values()}
+JOIN_STYLES = {v.value_nick: v for v in Gimp.JoinStyle.__enum_values__.values()}
+
+
+def _get_kind(params, kind, key="item"):
+    item = get_item(params, key)
+    if item_kind(item) != kind:
+        raise BridgeError("WRONG_KIND", "item %d is a %s, not a %s layer" % (item.get_id(), item_kind(item), kind))
+    return item
+
+
+def _unwrap(value):
+    """libgimp getters return either the value or (ok, value)."""
+    return value[-1] if isinstance(value, tuple) else value
+
+
+def vector_info(layer):
+    path = layer.get_path()
+    return {
+        **layer_node(layer, recurse=False),
+        "path": path.get_id() if path is not None else None,
+        "fill": {
+            "enabled": bool(layer.get_enable_fill()),
+            "color": _hex8(layer.get_fill_color()),
+            "pattern": layer.get_fill_pattern().get_name() if layer.get_fill_pattern() else None,
+        },
+        "stroke": {
+            "enabled": bool(layer.get_enable_stroke()),
+            "color": _hex8(layer.get_stroke_color()),
+            "width": layer.get_stroke_width(),
+            "cap": layer.get_stroke_cap_style().value_nick,
+            "join": layer.get_stroke_join_style().value_nick,
+            "miter_limit": layer.get_stroke_miter_limit(),
+            "dash": list(_unwrap(layer.get_stroke_dash_pattern()) or []),
+            "dash_offset": layer.get_stroke_dash_offset(),
+        },
+    }
+
+
+def _check_vector_settings(params):
+    stroke = params.get("stroke") or {}
+    if stroke.get("cap") is not None and stroke["cap"] not in CAP_STYLES:
+        raise BridgeError("INVALID_ARGUMENT", "unknown cap", {"allowed": sorted(CAP_STYLES)})
+    if stroke.get("join") is not None and stroke["join"] not in JOIN_STYLES:
+        raise BridgeError("INVALID_ARGUMENT", "unknown join", {"allowed": sorted(JOIN_STYLES)})
+    fill = params.get("fill") or {}
+    if fill.get("pattern") and Gimp.Pattern.get_by_name(fill["pattern"]) is None:
+        raise BridgeError("NOT_FOUND", "GIMP has no pattern named %r" % fill["pattern"])
+
+
+def _apply_vector_settings(layer, params):
+    fill = params.get("fill") or {}
+    if fill.get("enabled") is not None:
+        layer.set_enable_fill(bool(fill["enabled"]))
+    if fill.get("color") is not None:
+        layer.set_fill_color(color(fill["color"]))
+    stroke = params.get("stroke") or {}
+    if stroke.get("enabled") is not None:
+        layer.set_enable_stroke(bool(stroke["enabled"]))
+    if stroke.get("color") is not None:
+        layer.set_stroke_color(color(stroke["color"]))
+    if stroke.get("width") is not None:
+        layer.set_stroke_width(float(stroke["width"]))
+    if stroke.get("cap") is not None:
+        layer.set_stroke_cap_style(CAP_STYLES[stroke["cap"]])
+    if stroke.get("join") is not None:
+        layer.set_stroke_join_style(JOIN_STYLES[stroke["join"]])
+    if stroke.get("miter_limit") is not None:
+        layer.set_stroke_miter_limit(float(stroke["miter_limit"]))
+    if stroke.get("dash") is not None:
+        layer.set_stroke_dash_pattern([float(v) for v in stroke["dash"]])
+    if stroke.get("dash_offset") is not None:
+        layer.set_stroke_dash_offset(float(stroke["dash_offset"]))
+    layer.refresh()
+
+
+@mutation
+def vector_create(params):
+    path = get_path(params, "path")
+    image = path.get_image()
+    _check_vector_settings(params)
+    with undo_step(image):
+        layer = Gimp.VectorLayer.new(image, path)
+        if layer is None:
+            raise BridgeError("GIMP_ERROR", "GIMP could not create the vector layer")
+        if params.get("name"):
+            layer.set_name(params["name"])
+        image.insert_layer(layer, None, int(params.get("position", 0)))
+        _apply_vector_settings(layer, params)
+    return vector_info(layer)
+
+
+@mutation
+def vector_set(params):
+    layer = _get_kind(params, "vector")
+    _check_vector_settings(params)
+    with undo_step(layer.get_image()):
+        _apply_vector_settings(layer, params)
+    return vector_info(layer)
+
+
+def vector_inspect(params):
+    return vector_info(_get_kind(params, "vector"))
+
+
+def link_info(layer):
+    return {**layer_node(layer, recurse=False), "file": _path(layer.get_file()), "mime_type": layer.get_mime_type()}
+
+
+@mutation
+def link_create(params):
+    image = get_image(params)
+    with undo_step(image):
+        layer = Gimp.LinkLayer.new(image, Gio.File.new_for_path(params["file"]))
+        if layer is None:
+            raise BridgeError("UNSUPPORTED_FORMAT", "GIMP could not link %s" % params["file"], {"path": params["file"]})
+        if params.get("name"):
+            layer.set_name(params["name"])
+        image.insert_layer(layer, None, int(params.get("position", 0)))
+    return link_info(layer)
+
+
+@mutation
+def link_set(params):
+    layer = _get_kind(params, "link")
+    with undo_step(layer.get_image()):
+        if not layer.set_file(Gio.File.new_for_path(params["file"])):
+            raise BridgeError("UNSUPPORTED_FORMAT", "GIMP could not link %s" % params["file"], {"path": params["file"]})
+    return link_info(layer)
+
+
+def link_inspect(params):
+    return link_info(_get_kind(params, "link"))
 
 
 # -- text --------------------------------------------------------------------------------
@@ -4308,6 +4452,12 @@ def build_operations():
         "filter.list": filter_list,
         "filter.remove": filter_remove,
         "filter.operations": filter_operations,
+        "vector.create": vector_create,
+        "vector.set": vector_set,
+        "vector.inspect": vector_inspect,
+        "link.create": link_create,
+        "link.set": link_set,
+        "link.inspect": link_inspect,
         "select.color": select_by_color,
         "select.item": select_item_shape,
         "selection.modify_advanced": selection_modify_advanced,
