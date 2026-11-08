@@ -44,7 +44,7 @@ jobs:
         timeout-minutes: 10
         continue-on-error: true
         run: |
-          export PROBE_OUT="$PWD/filters.txt"
+          export PROBE_OUT="$PWD/filters.txt" PLUGIN_DIR="$PWD/src/gimp_mcp/plugin/gimp-mcp-bridge"
           /Applications/GIMP.app/Contents/MacOS/gimp-console-3.2 -i -n --no-splash --batch-interpreter=python-fu-eval \
             -b "exec(open('$PWD/ci/explore/filters_probe.py').read())" --quit || echo "exit $?"
           echo "lines: $(wc -l < filters.txt)"; tail -15 filters.txt
