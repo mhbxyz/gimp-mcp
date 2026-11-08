@@ -31,7 +31,12 @@ for walk in range(3 if "x3" in mode else 1):
                 continue
         say("walk %d op %s new" % (walk, name))
         drawable_filter = Gimp.DrawableFilter.new(layer, name, "probe")
-        gmb_ops._describe_filter_params(drawable_filter.get_config())
+        if "newonly" in mode:
+            pass
+        elif "config" in mode:
+            drawable_filter.get_config()
+        else:
+            gmb_ops._describe_filter_params(drawable_filter.get_config())
         if "delete" in mode:
             drawable_filter.delete()
 say("done")
