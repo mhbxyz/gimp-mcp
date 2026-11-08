@@ -247,6 +247,14 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   `Gimp.LinkLayer.new(image, GFile)`, `set_file`, `get_file`, `get_mime_type`. Both subclass
   `Gimp.Layer` (test them before `Layer` in type checks). An XCF keeps a link layer's path and
   pixels; opening it re-reads the file, a missing file leaves the saved pixels.
+* **Text styling** (checked 2026-11-08): `layer.set_markup(pango_markup)`, `get_markup()` (empty
+  without per-run styles). `get_outline_width()` and `get_indent()` return `(value, unit)`;
+  `set_outline_width(width, unit)` needs the unit. Enum nicks: `Gimp.TextOutline` `none`,
+  `stroke-only`, `stroke-fill`; `Gimp.TextHintStyle` `none`…`full`; `Gimp.TextDirection` `ltr`,
+  `rtl`, `ttb-*`. `set_base_direction(RTL)` does not change horizontal layouts: Pango's
+  automatic direction (first strong character) wins, so Hebrew renders right to left anyway; the
+  `ttb-*` directions make the layout vertical. `layer.resize(w, h)` fixes the text box. There is no
+  "text along path" procedure in the 3.2 PDB.
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.
 * Vector layers (3.2.6): fill and stroke **patterns** can be read (`get_fill_pattern`,

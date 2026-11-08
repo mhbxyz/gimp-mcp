@@ -4,7 +4,7 @@
 
 Inventory: GIMP **3.2.6**, 1030 PDB procedures (722 internal, 3 persistent, 244 plugin, 61 temporary), 200 GEGL operations available to filters.
 
-MCP tools: **149**. PDB procedures relied upon by tools: **272** (26.4% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
+MCP tools: **151**. PDB procedures relied upon by tools: **282** (27.4% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
 
 ## Capabilities
 
@@ -14,6 +14,7 @@ MCP tools: **149**. PDB procedures relied upon by tools: **272** (26.4% of the i
 | Session | Toolsets: list the tool groups, enable more during a session | tested | `gimp_list_toolsets`, `gimp_enable_toolsets` | `tests/unit/test_toolsets.py`, `tests/e2e/test_thumbnail_journey.py` | 3.2 | MCP-side only, no GIMP procedure; see docs/toolsets.md |
 | Inspection | Image properties and ordered layer tree (groups, masks) | tested | `gimp_inspect_image`, `gimp_inspect_item` | `tests/e2e/test_inspect.py` | 3.2 |  |
 | Preview | Composite preview as PNG (max 1024 px) | tested | `gimp_preview` | `tests/e2e/test_preview.py` | 3.2 | 8-bit sRGB rendering of the visible layers; larger renders go through export. |
+| Text | Rich text markup, outline, kerning, hinting, indent, language, base direction, text box | tested | `gimp_set_text_style`, `gimp_inspect_text_style` | `tests/e2e/test_typography.py`, `tests/unit/test_text_markup.py` | 3.2 | Text along a path: no GIMP 3.2 API (#88). |
 | Vector layers | Vector layers from paths with editable fill and stroke; link layers to external files | tested | `gimp_create_vector_layer`, `gimp_set_vector_layer`, `gimp_inspect_vector_layer`, `gimp_create_link_layer`, `gimp_set_link_layer`, `gimp_inspect_link_layer` | `tests/e2e/test_vector_layers.py` | 3.2 |  |
 | Selections | Select by color, fuzzy select, from alpha / text / path / channel | tested | `gimp_select_by_color`, `gimp_select_item` | `tests/e2e/test_channels.py` | 3.2 |  |
 | Selections | Grow, shrink, border, feather, sharpen, round, remove holes, translate | tested | `gimp_modify_selection_shape` | `tests/e2e/test_channels.py` | 3.2 |  |
@@ -71,7 +72,7 @@ MCP tools: **149**. PDB procedures relied upon by tools: **272** (26.4% of the i
 | `gimp-context-*` | 121 | 19 |
 | `plug-in-*` | 68 | 1 |
 | `gimp-drawable-*` | 56 | 32 |
-| `gimp-text-*` | 50 | 14 |
+| `gimp-text-*` | 50 | 24 |
 | `gimp-item-*` | 46 | 11 |
 | `script-fu-*` | 43 | 1 |
 | `gimp-layer-*` | 34 | 22 |

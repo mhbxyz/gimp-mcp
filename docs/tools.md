@@ -388,6 +388,28 @@ image dirty. Procedure names, arguments and availability depend on the GIMP
 version; check with `gimp_list_callable_procedures` (the committed matrix lists
 422 callable procedures on GIMP 3.2.6).
 
+## Advanced text (toolset `typography`)
+
+* `gimp_set_text_style(item, markup?, outline?, kerning?, hint_style?, indent?, language?,
+  base_direction?, box?)` keeps the layer editable text:
+  * `markup`: Pango markup, checked before GIMP sees it (well-formed, tags `b i u s big small sub
+    sup tt span`, `span` attributes such as `font`, `size`, `foreground`, `background`,
+    `letter_spacing`, `rise`, `underline`, `weight`, `style`, `lang`);
+  * `outline`: `mode` (`none`, `stroke-only`, `stroke-fill`), `color`, `width` (px), `cap`, `join`,
+    `miter_limit`, `antialias`;
+  * `kerning`, `hint_style` (`none`, `slight`, `medium`, `full`), `indent` (px of the first line),
+    `language` (e.g. `ar`, `he`, `ja`), `box` (fixed width and height: wrapping and alignment);
+  * `base_direction`: `ltr`, `rtl`, or vertical `ttb-rtl`, `ttb-rtl-upright`, `ttb-ltr`,
+    `ttb-ltr-upright`. For horizontal text GIMP 3.2 lets Pango take the paragraph direction from
+    the first strong character, so Hebrew or Arabic text lays out right to left on its own
+    (verified: in `שלום A` the A is drawn left of the word); the vertical directions change the
+    layout.
+* `gimp_inspect_text_style(item)`: markup (null when the text has no per-run style), outline,
+  kerning, hinting, indent, language, direction and size. Every property survives an XCF round
+  trip (`tests/e2e/test_typography.py`).
+* Text to path: `gimp_path_from_text` (toolset `paths`). Text along a path has no GIMP 3.2 API
+  for plug-ins (#88).
+
 ## Vector and link layers (toolset `vector`, GIMP 3.2)
 
 Both appear in `gimp_inspect_image` with their own `kind` (`vector`, `link`) and are kept in XCF.
