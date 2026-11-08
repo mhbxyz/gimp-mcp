@@ -75,6 +75,15 @@ def make_logo(path: Path, alpha: int = 255) -> None:
     img.save(path)
 
 
+def orientation_value(exif: dict, path: Path) -> str:
+    """The orientation GIMP read, or the file's own when GIMP for Windows returns none (#173)."""
+    value = str(exif.get("Exif.Image.Orientation", "")).strip()
+    if value:
+        return value
+    with Image.open(path) as photo:
+        return f"{photo.getexif().get(0x0112, '')} (from the file)"
+
+
 def orientation_of(value: object) -> int:
     """EXIF orientation 6 or 8 from what gimp_get_metadata returns: Exiv2's interpreted value in GIMP's
     language ("right, top" for 6, "left, bottom" for 8; the demos run GIMP in English) or a number
@@ -126,8 +135,9 @@ async def steps(gimp: Session, report: Report) -> None:
         info = await gimp.call("gimp_inspect_image", image=image)
         exif = (await gimp.call("gimp_get_metadata", image=image))["exif"]
         await gimp.call("gimp_close_image", image=image)
-        read[path.stem] = f"{info['width']}x{info['height']} {exif.get('Exif.Image.Orientation', '')}"
-        orientation = orientation_of(exif.get("Exif.Image.Orientation", ""))
+        value = orientation_value(exif, path)
+        read[path.stem] = f"{info['width']}x{info['height']} {value}"
+        orientation = orientation_of(value.removesuffix(" (from the file)"))
         groups.setdefault((info["width"], info["height"], orientation), []).append(str(path))
     report.check("every photo was read (size, orientation)", sum(len(g) for g in groups.values()) == len(PHOTOS),
                  f"{len(groups)} groups; read: {read}")  # fmt: skip

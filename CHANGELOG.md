@@ -55,6 +55,8 @@ what is covered by the compatibility promise.
 
 ### Fixed
 
+- The web photo batch demo reads a photo's EXIF orientation from the file when GIMP for Windows returns none
+  (it sometimes does, #173).
 - The release waits until PyPI serves a new version to both pip and uv: for v0.5.0, uv could not
   resolve it on the macOS runner seconds after pip could, and the verification failed (passed on re-run).
 
