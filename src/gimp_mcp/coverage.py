@@ -434,8 +434,8 @@ CAPABILITIES: tuple[Capability, ...] = (
     ),
     Capability(
         "Resources",
-        "Palette import (.gpl) and export (gpl, css, text, python, php, java, kpl)",
-        "partial",
+        "Palette import (.gpl, .act, .aco, .ase, .pal) and export (gpl, css, text, python, php, java, kpl)",
+        "tested",
         tools=("gimp_import_palette", "gimp_export_palette"),
         procedures=(
             "gimp-palettes-refresh",
@@ -443,8 +443,9 @@ CAPABILITIES: tuple[Capability, ...] = (
             "gimp-palette-export-text",
             "python-fu-palette-export-as-kpl",
         ),
-        tests=("tests/e2e/test_resources.py",),
-        notes="Import of .aco/.act/.ase/.pal is only in GIMP's dialog (#81).",
+        tests=("tests/e2e/test_resources.py", "tests/unit/test_palette_files.py"),
+        notes="Formats other than .gpl are read by gimp-mcp (GIMP 3.2 reads them only in its dialog); "
+        "CMYK and Lab swatches are refused.",
     ),
     Capability(
         "Paths",

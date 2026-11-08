@@ -6,6 +6,12 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+### Added
+
+- `gimp_import_palette` imports Adobe Color Tables (`.act`), Photoshop swatches (`.aco`), Adobe Swatch
+  Exchange (`.ase`) and RIFF or Paint Shop Pro palettes (`.pal`) by converting them to `.gpl` (#81).
+  Their RGB, HSB and grayscale colors are imported; CMYK and Lab colors are refused.
+
 ### Fixed
 
 - `demo/video/record.sh` resolves a relative output directory from the caller's directory, not

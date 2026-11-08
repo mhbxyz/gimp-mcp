@@ -2,20 +2,28 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from .tool_harness import error_code, tool_client
 
 
-async def test_import_accepts_only_gimp_palettes(tmp_path):
-    (tmp_path / "a.act").write_bytes(b"x" * 772)
+async def test_import_sends_gimp_palettes_as_files_and_converts_other_formats(tmp_path):
+    fixtures = Path(__file__).parent.parent / "fixtures" / "palettes"
     (tmp_path / "b.gpl").write_text("GIMP Palette\nName: B\n#\n")
+    (tmp_path / "c.xyz").write_text("x")
     ops = {"palette.import": lambda p: {"kind": "palette", "name": "B", "editable": True, "columns": 0, "entries": []}}
     async with tool_client(ops) as (client, bridge):
-        refused = await client.call_tool("gimp_import_palette", {"file": str(tmp_path / "a.act")})
-        assert error_code(refused) == "UNSUPPORTED_FORMAT" and bridge.calls == []
+        for refused in (tmp_path / "c.xyz", fixtures / "ADG3-CMYK.ase"):
+            result = await client.call_tool("gimp_import_palette", {"file": str(refused)})
+            assert error_code(result) == "UNSUPPORTED_FORMAT" and bridge.calls == [], refused
         ok = await client.call_tool("gimp_import_palette", {"file": str(tmp_path / "b.gpl")})
-        assert not ok.is_error and bridge.calls[0][1]["file"] == str(tmp_path / "b.gpl")
+        assert not ok.is_error and bridge.calls[0][1] == {"file": str(tmp_path / "b.gpl")}
+        converted = await client.call_tool("gimp_import_palette", {"file": str(fixtures / "arne-v20-16.act")})
+        sent = bridge.calls[1][1]
+        assert not converted.is_error and sent["name"] == "arne-v20-16" and len(sent["entries"]) == 16
+        assert sent["entries"][1] == {"name": "", "rgb": [0x9D, 0x9D, 0x9D]}  # second color of the file
 
 
 async def test_gradient_colors_are_sent_as_srgb_floats_and_positions_checked():

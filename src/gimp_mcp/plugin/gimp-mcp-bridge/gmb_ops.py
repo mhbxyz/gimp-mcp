@@ -2562,13 +2562,20 @@ def palette_import(params):
     import shutil
 
     source = params["file"]
+    entries = params.get("entries")  # colors read by the server from another format (#81)
     folder = os.path.join(Gimp.directory(), "palettes")
     os.makedirs(folder, exist_ok=True)
-    target = os.path.join(folder, os.path.basename(source))
+    basename = params["name"] + ".gpl" if entries is not None else os.path.basename(source)
+    target = os.path.join(folder, basename)
     if os.path.exists(target):
-        raise BridgeError("FILE_EXISTS", "%s is already in your palettes folder" % os.path.basename(source))
+        raise BridgeError("FILE_EXISTS", "%s is already in your palettes folder" % basename)
     before = {p.get_name() for p in Gimp.palettes_get_list("")}
-    shutil.copyfile(source, target)
+    if entries is None:
+        shutil.copyfile(source, target)
+    else:
+        rows = [(e["name"], tuple(e["rgb"])) for e in entries]
+        with open(target, "w", encoding="utf-8") as handle:
+            handle.write(gmb_resources.write_gpl(params["name"], 0, rows))
     Gimp.palettes_refresh()
     created = [p for p in Gimp.palettes_get_list("") if p.get_name() not in before]
     if not created:
