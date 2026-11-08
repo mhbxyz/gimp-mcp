@@ -29,6 +29,7 @@ TOOLSETS: dict[str, str] = {
     "full-resolution crops.",
     "color": "Color adjustments: levels, curves, color balance, colorize, desaturate, invert, threshold, "
     "posterize, exposure, shadows-highlights, automatic corrections.",
+    "batch": "Run a recipe of tool calls over many files: resize a folder, watermark, convert formats.",
     "animation": "Animations as layers: frames with duration and disposal, frame previews, optimization, "
     "animated GIF and WebP export.",
     "typography": "Rich text markup, text outlines, kerning, hinting, indentation, language and right-to-left or "

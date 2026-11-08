@@ -60,6 +60,7 @@ class CatalogEntry:
     toolset: str
     register: Callable[[], None]
     listed: bool = False
+    handler: Callable[..., Awaitable[Any]] | None = None
 
 
 class Toolkit:
@@ -134,7 +135,7 @@ class Toolkit:
 
             if name in self.catalog:
                 raise ValueError(f"tool {name} registered twice")
-            entry = CatalogEntry(name, toolset, register)
+            entry = CatalogEntry(name, toolset, register, handler=wrapper)
             self.catalog[name] = entry
             if toolset in self.enabled:
                 register()

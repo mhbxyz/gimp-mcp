@@ -55,6 +55,7 @@ Rules of thumb:
 * If your client caps the number of tools (counted across all MCP servers) or warns about too many
   tools, list only what your work needs, e.g. `files,layers,text` (21 tools with `core`). The agent
   can still enable more with `gimp_enable_toolsets` if the client refreshes its tool list.
+* Add `batch` to run the same recipe over a folder of files.
 * Add `animation` for animated GIF and WebP.
 * Add `typography` for rich text, outlines and right-to-left or vertical text.
 * Add `vector` for editable vector shapes and layers linked to external files.
@@ -135,6 +136,10 @@ Not in the default. Measure pixels, read-only: `gimp_histogram`, `gimp_sample_co
 Not in the default. Color adjustments with photographers' ranges: `gimp_levels`, `gimp_curves`,
 `gimp_color_balance`, `gimp_colorize`, `gimp_desaturate`, `gimp_invert`, `gimp_threshold`,
 `gimp_posterize`, `gimp_exposure`, `gimp_shadows_highlights`, `gimp_auto_adjust`.
+
+### `batch`
+
+Not in the default. Batch processing: `gimp_run_batch`.
 
 ### `animation`
 
