@@ -8,6 +8,7 @@ from gi.repository import Gimp, Gegl
 Gegl.Buffer.__gtype__
 sys.path.insert(0, os.environ["PLUGIN_DIR"])
 import gmb_ops
+import gmb_filters
 log = open(os.environ["PROBE_OUT"], "w")
 def say(text):
     log.write(text + "\n"); log.flush(); os.fsync(log.fileno())
@@ -22,6 +23,12 @@ for walk in range(3 if "x3" in mode else 1):
     for name in Gimp.DrawableFilter.operation_get_available():
         if name in skip:
             continue
+        if "prefilter" in mode:
+            _ok, keys, values = Gimp.DrawableFilter.operation_get_details(name)
+            details = {key: values.index(i) for i, key in enumerate(keys)}
+            categories = [c for c in (details.get("categories") or "").split(":") if c]
+            if not gmb_filters.operation_status(name, categories, [])[0]:
+                continue
         say("walk %d op %s new" % (walk, name))
         drawable_filter = Gimp.DrawableFilter.new(layer, name, "probe")
         gmb_ops._describe_filter_params(drawable_filter.get_config())
