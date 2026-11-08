@@ -58,6 +58,15 @@ class PathSummary(BaseModel):
     strokes: int
 
 
+class ChannelSummary(BaseModel):
+    id: str
+    name: str
+    visible: bool
+    opacity: float
+    color: str
+    show_masked: bool
+
+
 class ImageDetails(BaseModel):
     id: str
     name: str = Field(description="GIMP's display name (may be localized).")
@@ -74,6 +83,7 @@ class ImageDetails(BaseModel):
     dirty: bool
     layers: list[LayerNode] = Field(description="Layer tree, top-most layer first.")
     paths: list[PathSummary] = Field(default_factory=list, description="Paths (vectors), top first.")
+    channels: list[ChannelSummary] = Field(default_factory=list, description="Saved selections and masks.")
 
 
 class ItemDetails(BaseModel):
@@ -126,6 +136,7 @@ def encode_image(codec: IdCodec, data: dict[str, Any]) -> ImageDetails:
             "id": codec.image(data["id"]),
             "layers": [encode_layer(codec, node) for node in data["layers"]],
             "paths": [{**p, "id": codec.item(p["id"])} for p in data.get("paths", [])],
+            "channels": [{**c, "id": codec.item(c["id"])} for c in data.get("channels", [])],
         }
     )
 
