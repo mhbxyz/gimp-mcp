@@ -8,6 +8,7 @@ what is covered by the compatibility promise.
 
 ### Changed
 
+- The README demo is re-recorded with 0.4.0.
 - OS-specific locations (GIMP profile, client configuration folders, bridge address, headless GIMP)
   come from one platform layer that knows Linux, macOS and Windows (#98, ADR 0008). Linux behaves as
   before; `gimp-mcp doctor` skips the GIMP-process check where it cannot list processes.
