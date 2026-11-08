@@ -15,6 +15,7 @@ from .toolkit import Toolkit
 from .tools import (
     analysis,
     animation,
+    batch,
     channels,
     color,
     compose,
@@ -104,6 +105,7 @@ def build_server(
         vector,
         typography,
         animation,
+        batch,
     ):
         module.register(kit)
     return mcp

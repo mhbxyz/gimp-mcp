@@ -68,6 +68,12 @@ what is covered by the compatibility promise.
   fixed text boxes, all keeping text layers editable and surviving XCF round trips.
 - Animation toolset (#59): frames as layers with duration and disposal, frame previews, GIMP's animation
   optimizer, animated GIF and WebP export (verified frame by frame).
+- Batch toolset (#61): `gimp_run_batch` runs a recipe of tool calls (with placeholders such as
+  `{image}`, `{layer}`, `{stem}`, `{output}`) over explicit files or a glob confined to a directory.
+  The whole recipe, inputs and outputs are validated before the first file is opened; outputs follow
+  a naming pattern and are never overwritten unless asked; the report gives each file's status,
+  failed step and outputs; every image the batch opened is closed; `continue_on_error` and
+  `dry_run`. See docs/adr/0006-batch-recipes.md.
 
 ### Fixed
 

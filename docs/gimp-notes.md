@@ -272,3 +272,7 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   the same paint test passed alone or after any single other test file. Enums the bridge needs late
   are resolved when the plug-in starts (`TRANSFER_MIDTONES`, `DODGE_BURN_TYPES` in `gmb_ops.py`);
   the full suite then passes.
+* Batch (#61): a corrupt PNG makes `Gimp.file_load` return no image (GIMP logs the libpng error):
+  the batch reports `UNSUPPORTED_FORMAT` at the opening step, nothing stays open, and the other
+  files still run. Closing with `discard_changes` leaves input files byte-for-byte unchanged
+  (`tests/e2e/test_batch.py`).

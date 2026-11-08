@@ -409,6 +409,54 @@ disposal are written in its layer name, as GIMP's GIF and WebP exporters read th
   GIMP 3.2 has no APNG exporter. Verified frame by frame (count, size, durations, loop) in
   `tests/e2e/test_animation.py`.
 
+## Batch processing (toolset `batch`)
+
+`gimp_run_batch(recipe, files? | directory + pattern="*", output?, overwrite=false,
+continue_on_error=true, dry_run=false, max_files=200)` applies one recipe to many files
+(resize a folder, watermark, convert formats). It runs in the MCP server: each step is an ordinary
+call of a listed tool, with that tool's own checks.
+
+* `recipe`: up to 50 steps `{"tool": "gimp_resize_image", "arguments": {...}}`. Strings in
+  arguments may use placeholders: `{image}` (the opened image), `{layer}` (its top layer),
+  `{output}` (the output path, only as a whole value, only in tools with an `overwrite` argument),
+  `{file}`, `{name}`, `{stem}`, `{ext}`, `{dir}`, `{index}` (1-based; `"{index}"` alone is a
+  number, `{index:03d}` is formatted). `{{` and `}}` are literal braces. Steps cannot call
+  `gimp_run_batch`, `gimp_enable_toolsets` or `gimp_close_image`, nor tools of disabled toolsets.
+* Inputs: explicit absolute `files`, or the regular files matching `pattern` (`*.jpg`,
+  `**/*.png`) inside the absolute `directory`, sorted. The pattern cannot be absolute or contain
+  `..`, and symlinks pointing outside the directory are not followed. More than `max_files`
+  matches is refused.
+* Outputs: `output` is a naming pattern (`~/out/{stem}-small.webp`) written by the step whose path
+  is `{output}`. Every output is checked before the first file is opened: its directory exists,
+  no two inputs give the same output, no output is an input, and an existing file is refused with
+  `FILE_EXISTS` unless `overwrite=true` (the batch passes `overwrite` to the writing step).
+* Validation before anything runs: tool names, argument names and types (with the first file's
+  values), placeholders and outputs. Any problem is `INVALID_ARGUMENT` (or `FILE_EXISTS`,
+  `FILE_NOT_FOUND`) and nothing is opened. `dry_run=true` stops there and returns the plan
+  (`status: "planned"` and the output of each file).
+* Run: per file, open it (`gimp_open_image`), run the steps, then close **without saving** every
+  image the batch opened or a step returned (images open before the batch are left alone). A
+  failure (`error`: `step`, `tool`, `code`, `message`; `step: null` when the file could not be
+  opened) does not stop the other files unless `continue_on_error=false`, which marks the rest
+  `skipped`.
+* Result: `total`, `succeeded`, `failed`, `skipped` and `files[]` with `file`, `status`
+  (`ok`, `failed`, `skipped`, `planned`), `image`, `output`, `outputs` (files written), `closed`,
+  `error`.
+
+Example: every PNG of a folder to a 50 % lossless WebP, mirrored:
+
+```json
+{"directory": "~/photos", "pattern": "*.png", "output": "~/photos/web/{stem}.webp",
+ "recipe": [
+   {"tool": "gimp_resize_image", "arguments": {"image": "{image}", "width": 400, "height": 300}},
+   {"tool": "gimp_flip_image", "arguments": {"image": "{image}", "orientation": "horizontal"}},
+   {"tool": "gimp_export_as", "arguments": {"image": "{image}", "path": "{output}",
+                                           "options": {"lossless": true}}}]}
+```
+
+Verified on a generated folder with a corrupt file, outputs read back with Pillow
+(`tests/e2e/test_batch.py`).
+
 ## Advanced text (toolset `typography`)
 
 * `gimp_set_text_style(item, markup?, outline?, kerning?, hint_style?, indent?, language?,
