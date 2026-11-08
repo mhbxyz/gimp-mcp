@@ -388,6 +388,42 @@ image dirty. Procedure names, arguments and availability depend on the GIMP
 version; check with `gimp_list_callable_procedures` (the committed matrix lists
 422 callable procedures on GIMP 3.2.6).
 
+## File formats (toolset `formats`)
+
+Beyond `gimp_export_image` (PNG/JPEG) and `gimp_open_image`, every GIMP file procedure is
+reachable, with its **options read from GIMP** and validated before anything is written. Path rules
+are the same (absolute paths, `overwrite`); metadata is written only when listed in `metadata`.
+
+* `gimp_list_file_formats(mode=export|import)`: procedure, name and extensions. GIMP 3.2 does not
+  tell plug-ins which extensions another plug-in handles: they are derived from the procedure name
+  (`file-webp-export` → `webp`) with a few aliases (`tif`, `jpg`, `avif`, `heic`, `jxl`, `ora`).
+* `gimp_describe_file_format(extension | procedure, mode)`: options with `kind`, range, choices,
+  default.
+* `gimp_export_as(image, path, options={}, metadata=[], procedure?, overwrite)`: picks the
+  procedure from the extension. Returns `lossless` (`true`, `false`, or `null` when it depends on
+  the content: GIF palettes, PDF) and `layers`:
+
+  | Format | `layers` | Notes |
+  |---|---|---|
+  | PNG, JPEG, WebP, AVIF/HEIF, JPEG XL, BMP, GIF, TGA, QOI | `flattened` | WebP/AVIF/HEIF/JPEG XL are lossless with `lossless: true`; WebP `animation` and GIF `as-animation` give `frames` |
+  | TIFF | `pages` | one page per layer (verified with Pillow) |
+  | PDF | `flattened`, or `pages` with `layers-as-pages: true` | |
+  | ICO | `sizes` | one icon size per layer |
+  | PSD, OpenRaster | `kept` | layers stay layers |
+
+  The image itself is never changed.
+* `gimp_open_with_options(path, options={}, procedure?)`: PDF (`pages`: page numbers from 1 —
+  GIMP 3.2 cannot receive its page list from a plug-in, so every page is loaded and the others
+  removed; `width`, `height`, `keep-ratio`, `password`…), SVG (`width`, `height`), PSD (layers),
+  multi-page TIFF (pages as layers). Without options, a file no procedure matches by name (e.g. RAW
+  through darktable or RawTherapee, when installed) goes through GIMP's own format detection.
+* `gimp_export_layers(image, directory, extension="png", items?, template="{index:02d}-{name}",
+  crop=true, options, overwrite)`: one file per top-level layer (or per given layer/group), cropped
+  to the layer unless `crop=false`; names are made file-system safe. Refused as a whole
+  (`FILE_EXISTS`) if any target exists without `overwrite`.
+* `gimp_export_region(image, path, x, y, width, height, options, overwrite)`: a slice of the
+  composite.
+
 ## Guides, metadata and print size (toolset `document`)
 
 * `gimp_list_guides(image, values=true)`: `guides[]` (`id`, `orientation`, `position`) and

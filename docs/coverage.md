@@ -4,7 +4,7 @@
 
 Inventory: GIMP **3.2.6**, 1030 PDB procedures (722 internal, 3 persistent, 244 plugin, 61 temporary), 200 GEGL operations available to filters.
 
-MCP tools: **124**. PDB procedures relied upon by tools: **214** (20.8% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
+MCP tools: **130**. PDB procedures relied upon by tools: **228** (22.1% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
 
 ## Capabilities
 
@@ -14,6 +14,9 @@ MCP tools: **124**. PDB procedures relied upon by tools: **214** (20.8% of the i
 | Session | Toolsets: list the tool groups, enable more during a session | tested | `gimp_list_toolsets`, `gimp_enable_toolsets` | `tests/unit/test_toolsets.py`, `tests/e2e/test_thumbnail_journey.py` | 3.2 | MCP-side only, no GIMP procedure; see docs/toolsets.md |
 | Inspection | Image properties and ordered layer tree (groups, masks) | tested | `gimp_inspect_image`, `gimp_inspect_item` | `tests/e2e/test_inspect.py` | 3.2 |  |
 | Preview | Composite preview as PNG (max 1024 px) | tested | `gimp_preview` | `tests/e2e/test_preview.py` | 3.2 | 8-bit sRGB rendering of the visible layers; larger renders go through export. |
+| Formats | Export to every GIMP format with introspected options (WebP, AVIF/HEIF, TIFF, BMP, GIF, ICO, PDF, PSD…) | tested | `gimp_list_file_formats`, `gimp_describe_file_format`, `gimp_export_as` | `tests/e2e/test_formats.py`, `tests/unit/test_formats.py` | 3.2 |  |
+| Formats | Open PDF (pages, size), SVG (size), PSD layers, multi-page TIFF, RAW through GIMP's detection | partial | `gimp_open_with_options` | `tests/e2e/test_formats.py` | 3.2 | PDF pages are filtered after loading (GimpInt32Array options cannot be set); RAW is not tested (needs darktable or RawTherapee). |
+| Formats | Export layers or groups to separate files, and regions (slices) | tested | `gimp_export_layers`, `gimp_export_region` | `tests/e2e/test_formats.py` | 3.2 |  |
 | Document | Guides and sample points (add, list with values, remove) | tested | `gimp_list_guides`, `gimp_add_guide`, `gimp_add_sample_point`, `gimp_remove_guide` | `tests/e2e/test_document.py` | 3.2 |  |
 | Document | Exif/XMP/IPTC metadata and comment; exports keep only what is asked | tested | `gimp_get_metadata`, `gimp_set_metadata` | `tests/e2e/test_document.py` | 3.2 |  |
 | Document | Resolution, unit and print size | tested | `gimp_set_print_size` | `tests/e2e/test_document.py` | 3.2 |  |
@@ -63,7 +66,7 @@ MCP tools: **124**. PDB procedures relied upon by tools: **214** (20.8% of the i
 | `gimp-text-*` | 50 | 14 |
 | `gimp-item-*` | 46 | 8 |
 | `script-fu-*` | 43 | 0 |
-| `gimp-layer-*` | 34 | 21 |
+| `gimp-layer-*` | 34 | 22 |
 | `gimp-gradient-*` | 28 | 3 |
 | `file-raw-*` | 27 | 0 |
 | `gimp-vector-*` | 27 | 0 |
@@ -77,10 +80,10 @@ MCP tools: **124**. PDB procedures relied upon by tools: **214** (20.8% of the i
 | `gimp-help-*` | 10 | 0 |
 | `python-fu-*` | 10 | 1 |
 | `gimp-get-*` | 7 | 1 |
-| `file-heif-*` | 6 | 0 |
+| `file-heif-*` | 6 | 2 |
 | `gimp-buffer-*` | 6 | 0 |
 | `gimp-file-*` | 6 | 3 |
-| `file-psd-*` | 5 | 0 |
+| `file-psd-*` | 5 | 2 |
 | `gimp-brushes-*` | 5 | 1 |
 | `gimp-display-*` | 5 | 1 |
 | `gimp-fonts-*` | 5 | 1 |
@@ -89,17 +92,17 @@ MCP tools: **124**. PDB procedures relied upon by tools: **214** (20.8% of the i
 | `gimp-palettes-*` | 5 | 2 |
 | `gimp-patterns-*` | 5 | 1 |
 | `gimp-progress-*` | 5 | 0 |
-| `file-pdf-*` | 4 | 0 |
+| `file-pdf-*` | 4 | 2 |
 | `gimp-floating-*` | 4 | 2 |
 | `gimp-link-*` | 4 | 0 |
 | `extension-*` | 3 | 0 |
 | `file-ani-*` | 3 | 0 |
 | `file-fli-*` | 3 | 0 |
 | `file-gbr-*` | 3 | 0 |
-| `file-gif-*` | 3 | 0 |
+| `file-gif-*` | 3 | 1 |
 | `file-gih-*` | 3 | 0 |
 | `file-icns-*` | 3 | 0 |
-| `file-ico-*` | 3 | 0 |
+| `file-ico-*` | 3 | 1 |
 | `file-jpeg-*` | 3 | 1 |
 | `file-openraster-*` | 3 | 0 |
 | `file-pat-*` | 3 | 0 |
@@ -110,7 +113,7 @@ MCP tools: **124**. PDB procedures relied upon by tools: **214** (20.8% of the i
 | `gimp-items-*` | 3 | 0 |
 | `gimp-message-*` | 3 | 0 |
 | `gimp-rasterizable-*` | 3 | 0 |
-| `file-bmp-*` | 2 | 0 |
+| `file-bmp-*` | 2 | 1 |
 | `file-bz2-*` | 2 | 0 |
 | `file-cel-*` | 2 | 0 |
 | `file-cur-*` | 2 | 0 |
@@ -133,11 +136,11 @@ MCP tools: **124**. PDB procedures relied upon by tools: **214** (20.8% of the i
 | `file-rgbe-*` | 2 | 0 |
 | `file-sgi-*` | 2 | 0 |
 | `file-sunras-*` | 2 | 0 |
-| `file-svg-*` | 2 | 0 |
+| `file-svg-*` | 2 | 1 |
 | `file-tga-*` | 2 | 0 |
-| `file-tiff-*` | 2 | 0 |
+| `file-tiff-*` | 2 | 2 |
 | `file-tim-*` | 2 | 0 |
-| `file-webp-*` | 2 | 0 |
+| `file-webp-*` | 2 | 1 |
 | `file-wmf-*` | 2 | 0 |
 | `file-xbm-*` | 2 | 0 |
 | `file-xpm-*` | 2 | 0 |

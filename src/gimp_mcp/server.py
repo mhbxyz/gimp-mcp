@@ -20,6 +20,7 @@ from .tools import (
     effects,
     files,
     filters,
+    formats,
     history,
     inspect,
     layers,
@@ -90,6 +91,7 @@ def build_server(
         resources,
         compose,
         document,
+        formats,
     ):
         module.register(kit)
     return mcp
