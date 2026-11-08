@@ -71,6 +71,20 @@ async def test_select_by_color_fuzzy_and_from_items(gimp: HeadlessGimp, tmp_path
         await call(client, "gimp_close_image", image=image, discard_changes=True)
 
 
+async def test_sample_merged_reads_every_visible_layer(gimp: HeadlessGimp):
+    async with mcp_client(gimp) as client:
+        image, _ = await board(client)
+        top = await call(client, "gimp_create_layer", image=image, name="empty", fill="transparent")
+        own = await call(client, "gimp_select_by_color", image=image, item=top["id"], color="#ff0000", threshold=10)
+        assert own["empty"] is True  # the transparent top layer has no red
+        merged = await call(
+            client, "gimp_select_by_color", image=image, item=top["id"], color="#ff0000", threshold=10,
+            sample_merged=True,
+        )  # fmt: skip
+        assert merged["bounds"] == {"x": 5, "y": 5, "width": 30, "height": 30}  # the red squares below
+        await call(client, "gimp_close_image", image=image, discard_changes=True)
+
+
 async def test_selection_modifiers(gimp: HeadlessGimp, tmp_path: Path):
     async with mcp_client(gimp) as client:
         image, _ = await board(client)
