@@ -31,13 +31,12 @@ jobs:
         continue-on-error: true
         run: |
           app=$(ls -d /Applications/GIMP*.app | head -1)
-          console=$(find "$app/Contents/MacOS" -name 'gimp-console*' -type f | head -1)
-          [ -n "$console" ] || console="$app/Contents/MacOS/gimp"
+          console="$app/Contents/MacOS/gimp-console-3.2"
           echo "console=$console"
           export PROBE_OUT="$PWD/probe.json"
           "$console" --version
           "$console" -i -n --no-splash --batch-interpreter=python-fu-eval \
-            -b "exec(open('$PWD/ci/explore/probe.py').read())" -b "Gimp.quit()" || echo "exit $?"
+            -b "exec(open('$PWD/ci/explore/probe.py').read())" --quit || echo "exit $?"
           cat probe.json || true
           ls -la "$HOME/Library/Application Support/GIMP" || true
       - name: Probe the runner's Python
@@ -65,11 +64,17 @@ jobs:
         run: |
           $env:PROBE_OUT = "$PWD\probe.json"
           $probe = "$PWD\ci\explore\probe.py" -replace '\\','/'
-          $console = Get-ChildItem C:\gimp\bin -Filter 'gimp-console*.exe' | Select-Object -First 1
-          Write-Host "console=$($console.FullName)"
-          & $console.FullName --version
-          & $console.FullName -i -n --no-splash --batch-interpreter=python-fu-eval -b "exec(open('$probe').read())" -b "Gimp.quit()"
+          $console = Get-Item C:\gimp\bin\gimp-console-3.2.exe
+          & $console.FullName -i -n --no-splash --batch-interpreter=python-fu-eval -b "exec(open('$probe').read())" --quit
           Get-Content probe.json
           Get-ChildItem "$env:APPDATA\GIMP" -ErrorAction SilentlyContinue
-      - name: Probe the runner's Python
-        run: python ci/explore/host_probe.py
+      - name: Show the probe
+        if: always()
+        shell: pwsh
+        run: Get-Content probe.json -ErrorAction SilentlyContinue
+      - name: GIMP's own Python
+        if: always()
+        shell: pwsh
+        run: |
+          & C:\gimp\bin\python.exe -c "import sys, socket; print(sys.version, hasattr(socket, 'AF_UNIX'))"
+          & C:\gimp\bin\python.exe -c "import gi; gi.require_version('Gimp', '3.0'); from gi.repository import GLib, Gio; print(gi.__version__, GLib.MAJOR_VERSION, GLib.MINOR_VERSION)"
