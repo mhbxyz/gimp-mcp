@@ -1495,6 +1495,21 @@ def _trace(text):
         os.fsync(handle.fileno())
 
 
+def _gegl_pspecs(name):
+    """GEGL's own description of an operation's parameters, read without libgimp (empty when GEGL in this
+    process does not know the operation, e.g. GIMP's internal gimp:* operations)."""
+    if not _GEGL_READY:
+        Gegl.init(None)  # loads GEGL's operation modules into this process (none before)
+        _GEGL_READY.append(True)
+    try:
+        return [(type(p).__name__, p.value_type.name) for p in Gegl.Operation.list_properties(name)]
+    except Exception:
+        return []
+
+
+_GEGL_READY = []
+
+
 def filter_catalog():
     """Every operation GIMP offers to filters, introspected once per GIMP session."""
     if _CATALOG:
@@ -1508,14 +1523,18 @@ def filter_catalog():
             _trace("catalog %s details" % name)
             _ok, keys, values = Gimp.DrawableFilter.operation_get_details(name)
             details = {key: values.index(i) for i, key in enumerate(keys)}
-            _trace("catalog %s new" % name)
             categories = [c for c in (details.get("categories") or "").split(":") if c]
-            try:
-                params = _describe_filter_params(Gimp.DrawableFilter.new(layer, name, "catalog").get_config())
-            except Exception as error:  # an operation GIMP lists but cannot instantiate
-                params, broken = [], "GIMP could not create it: %s" % error
+            untransferable = gmb_filters.untransferable_parameters(_gegl_pspecs(name))
+            if untransferable:  # never instantiated: libgimp cannot carry these values (crash on macOS)
+                params, broken = [], "%s (%s)" % (gmb_filters.UNTRANSFERABLE_REASON, ", ".join(untransferable))
             else:
-                broken = None
+                _trace("catalog %s new" % name)
+                try:
+                    params = _describe_filter_params(Gimp.DrawableFilter.new(layer, name, "catalog").get_config())
+                except Exception as error:  # an operation GIMP lists but cannot instantiate
+                    params, broken = [], "GIMP could not create it: %s" % error
+                else:
+                    broken = None
             supported, reason = gmb_filters.operation_status(name, categories, [p["kind"] for p in params])
             if broken:
                 supported, reason = False, broken

@@ -103,3 +103,10 @@ Without `gimp-console`, end-to-end tests are **skipped** with the reason
 `GIMP_MCP_REQUIRE_GIMP=1` (always set in CI) they **fail** instead, so a broken
 GIMP installation can never look like a green build
 (`tests/unit/test_gimp_requirement.py`).
+
+## Locating a crash inside GIMP
+
+Set `GIMP_MCP_TRACE=<file>` in the environment of the GIMP that runs the bridge (the e2e fixtures pass
+the environment through): the plug-in appends a line, synced to disk, before each risky step (each
+filter operation it introspects). After a crash, the last line names the step. The macOS CI job sets it
+and prints the tail when the tests fail.

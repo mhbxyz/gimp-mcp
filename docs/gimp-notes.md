@@ -312,5 +312,11 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   pipes only). On macOS a plug-in that walks every filter (`Gimp.DrawableFilter.new(...).get_config()`
   and its properties) crashes with a segmentation fault after "type name GeglBuffer is not registered"
   (`gimp_gp_param_to_value`); touching `Gegl.Buffer.__gtype__` first registers the type and the same
-  walk completes (checked by replaying it on the runner). GIMP's own Python is used for plug-ins
+  walk completes (checked by replaying it on the runner). In the bridge itself the crash moved on (the
+  opt-in trace `GIMP_MCP_TRACE=<file>` ended on an ordinary operation): the trigger is earlier, when
+  libgimp deserializes an operation's `GeglParamFormat` (a `gpointer` value: "unsupported deserialization
+  to GValue of type 'gpointer'"), `GeglBuffer`, `GeglNode` or pointer parameter. Linux drops such
+  properties silently. GEGL knows each operation's parameters in-process, but only after `Gegl.init(None)`
+  in the plug-in (0 operations before, 291 after on 3.2.6); 15 GEGL operations have such parameters, and
+  `gegl:checkerboard` is the only one among the 200 GIMP offers as filters. GIMP's own Python is used for plug-ins
   (`Contents/MacOS/python3`, `bin\python.exe`): the system `python3` does not matter there.
