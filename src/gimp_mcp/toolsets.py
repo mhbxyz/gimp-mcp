@@ -29,6 +29,8 @@ TOOLSETS: dict[str, str] = {
     "full-resolution crops.",
     "color": "Color adjustments: levels, curves, color balance, colorize, desaturate, invert, threshold, "
     "posterize, exposure, shadows-highlights, automatic corrections.",
+    "compose": "Copy/paste (named buffers), merge and flatten, alpha channels, layer boundaries, crop to "
+    "content, align and distribute layers.",
     "resources": "Brushes, gradients, patterns and palettes: list, inspect with previews, create, edit, "
     "duplicate, rename, delete; palette import and export.",
     "paths": "Paths (vectors): create from points, Bézier segments, ellipses or text; edit strokes; stroke, "

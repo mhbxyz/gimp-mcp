@@ -388,6 +388,31 @@ image dirty. Procedure names, arguments and availability depend on the GIMP
 version; check with `gimp_list_callable_procedures` (the committed matrix lists
 422 callable procedures on GIMP 3.2.6).
 
+## Layer composition (toolset `compose`)
+
+* `gimp_copy(items? | image + visible=true, cut=false, buffer="gimp-mcp")`: copies the layers'
+  pixels (only the selected area when there is a selection; `selection` says so) or the visible
+  composite into a **named GIMP buffer** (shown in GIMP's Buffers dialog), so the user's clipboard
+  is untouched; `buffer="clipboard"` uses the global clipboard. `cut` empties the copied area.
+* `gimp_paste(mode, item?, buffer, into_selection=false)`: `into-layer` merges the pixels into
+  `item` (anchored), `new-layer` adds them as a layer above `item`, `new-image` opens a new image.
+  A paste never leaves a floating selection; an image that already has one is refused.
+  `NOT_FOUND` for an empty or unknown buffer.
+* `gimp_merge_layers(mode, item | image, merge_type)`: `down` (into the layer below; refused for
+  the bottom layer), `group` (a group becomes one layer), `visible` (all visible layers);
+  `merge_type` `expand`, `clip-to-image`, `clip-to-bottom`. `gimp_flatten_image(image)`: one opaque
+  layer. `gimp_new_layer_from_visible(image, name)`: a copy of the composite on top, the rest
+  untouched. All one undo step; merges and flattening are destructive.
+* `gimp_set_alpha_channel(item, add|remove)` (remove flattens onto the background color),
+  `gimp_alpha_to_selection(item, operation)`.
+* `gimp_fit_layer(item, mode)`: `image-size`, `size` (`width`, `height`, `offset_x`, `offset_y`:
+  where the old content goes) or `content` (shrink to the non-empty pixels).
+  `gimp_crop_to_content(image)`: GIMP's Crop to Content (`cropped` false when nothing changed).
+* `gimp_align_layers(items, reference=image|selection|layer, reference_item?, horizontal?,
+  vertical?, distribute?)`: aligns layer **boxes** (not their visible content) left/center/right
+  and top/middle/bottom to the reference, or distributes 3+ layers so their centers are evenly
+  spaced between the outer ones (to the nearest pixel). Locked positions are refused (`LOCKED`).
+
 ## Resources (toolset `resources`)
 
 Brushes, gradients, patterns and palettes are referenced **by name** (`kind` = `brush`,
