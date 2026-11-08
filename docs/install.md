@@ -108,7 +108,7 @@ Options: `--socket PATH` (or `GIMP_MCP_SOCKET`), `--timeout SECONDS`,
 Start GIMP normally (`gimp`); the bridge is ready when `gimp-mcp doctor`
 reports the connection. For automation without a window, the
 `gimp_mcp.headless.HeadlessGimp` class starts an isolated `gimp-console` with
-the plug-in (used by the tests and by `uv run demo/thumbnail.py`).
+the plug-in (used by the tests and by the demos, `uv run demo/run.py`).
 
 ## Check
 

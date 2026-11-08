@@ -6,6 +6,15 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+### Added
+
+- Demo scenarios (#107): `uv run demo/run.py <scenario>` or `--all` runs typical GIMP jobs through
+  MCP only, each declaring its toolsets, licensed assets (`demo/assets/LICENSES.md`), outputs,
+  factual checks and the prompt of its agent version; `demo/video/record.sh VERSION [SCENARIO]`
+  records the agent version of any scenario. The thumbnail demo is the first scenario (same outputs
+  and checks, now in `demo/out/thumbnail/`); every scenario runs in the end-to-end suite on Linux,
+  macOS and Windows.
+
 ## [0.5.0] - 2026-11-08
 
 ### Added

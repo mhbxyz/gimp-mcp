@@ -48,7 +48,7 @@ CAPABILITIES: tuple[Capability, ...] = (
         "Toolsets: list the tool groups, enable more during a session",
         "tested",
         tools=("gimp_list_toolsets", "gimp_enable_toolsets"),
-        tests=("tests/unit/test_toolsets.py", "tests/e2e/test_thumbnail_journey.py"),
+        tests=("tests/unit/test_toolsets.py", "tests/e2e/test_demo_scenarios.py"),
         notes="MCP-side only, no GIMP procedure; see docs/toolsets.md",
     ),
     Capability(

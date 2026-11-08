@@ -1,8 +1,8 @@
 # Guide: build a thumbnail through MCP
 
 This walk-through builds a 1280×720 thumbnail from a source picture, with an
-editable title, using only MCP tool calls. It is what `demo/thumbnail.py`
-does (run it with `uv run demo/thumbnail.py`; it writes `demo/out/report.md`
+editable title, using only MCP tool calls. It is what the `thumbnail` demo scenario
+(`demo/scenarios/thumbnail.py`) does (run it with `uv run demo/run.py thumbnail`; it writes `demo/out/thumbnail/report.md`
 with every call, its duration and the verifications). Any MCP client works:
 the calls below are plain `tools/call` requests, independent of the model or
 the client library.
