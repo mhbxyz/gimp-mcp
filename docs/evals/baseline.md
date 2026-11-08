@@ -1,8 +1,8 @@
 # gimp-mcp agent evaluation
 
-**18/22 tasks passed** — gimp-mcp 0.5.0 (checkout), model claude-sonnet-5-5, 2026-11-08. Default toolsets; the agent enables others itself.
+**18/23 tasks passed** — gimp-mcp 0.5.0 (checkout), model claude-sonnet-5-5, 2026-11-08. Default toolsets; the agent enables others itself.
 
-Updated since: old-photo-restoration, product-cutout and social-media-kit on 2026-11-08; screenshot-annotation on 2026-11-08 (each task's package and date are in the JSON).
+Updated since: old-photo-restoration, product-cutout and social-media-kit on 2026-11-08; screenshot-annotation on 2026-11-08; web-photo-batch on 2026-11-08 (each task's package and date are in the JSON).
 
 | Task | Result | Tool calls | Errors returned | Duration | Tokens in / out (cache read) |
 |---|---|---|---|---|---|
@@ -28,6 +28,7 @@ Updated since: old-photo-restoration, product-cutout and social-media-kit on 202
 | `product-cutout` | **FAIL** | 52 | 6 | 89.0 s | 60 / 9789 (890864) |
 | `social-media-kit` | pass | 74 | 0 | 88.4 s | 40 / 12850 (663588) |
 | `screenshot-annotation` | **FAIL** | 36 | 0 | 76.3 s | 38 / 8628 (492658) |
+| `web-photo-batch` | **FAIL** | 80 | 2 | 145.8 s | 68 / 16407 (1214075) |
 
 ## Details
 
@@ -311,3 +312,20 @@ image
 * **FAIL**: the PNG carries no metadata (no text, Exif, time or profile chunk) (chunks ['IHDR', 'sRGB', 'gAMA', 'cHRM', 'pHYs', 'tIME', 'IDAT', 'IDAT', 'IDAT', 'IEND'])
 * gimp tools: gimp_open_image, gimp_preview, gimp_list_toolsets, gimp_enable_toolsets, gimp_describe_filter_operation, gimp_inspect_image, gimp_select_rectangle, gimp_apply_filter, gimp_select_rectangle, gimp_apply_filter, gimp_select_rectangle, gimp_create_layer, gimp_draw_shape, gimp_draw_shape, gimp_draw_shape, gimp_draw_shape, gimp_draw_path, gimp_draw_path, gimp_create_text_layer, gimp_create_text_layer, gimp_create_text_layer, gimp_create_text_layer, gimp_set_layer_offsets, gimp_set_layer_offsets, gimp_set_layer_offsets, gimp_set_layer_offsets, gimp_preview, gimp_select_rectangle, gimp_draw_path, gimp_draw_path, gimp_draw_path, gimp_draw_path, gimp_draw_path, gimp_draw_path, gimp_preview, gimp_export_image
 * other tools tried: ToolSearch, Bash, ToolSearch, ToolSearch
+
+### `web-photo-batch`
+
+* pass: the session finished (success)
+* pass: every photo has a WebP and a JPEG, longest side 1600 px (40 files)
+* pass: each is upright as EXIF said (red marker top-left)
+* pass: the watermark is in the bottom-right corner at about 60%
+* pass: no GPS position in any export
+* pass: the copyright is kept in every export
+* **FAIL**: every export carries an sRGB profile (beach-web.webp, beach-web.jpg, harbor-web.webp, harbor-web.jpg, market-web.webp, market-web.jpg)
+* error returned: `gimp_enable_toolsets: Error executing tool gimp_enable_toolsets: 1 validation error for gimp_enable_toolsetsArguments
+toolsets
+  Field required [type=missing, input_value={'names': '["batch","docu...","formats","compose"]'`
+* error returned: `gimp_export_as: WRITE_FAILED: directory /home/demo/work does not exist
+Hint: Create the directory first; file tools never create directories.`
+* gimp tools: gimp_list_toolsets, gimp_enable_toolsets, gimp_enable_toolsets, gimp_run_batch, gimp_open_image, gimp_get_metadata, gimp_get_color_profile, gimp_describe_file_format, gimp_run_batch, gimp_open_image, gimp_open_image, gimp_get_metadata, gimp_get_metadata, gimp_open_image, gimp_open_image, gimp_open_image, gimp_open_image, gimp_open_image, gimp_open_image, gimp_get_metadata, gimp_open_image, gimp_open_image, gimp_open_image, gimp_get_metadata, gimp_get_metadata, gimp_get_metadata, gimp_get_metadata, gimp_get_metadata, gimp_get_metadata, gimp_get_metadata, gimp_get_metadata, gimp_enable_toolsets, gimp_describe_file_format, gimp_resize_image, gimp_import_layer, gimp_set_layer_offsets, gimp_set_layer_properties, gimp_set_color_profile, gimp_set_metadata, gimp_export_as, gimp_export_as, gimp_open_image, gimp_open_image, gimp_get_color_profile, gimp_get_color_profile, gimp_get_metadata, gimp_get_metadata, gimp_open_image, gimp_inspect_image, gimp_set_layer_properties, gimp_export_as, gimp_export_as, gimp_open_image, gimp_open_image, gimp_open_image, gimp_open_image, gimp_open_image, gimp_open_image, gimp_open_image, gimp_open_image, gimp_get_metadata, gimp_get_metadata, gimp_get_metadata, gimp_get_metadata, gimp_get_color_profile, gimp_get_color_profile, gimp_get_color_profile, gimp_run_batch, gimp_open_image, gimp_preview, gimp_run_batch, gimp_run_batch, gimp_run_batch, gimp_run_batch, gimp_run_batch, gimp_run_batch, gimp_open_image, gimp_open_image, gimp_preview, gimp_preview
+* other tools tried: Bash, ToolSearch, ToolSearch, ToolSearch, ToolSearch, ToolSearch
