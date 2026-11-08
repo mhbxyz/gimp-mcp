@@ -1,0 +1,14 @@
+[window]
+padding = { x = 18, y = 16 }
+decorations = "None"
+
+[font]
+normal = { family = "JetBrains Mono" }
+size = 11.5
+
+[cursor]
+style = { shape = "Beam", blinking = "Never" }
+
+[colors.primary]
+background = "#1b1b1f"
+foreground = "#e4e4e7"
