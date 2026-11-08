@@ -1,8 +1,8 @@
 # gimp-mcp agent evaluation
 
-**18/23 tasks passed** — gimp-mcp 0.5.0 (checkout), model claude-sonnet-5-5, 2026-11-08. Default toolsets; the agent enables others itself.
+**19/24 tasks passed** — gimp-mcp 0.5.0 (checkout), model claude-sonnet-5-5, 2026-11-08. Default toolsets; the agent enables others itself.
 
-Updated since: old-photo-restoration, product-cutout and social-media-kit on 2026-11-08; screenshot-annotation on 2026-11-08; web-photo-batch on 2026-11-08 (each task's package and date are in the JSON).
+Updated since: old-photo-restoration, product-cutout and social-media-kit on 2026-11-08; screenshot-annotation on 2026-11-08; web-photo-batch on 2026-11-08; animated-sticker on 2026-11-08 (each task's package and date are in the JSON).
 
 | Task | Result | Tool calls | Errors returned | Duration | Tokens in / out (cache read) |
 |---|---|---|---|---|---|
@@ -29,6 +29,7 @@ Updated since: old-photo-restoration, product-cutout and social-media-kit on 202
 | `social-media-kit` | pass | 74 | 0 | 88.4 s | 40 / 12850 (663588) |
 | `screenshot-annotation` | **FAIL** | 36 | 0 | 76.3 s | 38 / 8628 (492658) |
 | `web-photo-batch` | **FAIL** | 80 | 2 | 145.8 s | 68 / 16407 (1214075) |
+| `animated-sticker` | pass | 87 | 4 | 95.8 s | 52 / 12380 (769104) |
 
 ## Details
 
@@ -329,3 +330,30 @@ toolsets
 Hint: Create the directory first; file tools never create directories.`
 * gimp tools: gimp_list_toolsets, gimp_enable_toolsets, gimp_enable_toolsets, gimp_run_batch, gimp_open_image, gimp_get_metadata, gimp_get_color_profile, gimp_describe_file_format, gimp_run_batch, gimp_open_image, gimp_open_image, gimp_get_metadata, gimp_get_metadata, gimp_open_image, gimp_open_image, gimp_open_image, gimp_open_image, gimp_open_image, gimp_open_image, gimp_get_metadata, gimp_open_image, gimp_open_image, gimp_open_image, gimp_get_metadata, gimp_get_metadata, gimp_get_metadata, gimp_get_metadata, gimp_get_metadata, gimp_get_metadata, gimp_get_metadata, gimp_get_metadata, gimp_enable_toolsets, gimp_describe_file_format, gimp_resize_image, gimp_import_layer, gimp_set_layer_offsets, gimp_set_layer_properties, gimp_set_color_profile, gimp_set_metadata, gimp_export_as, gimp_export_as, gimp_open_image, gimp_open_image, gimp_get_color_profile, gimp_get_color_profile, gimp_get_metadata, gimp_get_metadata, gimp_open_image, gimp_inspect_image, gimp_set_layer_properties, gimp_export_as, gimp_export_as, gimp_open_image, gimp_open_image, gimp_open_image, gimp_open_image, gimp_open_image, gimp_open_image, gimp_open_image, gimp_open_image, gimp_get_metadata, gimp_get_metadata, gimp_get_metadata, gimp_get_metadata, gimp_get_color_profile, gimp_get_color_profile, gimp_get_color_profile, gimp_run_batch, gimp_open_image, gimp_preview, gimp_run_batch, gimp_run_batch, gimp_run_batch, gimp_run_batch, gimp_run_batch, gimp_run_batch, gimp_open_image, gimp_open_image, gimp_preview, gimp_preview
 * other tools tried: Bash, ToolSearch, ToolSearch, ToolSearch, ToolSearch, ToolSearch
+
+### `animated-sticker`
+
+* pass: the session finished (success)
+* pass: sticker.gif has 12 frames and loops (12 frames, loop 0)
+* pass: sticker.gif: 80 ms per frame, the last held 1 s ([80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 1000])
+* pass: sticker.gif: each frame shows the logo at its place and opacity
+* pass: sticker.gif is under 500 KB (12651 bytes)
+* pass: sticker.webp has 12 frames and loops (12 frames, loop 0)
+* pass: sticker.webp: 80 ms per frame, the last held 1 s ([80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 1000])
+* pass: sticker.webp: each frame shows the logo at its place and opacity
+* pass: sticker.webp is under 500 KB (2992 bytes)
+* error returned: `gimp_duplicate_layer: Error executing tool gimp_duplicate_layer: 1 validation error for gimp_duplicate_layerArguments
+item
+  Field required [type=missing, input_value={'layer': 'item:2@b0f8cd23'}, input_type=dict]
+    For `
+* error returned: `gimp_set_layer_properties: Error executing tool gimp_set_layer_properties: 1 validation error for gimp_set_layer_propertiesArguments
+item
+  Field required [type=missing, input_value={'layer': 'item:5@b0f8cd23', 'opacity': 8}, i`
+* error returned: `gimp_set_layer_offsets: Error executing tool gimp_set_layer_offsets: 1 validation error for gimp_set_layer_offsetsArguments
+item
+  Field required [type=missing, input_value={'layer': 'item:5@b0f8cd23', 'x': 40, 'y': 24}, inp`
+* error returned: `gimp_preview_frame: Error executing tool gimp_preview_frame: 1 validation error for gimp_preview_frameArguments
+index
+  Field required [type=missing, input_value={'image': 'image:1@b0f8cd...em': 'item:65@b0f8cd23'}, inpu`
+* gimp tools: gimp_list_toolsets, gimp_enable_toolsets, gimp_create_image, gimp_status, gimp_inspect_image, gimp_import_layer, gimp_duplicate_layer, gimp_set_layer_properties, gimp_set_layer_offsets, gimp_duplicate_layer, gimp_duplicate_layer, gimp_set_layer_offsets, gimp_set_layer_properties, gimp_merge_layers, gimp_duplicate_layer, gimp_duplicate_layer, gimp_set_layer_offsets, gimp_set_layer_properties, gimp_merge_layers, gimp_duplicate_layer, gimp_duplicate_layer, gimp_set_layer_offsets, gimp_set_layer_properties, gimp_merge_layers, gimp_duplicate_layer, gimp_duplicate_layer, gimp_set_layer_offsets, gimp_set_layer_properties, gimp_merge_layers, gimp_duplicate_layer, gimp_duplicate_layer, gimp_set_layer_offsets, gimp_set_layer_properties, gimp_merge_layers, gimp_duplicate_layer, gimp_duplicate_layer, gimp_set_layer_offsets, gimp_set_layer_properties, gimp_merge_layers, gimp_duplicate_layer, gimp_duplicate_layer, gimp_set_layer_offsets, gimp_set_layer_properties, gimp_merge_layers, gimp_duplicate_layer, gimp_duplicate_layer, gimp_set_layer_offsets, gimp_set_layer_properties, gimp_merge_layers, gimp_duplicate_layer, gimp_duplicate_layer, gimp_set_layer_offsets, gimp_set_layer_properties, gimp_merge_layers, gimp_duplicate_layer, gimp_duplicate_layer, gimp_set_layer_offsets, gimp_set_layer_properties, gimp_merge_layers, gimp_duplicate_layer, gimp_duplicate_layer, gimp_set_layer_offsets, gimp_set_layer_properties, gimp_merge_layers, gimp_duplicate_layer, gimp_duplicate_layer, gimp_set_layer_offsets, gimp_merge_layers, gimp_delete_layer, gimp_delete_layer, gimp_list_frames, gimp_set_frame, gimp_set_frame, gimp_set_frame, gimp_set_frame, gimp_set_frame, gimp_set_frame, gimp_set_frame, gimp_set_frame, gimp_set_frame, gimp_set_frame, gimp_set_frame, gimp_set_frame, gimp_export_animation, gimp_export_animation, gimp_preview_frame, gimp_preview_frame
+* other tools tried: Bash, ToolSearch, ToolSearch, ToolSearch

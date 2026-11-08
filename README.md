@@ -93,6 +93,8 @@ and Windows, and an agent version (one plain-language request) in the evaluation
   removed ([walk-through](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/demos/screenshot-annotation.md)).
 * **Photos for a website**: a folder upright, resized, watermarked, GPS removed, WebP and JPEG, the
   corrupt file reported ([walk-through](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/demos/web-photo-batch.md)).
+* **Animated sticker**: frames with timing and disposal, optimized GIF and animated WebP under a size
+  budget ([walk-through](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/demos/animated-sticker.md)).
 * **YouTube thumbnail** from one photo, with an editable title
   ([guide](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/guide-thumbnail.md)).
 
