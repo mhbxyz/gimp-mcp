@@ -18,6 +18,7 @@ import gmb_formats  # noqa: E402
 import gmb_policy  # noqa: E402
 import gmb_resources  # noqa: E402
 import gmb_stats  # noqa: E402
+import gmb_text  # noqa: E402
 import gmb_undo  # noqa: E402
 from gi.repository import Babl, Gegl, Gimp, Gio  # noqa: E402
 from gmb_server import BridgeError  # noqa: E402
@@ -3776,6 +3777,108 @@ def link_inspect(params):
     return link_info(_get_kind(params, "link"))
 
 
+# -- typography (#56) --------------------------------------------------------------------
+
+
+def _nicks(enum):
+    return {v.value_nick: v for v in enum.__enum_values__.values()}
+
+
+TEXT_OUTLINES = _nicks(Gimp.TextOutline)
+TEXT_HINTS = _nicks(Gimp.TextHintStyle)
+TEXT_DIRECTIONS = _nicks(Gimp.TextDirection)
+
+
+def _pick(table, value, name):
+    if value not in table:
+        raise BridgeError("INVALID_ARGUMENT", "unknown %s %r" % (name, value), {"allowed": sorted(table)})
+    return table[value]
+
+
+def _first_number(value):
+    """Text getters return a number, or (number, unit) / (ok, number)."""
+    if isinstance(value, tuple):
+        return next(v for v in value if isinstance(v, (int, float)) and not isinstance(v, bool))
+    return value
+
+
+def text_style(layer):
+    markup = layer.get_markup()
+    return {
+        "item": layer.get_id(),
+        "text": layer.get_text(),
+        "markup": markup or None,
+        "outline": {
+            "mode": layer.get_outline().value_nick,
+            "color": _hex8(layer.get_outline_color()),
+            "width": _first_number(layer.get_outline_width()),
+            "cap": layer.get_outline_cap_style().value_nick,
+            "join": layer.get_outline_join_style().value_nick,
+            "miter_limit": layer.get_outline_miter_limit(),
+            "antialias": bool(layer.get_outline_antialias()),
+        },
+        "kerning": bool(layer.get_kerning()),
+        "hint_style": layer.get_hint_style().value_nick,
+        "indent": _first_number(layer.get_indent()),
+        "language": layer.get_language() or None,
+        "base_direction": layer.get_base_direction().value_nick,
+        "antialias": bool(layer.get_antialias()),
+        "width": layer.get_width(),
+        "height": layer.get_height(),
+    }
+
+
+def text_style_get(params):
+    return text_style(get_text_layer(params))
+
+
+@mutation
+def text_style_set(params):
+    layer = get_text_layer(params)
+    markup = params.get("markup")
+    if markup is not None:
+        try:
+            gmb_text.check_markup(markup)
+        except ValueError as error:
+            raise BridgeError("INVALID_ARGUMENT", str(error)) from None
+    outline = params.get("outline") or {}
+    mode = _pick(TEXT_OUTLINES, outline["mode"], "outline") if outline.get("mode") else None
+    cap = _pick(CAP_STYLES, outline["cap"], "cap") if outline.get("cap") else None
+    join = _pick(JOIN_STYLES, outline["join"], "join") if outline.get("join") else None
+    hint = _pick(TEXT_HINTS, params["hint_style"], "hint style") if params.get("hint_style") else None
+    direction = _pick(TEXT_DIRECTIONS, params["base_direction"], "direction") if params.get("base_direction") else None
+    with undo_step(layer.get_image()):
+        if markup is not None:
+            layer.set_markup(markup)
+        if mode is not None:
+            layer.set_outline(mode)
+        if outline.get("color") is not None:
+            layer.set_outline_color(color(outline["color"]))
+        if outline.get("width") is not None:
+            layer.set_outline_width(float(outline["width"]), Gimp.Unit.pixel())
+        if cap is not None:
+            layer.set_outline_cap_style(cap)
+        if join is not None:
+            layer.set_outline_join_style(join)
+        if outline.get("miter_limit") is not None:
+            layer.set_outline_miter_limit(float(outline["miter_limit"]))
+        if outline.get("antialias") is not None:
+            layer.set_outline_antialias(bool(outline["antialias"]))
+        if params.get("kerning") is not None:
+            layer.set_kerning(bool(params["kerning"]))
+        if hint is not None:
+            layer.set_hint_style(hint)
+        if params.get("indent") is not None:
+            layer.set_indent(float(params["indent"]))
+        if params.get("language") is not None:
+            layer.set_language(params["language"])
+        if direction is not None:
+            layer.set_base_direction(direction)
+        if params.get("box") is not None:
+            layer.resize(float(params["box"]["width"]), float(params["box"]["height"]))
+    return text_style(layer)
+
+
 # -- text --------------------------------------------------------------------------------
 
 JUSTIFICATIONS = {"left": "LEFT", "right": "RIGHT", "center": "CENTER", "fill": "FILL"}
@@ -4452,6 +4555,8 @@ def build_operations():
         "filter.list": filter_list,
         "filter.remove": filter_remove,
         "filter.operations": filter_operations,
+        "text.style_get": text_style_get,
+        "text.style_set": text_style_set,
         "vector.create": vector_create,
         "vector.set": vector_set,
         "vector.inspect": vector_inspect,

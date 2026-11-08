@@ -63,6 +63,9 @@ what is covered by the compatibility promise.
 - Vector toolset (#57): GIMP 3.2 vector layers (a path rendered with editable fill and stroke) and link
   layers (an external image file); both have their own `kind` in inspection and are refused by
   painting and destructive filters instead of being rasterized.
+- Typography toolset (#56): rich text through validated Pango markup, text outlines, kerning, hinting,
+  indentation, language, base direction (right-to-left scripts verified with Hebrew, vertical text) and
+  fixed text boxes, all keeping text layers editable and surviving XCF round trips.
 
 ### Fixed
 
