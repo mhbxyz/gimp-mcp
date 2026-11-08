@@ -163,6 +163,25 @@ async def test_stale_socket(tmp_path):
     assert result.status is Status.FAIL and "stale" in result.message
 
 
+async def test_stale_socket_while_another_gimp_runs(tmp_path):
+    """A crashed GIMP left its socket; another GIMP (another socket) runs: the socket is still stale."""
+    directory = short_tmpdir()
+    path = directory / "bridge.sock"
+    listener = socket.socket(socket.AF_UNIX)
+    listener.bind(str(path))
+    listener.close()
+    (directory / "bridge.sock.token").write_text("t")
+    os.chmod(directory / "bridge.sock.token", 0o600)
+    try:
+        probe = healthy(tmp_path, BridgeEndpoint.for_socket(path), processes=[(4242, "gimp-console-3.2")])
+        result = by_id(await run_checks(probe))["connection"]
+    finally:
+        for child in directory.iterdir():
+            child.unlink()
+        directory.rmdir()
+    assert result.status is Status.FAIL and "stale" in result.message and "4242" in result.message
+
+
 async def test_token_and_directory_permissions(tmp_path):
     with running_fake_bridge({}) as bridge:
         bridge.token_path.chmod(0o644)

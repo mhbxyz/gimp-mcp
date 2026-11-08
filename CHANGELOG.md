@@ -18,6 +18,11 @@ what is covered by the compatibility promise.
   radius), `gimp_compare` (images, layers or checkpoints: changed pixels, bounds, mean/max difference,
   difference preview), `gimp_dominant_colors`, `gimp_preview_region` (full-resolution crops).
 
+### Fixed
+
+- `gimp-mcp doctor` reported "GIMP is running but its bridge does not answer" for a stale socket
+  when some other GIMP was running; it now says the socket is stale and that another GIMP runs.
+
 ### Changed
 
 - The default tool list no longer includes the `procedures` toolset (`gimp_search_procedures`,
