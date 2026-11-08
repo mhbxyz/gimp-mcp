@@ -14,6 +14,8 @@ from gimp_mcp.headless import HeadlessGimp
 from .conftest import mcp_client, server_params
 from .helpers import call, error
 
+FIXTURES = Path(__file__).parent.parent / "fixtures" / "palettes"
+
 
 def px(img: Image.Image, x: int, y: int) -> tuple[int, ...]:
     return img.getpixel((x, y))  # type: ignore[return-value]
@@ -122,8 +124,21 @@ async def test_palettes_are_imported_exported_and_kept_in_the_profile(
             "#0a141eff",
             "#c86432ff",
         ]
-        adobe = await error(client, "gimp_import_palette", file=str(act))  # only .gpl is reachable from plug-ins
-        assert adobe["code"] == "UNSUPPORTED_FORMAT"
+        adobe = await call(client, "gimp_import_palette", file=str(act))  # converted to .gpl by gimp-mcp (#81)
+        assert adobe["name"] == "brand" and [e["color"] for e in adobe["entries"]] == ["#ff0000ff", "#00ff00ff"]
+        assert (gimp.config_dir / "palettes" / "brand.gpl").exists()
+        assert (await error(client, "gimp_import_palette", file=str(act)))["code"] == "FILE_EXISTS"
+        swatches = await call(client, "gimp_import_palette", file=str(FIXTURES / "Material_Palette.aco"))
+        assert len(swatches["entries"]) == 256
+        first = swatches["entries"][0]
+        assert (first["name"], first["color"]) == ("Red 500 - Primary", "#f44336ff")  # Material red 500
+        arne = await call(client, "gimp_import_palette", file=str(FIXTURES / "arne-v20-16.pal"))
+        lospec = {line.split()[-1] for line in (FIXTURES / "arne16.gpl").read_text().splitlines()[4:]}
+        assert {e["color"][1:7] for e in arne["entries"]} == lospec  # same 16 colors as Lospec's copy
+        before = sorted(p.name for p in (gimp.config_dir / "palettes").iterdir())
+        cmyk = await error(client, "gimp_import_palette", file=str(FIXTURES / "ADG3-CMYK.ase"))
+        assert cmyk["code"] == "UNSUPPORTED_FORMAT" and "CMYK" in cmyk["message"]
+        assert sorted(p.name for p in (gimp.config_dir / "palettes").iterdir()) == before
         bad = tmp_path / "junk.gpl"
         bad.write_text("not a palette")
         assert (await error(client, "gimp_import_palette", file=str(bad)))["code"] == "UNSUPPORTED_FORMAT"

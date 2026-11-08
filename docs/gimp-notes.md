@@ -185,6 +185,11 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   the copy after the original (localized "Copy of"), `rename`, `delete` (built-ins:
   `is_editable()` is false). A created resource's file is written at once; edits are written only
   when GIMP exits normally (SIGTERM loses them). The data folder loads palettes from `.gpl` only;
+  the dialog's importers (`app/core/gimppalette-load.c`, read 2026-11-08) are not in the PDB. Their
+  conventions, followed by `gimp_mcp/palettes.py`: ACO RGB/HSB values are 16-bit (HSB as fractions of
+  65536), ACO grayscale 0..10000 is ink (0 = white), ACT/RIFF colors are sRGB bytes; GIMP converts
+  CMYK naively (no profile), which gimp-mcp refuses instead. GIMP's ACT loader reads all 256
+  triplets and ignores the count stored in 772-byte files;
   `gimp-palette-export-{css,java,php,python,text}` (Script-Fu, context palette, `dirname` +
   file name) and `python-fu-palette-export-as-kpl` export palettes.
 * **Composition** (checked 2026-11-08): `Gimp.edit_copy([drawables])`, `edit_cut`,

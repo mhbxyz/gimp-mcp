@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 
 from ..colors import parse_color
 from ..errors import GimpMcpError
+from ..palettes import read_palette
 from ..paths import check_input_file, check_output_file
 from ..toolkit import DESTRUCTIVE, MUTATING, READ_ONLY, Toolkit, ToolResult
 
@@ -224,18 +225,21 @@ def register(kit: Toolkit) -> None:
         name="gimp_import_palette",
         title="Import a palette",
         description=(
-            "Copy a GIMP palette file (.gpl) into GIMP's palettes folder and load it; it stays there (user "
-            "palette). Other formats (.aco, .act, .ase, .pal) are only readable through GIMP's import dialog."
+            "Import a palette file into GIMP's palettes folder and load it; it stays there (user palette). "
+            "Reads GIMP palettes (.gpl), Adobe Color Tables (.act), Photoshop swatches (.aco), Adobe Swatch "
+            "Exchange (.ase) and RIFF or Paint Shop Pro palettes (.pal). Other formats are written as a .gpl "
+            "named after the file; their RGB, HSB and grayscale colors are imported as sRGB, CMYK and Lab "
+            "colors are refused."
         ),
         annotations=MUTATING,
     )
     async def gimp_import_palette(file: str) -> ResourceDetails:
         source = check_input_file(file)
         if source.suffix.lower() != ".gpl":
-            raise GimpMcpError(
-                "UNSUPPORTED_FORMAT",
-                f"{source.name}: only GIMP palette files (.gpl) can be imported from a plug-in in GIMP 3.2",
-                hint="Open it in GIMP's Palettes dialog (Import Palette) once, or convert it to .gpl.",
+            palette = read_palette(source)
+            entries = [{"name": e.name, "rgb": list(e.rgb)} for e in palette.entries]
+            return ResourceDetails(
+                **await call("palette.import", {"file": str(source), "name": palette.name, "entries": entries})
             )
         return ResourceDetails(**await call("palette.import", {"file": str(source)}))
 
