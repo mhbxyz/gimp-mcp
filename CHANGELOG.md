@@ -66,6 +66,8 @@ what is covered by the compatibility promise.
 - Typography toolset (#56): rich text through validated Pango markup, text outlines, kerning, hinting,
   indentation, language, base direction (right-to-left scripts verified with Hebrew, vertical text) and
   fixed text boxes, all keeping text layers editable and surviving XCF round trips.
+- Animation toolset (#59): frames as layers with duration and disposal, frame previews, GIMP's animation
+  optimizer, animated GIF and WebP export (verified frame by frame).
 
 ### Fixed
 

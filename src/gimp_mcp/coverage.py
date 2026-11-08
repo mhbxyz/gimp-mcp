@@ -83,6 +83,28 @@ CAPABILITIES: tuple[Capability, ...] = (
         notes="8-bit sRGB rendering of the visible layers; larger renders go through export.",
     ),
     Capability(
+        "Animation",
+        "Frames with duration and disposal, frame previews, optimize/unoptimize, animated GIF and WebP export",
+        "tested",
+        tools=(
+            "gimp_list_frames",
+            "gimp_add_frame",
+            "gimp_set_frame",
+            "gimp_preview_frame",
+            "gimp_optimize_animation",
+            "gimp_export_animation",
+        ),
+        procedures=(
+            "plug-in-animationoptimize",
+            "plug-in-animationoptimize-diff",
+            "plug-in-animationunoptimize",
+            "file-gif-export",
+            "file-webp-export",
+        ),
+        tests=("tests/e2e/test_animation.py", "tests/unit/test_animation_names.py"),
+        notes="No APNG exporter in GIMP 3.2.",
+    ),
+    Capability(
         "Text",
         "Rich text markup, outline, kerning, hinting, indent, language, base direction, text box",
         "tested",
