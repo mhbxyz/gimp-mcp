@@ -8,6 +8,7 @@ import pytest
 from PIL import Image
 from pypdf import PdfReader
 
+from gimp_mcp import platforms
 from gimp_mcp.headless import HeadlessGimp
 
 from .conftest import mcp_client
@@ -42,6 +43,13 @@ async def test_raster_exports_are_read_back(gimp: HeadlessGimp, tmp_path: Path, 
     async with mcp_client(gimp) as client:
         image, _, _ = await two_layers(client)
         path = tmp_path / f"out.{extension}"
+        if extension == "avif" and lossless and platforms.CURRENT == "macos":
+            # gimp.org's macOS 3.2.6 build: AOM refuses lossless with chroma delta-q (docs/gimp-notes.md)
+            failed = await error(client, "gimp_export_as", image=image, path=str(path), options=options)
+            assert failed["code"] == "WRITE_FAILED" and "enable_chroma_deltaq" in failed["message"]
+            assert not path.exists()
+            await call(client, "gimp_close_image", image=image, discard_changes=True)
+            return
         result = await call(client, "gimp_export_as", image=image, path=str(path), options=options)
         assert result["lossless"] is lossless and result["layers"] == "flattened" and result["bytes"] > 0
         with Image.open(path) as img:

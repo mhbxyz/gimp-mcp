@@ -318,5 +318,7 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   to GValue of type 'gpointer'"), `GeglBuffer`, `GeglNode` or pointer parameter. Linux drops such
   properties silently. GEGL knows each operation's parameters in-process, but only after `Gegl.init(None)`
   in the plug-in (0 operations before, 291 after on 3.2.6); 15 GEGL operations have such parameters, and
-  `gegl:checkerboard` is the only one among the 200 GIMP offers as filters. GIMP's own Python is used for plug-ins
+  `gegl:checkerboard` is the only one among the 200 GIMP offers as filters. The macOS build has no
+  `gegl:gluas` (no Lua), and its AVIF exporter fails on lossless output ("AOM encoder error: Invalid
+  parameter - Only --enable_chroma_deltaq=0 can be used with --lossless=1"); lossy AVIF is not affected. GIMP's own Python is used for plug-ins
   (`Contents/MacOS/python3`, `bin\python.exe`): the system `python3` does not matter there.

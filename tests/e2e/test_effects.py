@@ -204,10 +204,12 @@ async def test_invalid_filters_are_refused_before_anything_changes(gimp: Headles
             ({"operation": "gegl:pixelize", "parameters": {"size-x": 0}}, "INVALID_ARGUMENT"),
             ({"operation": "gegl:pixelize", "parameters": {"norm": "hexagon"}}, "INVALID_ARGUMENT"),
             ({"operation": "gegl:pixelize", "mode": "sparkle"}, "INVALID_ARGUMENT"),
-            ({"operation": "gegl:gluas"}, "UNSUPPORTED"),
             ({"operation": "gegl:displace"}, "UNSUPPORTED"),
             ({"operation": "gegl:does-not-exist"}, "NOT_FOUND"),
         ]
+        offered = {op["name"] for op in (await call(client, "gimp_list_filter_operations"))["operations"]}
+        # Lua scripting is denied; GEGL builds without Lua (gimp.org macOS 3.2.6) do not offer it at all
+        cases.append(({"operation": "gegl:gluas"}, "UNSUPPORTED" if "gegl:gluas" in offered else "NOT_FOUND"))
         for arguments, code in cases:
             assert (await error(client, "gimp_apply_filter", item=layer, **arguments))["code"] == code, arguments
         group = (await call(client, "gimp_create_group", image=image, name="Group"))["id"]
@@ -223,7 +225,9 @@ async def test_every_supported_operation_applies_with_its_defaults(gimp: Headles
         catalog = (await call(client, "gimp_list_filter_operations"))["operations"]
         assert len(catalog) >= 150
         unsupported = {op["name"]: op["reason"] for op in catalog if not op["supported"]}
-        assert {"gegl:gluas", "gegl:displace", "gimp:curves"} <= set(unsupported)
+        offered = {op["name"] for op in catalog}
+        assert {"gegl:gluas", "gegl:displace", "gimp:curves"} & offered <= set(unsupported)
+        assert {"gegl:displace", "gimp:curves"} <= offered
         assert all(unsupported.values())
         image, layer = await new_image(client, 24, 24, "#808080")
         failures = {}
