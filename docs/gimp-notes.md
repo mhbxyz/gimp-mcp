@@ -120,5 +120,27 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   (every pixel once, selection ≥ 50%).
 * `Gimp.Image.pick_color(image, drawables, x, y, sample_merged, sample_average, radius)` exists
   (PDB `gimp-image-pick-color`) and returns `(ok, GeglColor)`.
+* **Filter catalog** (checked 2026-11-08): GEGL operations are *not* loaded in the plug-in process
+  (`Gegl.list_operations()` is empty there). `Gimp.DrawableFilter.operation_get_available()` lists
+  the 200 operations GIMP offers as filters (149 `gegl:`, 51 `gimp:` including layer modes and
+  internal helpers). `operation_get_details(name)` returns `(ok, keys, ValueArray)`: read values
+  with `values.index(i)` (title, description, categories `blur:scramble`, license; localized).
+  Parameters: create `Gimp.DrawableFilter.new(layer, name, title)` (not added to the layer until
+  `append_filter`) and read `get_config().list_properties()`: `ParamSpecDouble/Int/UInt/Boolean`
+  (with `minimum`, `maximum`), `GimpParamChoice` (nicks via
+  `Gimp.param_spec_choice_get_choice(p).list_nicks()`), `GeglParamColor`, `ParamSpecEnum`
+  (`p.enum_class.__enum_values__`), `ParamSpecString`, and `gimp:curves`' `GimpCurve` object.
+  Defaults are the config's initial values. Introspecting all 200: ≈0.3 s.
+* Filters with an auxiliary input (`gegl:gaussian-blur-selective`, `lens-blur`,
+  `negative-darkroom`, `oilify`, `voronoi-diagram`, `gimp:set-alpha`) are accepted by
+  `DrawableFilter.new` but **silently dropped** by `append_filter` (not in `get_filters()`).
+* There is no API to reorder filters or to merge a single filter: libgimp has `append_filter`
+  (adds on top), `merge_filter` (bakes a filter not in the stack), `merge_filters` (bakes the whole
+  stack), `filter.delete()`. Re-creating a filter (same operation, config properties, opacity,
+  blend mode, visibility) on top is the only way to move it.
+* Editable filters respect the selection active when they are created, like destructive ones;
+  a hidden filter (`set_visible(False)`) leaves the rendering byte-identical; XCF keeps editable
+  filters with their parameters. Baking a filter stack stores 8-bit values while the live stack
+  computes in float: results may differ by 1.
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.
