@@ -11,6 +11,7 @@ import os
 import gi
 
 gi.require_version("Babl", "0.1")
+import gmb_align  # noqa: E402
 import gmb_color  # noqa: E402
 import gmb_filters  # noqa: E402
 import gmb_policy  # noqa: E402
@@ -2506,6 +2507,212 @@ def palette_export(params):
     return {"file": path, "format": fmt, "bytes": os.path.getsize(path)}
 
 
+# -- composition (#54) -------------------------------------------------------------------
+
+MERGE_TYPES = {
+    "expand": Gimp.MergeType.EXPAND_AS_NECESSARY,
+    "clip-to-image": Gimp.MergeType.CLIP_TO_IMAGE,
+    "clip-to-bottom": Gimp.MergeType.CLIP_TO_BOTTOM_LAYER,
+}
+CLIPBOARD = "clipboard"
+
+
+def _same_image(items):
+    images = {item.get_image().get_id() for item in items}
+    if len(images) > 1:
+        raise BridgeError("IMAGE_MISMATCH", "the items belong to different images")
+    return items[0].get_image()
+
+
+@mutation
+def clipboard_copy(params):
+    """Copy (or cut) drawables or the visible composite into a named GIMP buffer (or the clipboard)."""
+    buffer = params.get("buffer") or "gimp-mcp"
+    if params.get("visible"):
+        image = get_image(params)
+        ok = Gimp.edit_copy_visible(image) if buffer == CLIPBOARD else Gimp.edit_named_copy_visible(image, buffer)
+    else:
+        drawables = [get_paintable({"item": number}) for number in params["items"]]
+        image = _same_image(drawables)
+        cut = bool(params.get("cut"))
+        if buffer == CLIPBOARD:
+            ok = (Gimp.edit_cut if cut else Gimp.edit_copy)(drawables)
+        else:
+            ok = (Gimp.edit_named_cut if cut else Gimp.edit_named_copy)(drawables, buffer)
+    if not ok:
+        raise BridgeError("INVALID_ARGUMENT", "nothing to copy (empty selection or area)")
+    name = buffer if buffer == CLIPBOARD else (ok if isinstance(ok, str) else buffer)
+    return {"buffer": name, "selection": not Gimp.Selection.is_empty(image)}
+
+
+def _floating(image):
+    return image.get_floating_sel()
+
+
+@mutation
+def clipboard_paste(params):
+    buffer = params.get("buffer") or "gimp-mcp"
+    mode = params["mode"]
+    if mode == "new-image":
+        image = Gimp.edit_paste_as_new_image() if buffer == CLIPBOARD else Gimp.edit_named_paste_as_new_image(buffer)
+        if image is None:
+            raise BridgeError("NOT_FOUND", "buffer %r is empty or does not exist" % buffer, {"buffer": buffer})
+        shown = show(image)
+        return {"mode": mode, "image": image_ref(image, shown), "layer": None}
+    drawable = get_paintable(params)
+    image = drawable.get_image()
+    if _floating(image) is not None:
+        raise BridgeError("INVALID_ARGUMENT", "the image already has a floating selection: anchor it in GIMP first")
+    into = bool(params.get("into_selection"))
+    with undo_step(image):
+        pasted = (
+            Gimp.edit_paste(drawable, into) if buffer == CLIPBOARD else Gimp.edit_named_paste(drawable, buffer, into)
+        )
+        floating = _floating(image)
+        if not pasted or floating is None:
+            raise BridgeError("NOT_FOUND", "buffer %r is empty or does not exist" % buffer, {"buffer": buffer})
+        if mode == "into-layer":
+            Gimp.floating_sel_anchor(floating)
+            layer = drawable
+        else:
+            Gimp.floating_sel_to_layer(floating)
+            layer = floating
+    return {"mode": mode, "image": image_ref(image), "layer": layer_node(layer, recurse=False)}
+
+
+@mutation
+def layers_merge(params):
+    mode = params["mode"]
+    merge_type = MERGE_TYPES[params.get("merge_type", "expand")]
+    if mode == "visible":
+        image = get_image(params)
+        visible = [layer for layer in image.get_layers() if layer.get_visible()]
+        if len(visible) < 2:
+            raise BridgeError("INVALID_ARGUMENT", "merging visible layers needs at least two visible layers")
+        merged = image.merge_visible_layers(merge_type)
+    elif mode == "down":
+        layer = get_layer(params)
+        image = layer.get_image()
+        siblings = layer.get_parent().get_children() if layer.get_parent() else image.get_layers()
+        if siblings.index(next(s for s in siblings if s.get_id() == layer.get_id())) == len(siblings) - 1:
+            raise BridgeError("INVALID_ARGUMENT", "there is no layer below %r to merge into" % layer.get_name())
+        merged = image.merge_down(layer, merge_type)
+    else:
+        group = get_layer(params)
+        if item_kind(group) != "group":
+            raise BridgeError("WRONG_KIND", "item %d is not a group" % group.get_id())
+        image = group.get_image()
+        merged = group.merge()
+    if merged is None:
+        raise BridgeError("GIMP_ERROR", "GIMP could not merge the layers")
+    return {"image": image_ref(image), "layer": layer_node(merged, recurse=False)}
+
+
+@mutation
+def image_flatten(params):
+    image = get_image(params)
+    layer = image.flatten()
+    if layer is None:
+        raise BridgeError("GIMP_ERROR", "GIMP could not flatten the image")
+    return {"image": image_ref(image), "layer": layer_node(layer, recurse=False)}
+
+
+@mutation
+def layer_from_visible(params):
+    image = get_image(params)
+    with undo_step(image):
+        layer = Gimp.Layer.new_from_visible(image, image, params.get("name") or "Visible")
+        image.insert_layer(layer, None, 0)
+    return layer_node(layer, recurse=False)
+
+
+@mutation
+def layer_alpha(params):
+    layer = get_layer(params)
+    if item_kind(layer) != "layer":
+        raise BridgeError("WRONG_KIND", "alpha channels belong to plain layers")
+    with undo_step(layer.get_image()):
+        if params["action"] == "add":
+            layer.add_alpha()
+        elif layer.has_alpha():
+            layer.flatten()  # removes alpha, filling transparency with the background color
+    return layer_node(layer, recurse=False)
+
+
+@mutation
+def selection_from_alpha(params):
+    layer = get_layer(params)
+    image = layer.get_image()
+    image.select_item(CHANNEL_OPS[params.get("operation", "replace")], layer)
+    return {**selection_state(image), "image": image.get_id()}
+
+
+@mutation
+def layer_fit(params):
+    layer = get_layer(params)
+    image = layer.get_image()
+    mode = params["mode"]
+    with undo_step(image):
+        if mode == "image-size":
+            ok = layer.resize_to_image_size()
+        elif mode == "size":
+            ok = layer.resize(int(params["width"]), int(params["height"]), int(params.get("offset_x", 0)),
+                              int(params.get("offset_y", 0)))  # fmt: skip
+        else:
+            image.set_selected_layers([layer])
+            ok = image.autocrop_selected_layers(layer)
+    if not ok:
+        raise BridgeError("GIMP_ERROR", "GIMP could not resize the layer")
+    return layer_node(layer, recurse=False)
+
+
+@mutation
+def image_crop_to_content(params):
+    image = get_image(params)
+    before = (image.get_width(), image.get_height())
+    if not image.autocrop(None):
+        raise BridgeError("GIMP_ERROR", "GIMP could not crop the image")
+    return {**image_ref(image), "cropped": before != (image.get_width(), image.get_height())}
+
+
+@mutation
+def layers_align(params):
+    layers = [get_layer({"item": number}) for number in params["items"]]
+    image = _same_image(layers)
+    boxes = []
+    for layer in layers:
+        _ok, x, y = layer.get_offsets()
+        boxes.append((x, y, layer.get_width(), layer.get_height()))
+    reference = params.get("reference", "image")
+    if reference == "image":
+        box = (0, 0, image.get_width(), image.get_height())
+    elif reference == "selection":
+        _ok, non_empty, x1, y1, x2, y2 = Gimp.Selection.bounds(image)
+        if not non_empty:
+            raise BridgeError("EMPTY_SELECTION", "nothing is selected to align to")
+        box = (x1, y1, x2 - x1, y2 - y1)
+    else:
+        other = get_layer({"item": params["reference_item"]})
+        if other.get_image().get_id() != image.get_id():
+            raise BridgeError("IMAGE_MISMATCH", "the reference layer belongs to another image")
+        _ok, x, y = other.get_offsets()
+        box = (x, y, other.get_width(), other.get_height())
+    try:
+        if params.get("distribute"):
+            offsets = gmb_align.distribute(boxes, params["distribute"])
+        else:
+            offsets = gmb_align.align(boxes, box, params.get("horizontal"), params.get("vertical"))
+    except ValueError as error:
+        raise BridgeError("INVALID_ARGUMENT", str(error)) from None
+    for layer in layers:
+        if layer.get_lock_position():
+            raise BridgeError("LOCKED", "the position of %r is locked" % layer.get_name())
+    with undo_step(image):
+        for layer, (x, y) in zip(layers, offsets, strict=True):
+            layer.set_offsets(x, y)
+    return {"layers": [layer_node(layer, recurse=False) for layer in layers]}
+
+
 # -- text --------------------------------------------------------------------------------
 
 JUSTIFICATIONS = {"left": "LEFT", "right": "RIGHT", "center": "CENTER", "fill": "FILL"}
@@ -3182,6 +3389,16 @@ def build_operations():
         "filter.list": filter_list,
         "filter.remove": filter_remove,
         "filter.operations": filter_operations,
+        "clipboard.copy": clipboard_copy,
+        "clipboard.paste": clipboard_paste,
+        "layers.merge": layers_merge,
+        "image.flatten": image_flatten,
+        "layer.from_visible": layer_from_visible,
+        "layer.alpha": layer_alpha,
+        "selection.from_alpha": selection_from_alpha,
+        "layer.fit": layer_fit,
+        "image.crop_to_content": image_crop_to_content,
+        "layers.align": layers_align,
         "resources.list": resources_list,
         "resource.inspect": resource_inspect,
         "resource.create": resource_create,

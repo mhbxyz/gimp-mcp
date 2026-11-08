@@ -4,7 +4,7 @@
 
 Inventory: GIMP **3.2.6**, 1030 PDB procedures (722 internal, 3 persistent, 244 plugin, 61 temporary), 200 GEGL operations available to filters.
 
-MCP tools: **107**. PDB procedures relied upon by tools: **182** (17.7% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
+MCP tools: **117**. PDB procedures relied upon by tools: **201** (19.5% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
 
 ## Capabilities
 
@@ -14,6 +14,9 @@ MCP tools: **107**. PDB procedures relied upon by tools: **182** (17.7% of the i
 | Session | Toolsets: list the tool groups, enable more during a session | tested | `gimp_list_toolsets`, `gimp_enable_toolsets` | `tests/unit/test_toolsets.py`, `tests/e2e/test_thumbnail_journey.py` | 3.2 | MCP-side only, no GIMP procedure; see docs/toolsets.md |
 | Inspection | Image properties and ordered layer tree (groups, masks) | tested | `gimp_inspect_image`, `gimp_inspect_item` | `tests/e2e/test_inspect.py` | 3.2 |  |
 | Preview | Composite preview as PNG (max 1024 px) | tested | `gimp_preview` | `tests/e2e/test_preview.py` | 3.2 | 8-bit sRGB rendering of the visible layers; larger renders go through export. |
+| Composition | Copy/cut (layers, selection, visible) and paste into a layer, as a layer or a new image | tested | `gimp_copy`, `gimp_paste` | `tests/e2e/test_compose.py` | 3.2 |  |
+| Composition | Merge down, merge group, merge visible, flatten, new layer from visible | tested | `gimp_merge_layers`, `gimp_flatten_image`, `gimp_new_layer_from_visible` | `tests/e2e/test_compose.py` | 3.2 |  |
+| Composition | Alpha channel, alpha to selection, layer boundary, crop to content, align and distribute | tested | `gimp_set_alpha_channel`, `gimp_alpha_to_selection`, `gimp_fit_layer`, `gimp_crop_to_content`, `gimp_align_layers` | `tests/e2e/test_compose.py`, `tests/unit/test_align.py` | 3.2 |  |
 | Resources | List and inspect brushes, gradients, patterns, palettes with previews | tested | `gimp_list_resources`, `gimp_inspect_resource` | `tests/e2e/test_resources.py`, `tests/unit/test_resource_helpers.py` | 3.2 |  |
 | Resources | Create, edit (generated brushes, gradients, palettes), duplicate, rename, delete user resources | tested | `gimp_create_resource`, `gimp_duplicate_resource`, `gimp_rename_resource`, `gimp_delete_resource`, `gimp_edit_brush`, `gimp_edit_gradient`, `gimp_edit_palette` | `tests/e2e/test_resources.py` | 3.2 | Patterns cannot be created from a plug-in in GIMP 3.2. |
 | Resources | Palette import (.gpl) and export (gpl, css, text, python, php, java, kpl) | partial | `gimp_import_palette`, `gimp_export_palette` | `tests/e2e/test_resources.py` | 3.2 | Import of .aco/.act/.ase/.pal is only in GIMP's dialog (#81). |
@@ -50,14 +53,14 @@ MCP tools: **107**. PDB procedures relied upon by tools: **182** (17.7% of the i
 
 | Family | Procedures in GIMP | Used by MCP tools |
 |---|---|---|
-| `gimp-image-*` | 137 | 39 |
+| `gimp-image-*` | 137 | 43 |
 | `gimp-context-*` | 121 | 15 |
 | `plug-in-*` | 68 | 1 |
 | `gimp-drawable-*` | 56 | 30 |
 | `gimp-text-*` | 50 | 14 |
 | `gimp-item-*` | 46 | 8 |
 | `script-fu-*` | 43 | 0 |
-| `gimp-layer-*` | 34 | 16 |
+| `gimp-layer-*` | 34 | 21 |
 | `gimp-gradient-*` | 28 | 3 |
 | `file-raw-*` | 27 | 0 |
 | `gimp-vector-*` | 27 | 0 |
@@ -67,7 +70,7 @@ MCP tools: **107**. PDB procedures relied upon by tools: **182** (17.7% of the i
 | `gimp-selection-*` | 14 | 7 |
 | `gimp-resource-*` | 11 | 3 |
 | `gimp-channel-*` | 10 | 0 |
-| `gimp-edit-*` | 10 | 0 |
+| `gimp-edit-*` | 10 | 7 |
 | `gimp-help-*` | 10 | 0 |
 | `python-fu-*` | 10 | 1 |
 | `gimp-get-*` | 7 | 1 |
@@ -84,7 +87,7 @@ MCP tools: **107**. PDB procedures relied upon by tools: **182** (17.7% of the i
 | `gimp-patterns-*` | 5 | 1 |
 | `gimp-progress-*` | 5 | 0 |
 | `file-pdf-*` | 4 | 0 |
-| `gimp-floating-*` | 4 | 0 |
+| `gimp-floating-*` | 4 | 2 |
 | `gimp-link-*` | 4 | 0 |
 | `extension-*` | 3 | 0 |
 | `file-ani-*` | 3 | 0 |
@@ -146,7 +149,7 @@ MCP tools: **107**. PDB procedures relied upon by tools: **182** (17.7% of the i
 | `gimp-dynamics-*` | 2 | 0 |
 | `gimp-eraser-*` | 2 | 0 |
 | `gimp-gimprc-*` | 2 | 0 |
-| `gimp-group-*` | 2 | 1 |
+| `gimp-group-*` | 2 | 2 |
 | `gimp-heal-*` | 2 | 0 |
 | `gimp-paintbrush-*` | 2 | 0 |
 | `gimp-pattern-*` | 2 | 1 |
