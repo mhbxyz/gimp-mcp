@@ -16,15 +16,13 @@ import pytest
 
 from gimp_mcp import platforms
 
-LINUX_SEMANTICS = {"test_flatpak", "test_setup", "test_uninstall", "test_doctor"}
+LINUX_SEMANTICS = {"test_flatpak", "test_doctor"}
 WINDOWS_PENDING_TESTS = {
     "test_glob_stays_inside_its_directory": "batch globs on Windows paths: #102",
     "test_second_bridge_on_the_same_socket_refuses_to_start": "Unix socket; on Windows see "
     "test_a_second_bridge_cannot_take_the_pipe_name",
 }
 WINDOWS_PENDING = {
-    "test_setup": "setup on Windows: #101",
-    "test_uninstall": "setup on Windows: #101",
     "test_doctor": "doctor on Windows: #103",
     "test_flatpak": "Flatpak is Linux only",
 }

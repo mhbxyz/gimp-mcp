@@ -43,7 +43,6 @@ def build_previous_wheel(tmp_path: Path) -> Path:
     return next(dist.glob("*.whl"))
 
 
-@pytest.mark.skipif(platforms.CURRENT == "windows", reason="setup and uninstall on Windows: #101")
 async def test_upgrade_from_the_previous_release_then_uninstall(tmp_path: Path):
     if find_gimp_console() is None:
         pytest.skip("gimp-console not found")
@@ -53,7 +52,7 @@ async def test_upgrade_from_the_previous_release_then_uninstall(tmp_path: Path):
     assert run("uv", "venv", "--quiet", str(old_venv), cwd=installed.work).returncode == 0
     assert run("uv", "pip", "install", "--quiet", "--python", str(venv_python(old_venv)), str(previous),
                cwd=installed.work, env=installed.env).returncode == 0  # fmt: skip
-    claude = Path(platforms.config_home({"HOME": str(installed.home)})) / "Claude"  # this OS's location
+    claude = Path(platforms.config_home(installed.env)) / "Claude"  # this OS's location
     claude.mkdir(parents=True)
     gimp = HeadlessGimp(install_plugin=False)
     try:

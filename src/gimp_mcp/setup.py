@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -66,12 +67,15 @@ def server_command(prefix: str | None = None, env: dict[str, str] | None = None)
     """
     prefix = prefix or sys.prefix
     path = (env or os.environ).get("PATH")
-    ephemeral = "/uv/archive-v" in prefix.replace(os.sep, "/") or "/.cache/uv/" in prefix.replace(os.sep, "/")
+    posix_prefix = prefix.replace("\\", "/")
+    # uv's throw-away environments: ~/.cache/uv/archive-v0/… (Linux, macOS), %LOCALAPPDATA%\uv\cache\archive-v0\…
+    ephemeral = bool(re.search(r"/uv/(cache/)?archive-v", posix_prefix)) or "/.cache/uv/" in posix_prefix
     if ephemeral:
         uvx = shutil.which("uvx", path=path)
         if uvx:
             return [uvx, "--from", f"gimp-mcp=={__version__}", "gimp-mcp", "serve"]
-    candidate = Path(prefix) / "bin" / "gimp-mcp"
+    scripts = ("Scripts", "gimp-mcp.exe") if platforms.CURRENT == "windows" else ("bin", "gimp-mcp")
+    candidate = Path(prefix).joinpath(*scripts)
     if candidate.exists():
         return [str(candidate), "serve"]
     found = shutil.which("gimp-mcp", path=path)
@@ -98,11 +102,11 @@ class Client:
 
     @property
     def home(self) -> Path:
-        return Path(self.env.get("HOME") or Path.home())
+        return Path(platforms.home(self.env))
 
     @property
     def config_home(self) -> Path:
-        return Path(platforms.config_home({**self.env, "HOME": str(self.home)}))
+        return Path(platforms.config_home(self.env))
 
     def detected(self) -> bool:
         raise NotImplementedError

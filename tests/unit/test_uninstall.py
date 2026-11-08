@@ -6,14 +6,15 @@ import json
 from pathlib import Path
 
 import gimp_mcp
+from gimp_mcp import platforms
 from gimp_mcp.installer import install_plugin
 from gimp_mcp.setup import run_setup, run_uninstall
 
-from .test_setup import make_world, options
+from .test_setup import config_home, make_world, options
 
 
 def profile(world, series: str) -> Path:
-    return world.home / ".config" / "GIMP" / series
+    return Path(platforms.gimp_profile_dir(world.env, series=series))
 
 
 def plugin(world, series: str) -> Path:
@@ -43,7 +44,7 @@ async def test_uninstall_removes_plugins_and_our_client_entries_only(tmp_path):
     world = make_world(tmp_path, clients=("claude-desktop", "cursor"))
     for series in ("3.2", "3.0"):
         install_plugin(profile(world, series))
-    desktop = world.home / ".config" / "Claude" / "claude_desktop_config.json"
+    desktop = config_home(world) / "Claude" / "claude_desktop_config.json"
     desktop.write_text(json.dumps({"mcpServers": {
         "gimp": {"command": "/opt/gimp-mcp/bin/gimp-mcp", "args": ["serve"]},
         "other": {"command": "x"},
@@ -64,7 +65,7 @@ async def test_uninstall_removes_plugins_and_our_client_entries_only(tmp_path):
 async def test_uninstall_asks_before_each_removal(tmp_path):
     world = make_world(tmp_path, clients=("claude-desktop",))
     install_plugin(profile(world, "3.2"))
-    desktop = world.home / ".config" / "Claude" / "claude_desktop_config.json"
+    desktop = config_home(world) / "Claude" / "claude_desktop_config.json"
     desktop.write_text(json.dumps({"mcpServers": {"gimp": {"command": "/x/gimp-mcp", "args": ["serve"]}}}))
     world.answers = ["n", "n"]
     await run_uninstall(options(world))
