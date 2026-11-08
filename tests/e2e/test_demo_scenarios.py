@@ -124,6 +124,25 @@ def web_photo_batch(out: Path, report: Report) -> None:
             assert r > 170 and g < 90 and b < 90, (name, (r, g, b))  # upright: the red marker is top-left
 
 
+def animated_sticker(out: Path, report: Report) -> None:
+    from demo.scenarios.animated_sticker import webp_durations
+
+    with Image.open(out / "sticker.gif") as gif:
+        frames = getattr(gif, "n_frames", 1)
+        assert gif.format == "GIF" and gif.size == (480, 240) and frames == 12 and gif.info["loop"] == 0
+        positions = []
+        for k in range(12):
+            gif.seek(k)
+            row = gif.convert("RGB").crop((0, 128, 480, 129))
+            background = (253, 246, 227)  # the logo's left edge: the first pixel that is not the background
+            pixels = [row.getpixel((x, 0)) for x in range(480)]
+            logo = [x for x, p in enumerate(pixels) if max(abs(a - b) for a, b in zip(p, background, strict=True)) > 8]  # type: ignore[arg-type]
+            positions.append(min(logo) if logo else None)
+        assert positions == [40 + 24 * k for k in range(12)], positions  # the logo slides 24 px per frame
+    assert webp_durations(out / "sticker.webp") == [80] * 11 + [1000]
+    assert (out / "sticker.gif").stat().st_size < 500 * 1024 and (out / "sticker.webp").stat().st_size < 500 * 1024
+
+
 INDEPENDENT: dict[str, Callable[[Path, Report], None]] = {
     "thumbnail": thumbnail,
     "old-photo-restoration": old_photo_restoration,
@@ -131,6 +150,7 @@ INDEPENDENT: dict[str, Callable[[Path, Report], None]] = {
     "social-media-kit": social_media_kit,
     "screenshot-annotation": screenshot_annotation,
     "web-photo-batch": web_photo_batch,
+    "animated-sticker": animated_sticker,
 }
 
 

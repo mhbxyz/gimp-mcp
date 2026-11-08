@@ -14,6 +14,7 @@ with Pillow), never an aesthetic judgement. It has two versions:
 
 | Scenario | What it does | Toolsets |
 |---|---|---|
+| `animated-sticker` | A logo that slides and fades in over 12 frames (80 ms each, the last held 1 s, replace disposal), optimized, exported as GIF and animated WebP under 500 KB ([page](../docs/demos/animated-sticker.md)) | files, layers, animation, compose |
 | `old-photo-restoration` | A tilted, dusty, scratched, faded scan straightened, cropped, healed (heal and clone), leveled and denoised; 16-bit TIFF at 300 dpi and a web JPEG ([page](../docs/demos/old-photo-restoration.md)) | files, layers, transform, painting, color, effects, modes, formats, document |
 | `product-cutout` | A bottle cut out of its studio backdrop (fuzzy select, refined edge, layer mask), soft contact shadow on pure white, centered on 2000×2000 with a 5% margin; JPEG and WebP at 2000, 800 and 400 px with an sRGB profile ([page](../docs/demos/product-cutout.md)) | files, layers, transform, selection, paint, filters, channels, formats, modes, analysis |
 | `web-photo-batch` | 20 photos (JPEG with EXIF orientations, PNG, TIFF, mixed sizes) and a corrupt file: upright, longest side 1600 px, sRGB, 60% watermark, GPS removed and copyright kept, WebP and JPEG; one `gimp_run_batch` per group of same-size photos ([page](../docs/demos/web-photo-batch.md)) | files, layers, transform, batch, document, geometry, modes, formats |

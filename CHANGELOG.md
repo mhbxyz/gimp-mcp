@@ -8,6 +8,9 @@ what is covered by the compatibility promise.
 
 ### Added
 
+- Demo: animated sticker (#113). `uv run demo/run.py animated-sticker` builds 12 frames where a logo
+  slides and fades in, with per-frame timing and disposal, optimizes them and exports GIF and animated
+  WebP under 500 KB, each frame checked; its agent version is an evaluation task.
 - Demo: prepare a folder of photos for a website (#112). `uv run demo/run.py web-photo-batch` turns
   twenty photos upright from EXIF, fits them to 1600 px, converts them to sRGB, watermarks them, removes
   GPS but keeps the copyright, exports WebP and JPEG, and reports the corrupt file; its agent version is
