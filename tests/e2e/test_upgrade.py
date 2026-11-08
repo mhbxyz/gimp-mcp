@@ -10,6 +10,7 @@ import pytest
 from mcp import Client, StdioServerParameters
 
 import gimp_mcp
+from gimp_mcp import platforms
 from gimp_mcp.headless import HeadlessGimp, find_gimp_console
 
 from .dist_helpers import ROOT, install_distribution, run
@@ -51,7 +52,8 @@ async def test_upgrade_from_the_previous_release_then_uninstall(tmp_path: Path):
     assert run("uv", "venv", "--quiet", str(old_venv), cwd=installed.work).returncode == 0
     assert run("uv", "pip", "install", "--quiet", "--python", str(old_venv / "bin/python"), str(previous),
                cwd=installed.work, env=installed.env).returncode == 0  # fmt: skip
-    (installed.home / ".config" / "Claude").mkdir(parents=True)
+    claude = Path(platforms.config_home({"HOME": str(installed.home)})) / "Claude"  # this OS's location
+    claude.mkdir(parents=True)
     gimp = HeadlessGimp(install_plugin=False)
     try:
         gimp.config_dir.mkdir(parents=True)
@@ -80,7 +82,7 @@ async def test_upgrade_from_the_previous_release_then_uninstall(tmp_path: Path):
         removed = installed.gimp_mcp("uninstall", "--yes", "--gimp-dir", str(gimp.config_dir))
         assert removed.returncode == 0, removed.stderr
         assert not plugin.exists()
-        desktop = json.loads((installed.home / ".config/Claude/claude_desktop_config.json").read_text())
+        desktop = json.loads((claude / "claude_desktop_config.json").read_text(encoding="utf-8"))
         assert "gimp" not in desktop["mcpServers"]
         assert "Left for you" in removed.stderr
     finally:
