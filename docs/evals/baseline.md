@@ -1,0 +1,226 @@
+# gimp-mcp agent evaluation
+
+**16/18 tasks passed** — gimp-mcp 0.5.0 (checkout), model claude-sonnet-5-5, 2026-11-08. Default toolsets; the agent enables others itself.
+
+| Task | Result | Tool calls | Errors returned | Duration | Tokens in / out (cache read) |
+|---|---|---|---|---|---|
+| `resize-export` | pass | 3 | 0 | 10.8 s | 10 / 748 (69709) |
+| `crop-quadrant` | pass | 3 | 0 | 10.3 s | 10 / 658 (64946) |
+| `text-title` | pass | 5 | 0 | 15.8 s | 12 / 951 (88843) |
+| `logo-overlay` | pass | 5 | 0 | 16.7 s | 12 / 820 (85574) |
+| `rotate` | pass | 7 | 0 | 26.1 s | 18 / 1302 (130496) |
+| `red-rectangle` | pass | 5 | 0 | 22.2 s | 14 / 1059 (98353) |
+| `blur` | pass | 4 | 0 | 12.7 s | 10 / 659 (65633) |
+| `darken` | **FAIL** | 4 | 0 | 13.9 s | 12 / 658 (80047) |
+| `white-border` | pass | 3 | 0 | 15.6 s | 10 / 863 (67665) |
+| `undo` | pass | 7 | 0 | 20.8 s | 16 / 1091 (118566) |
+| `grayscale` | pass | 4 | 0 | 20.4 s | 12 / 824 (79705) |
+| `invert` | pass | 7 | 1 | 32.9 s | 18 / 1094 (143909) |
+| `batch-thumbnails` | pass | 16 | 0 | 36.6 s | 22 / 2536 (193961) |
+| `animated-gif` | pass | 8 | 0 | 35.8 s | 16 / 1767 (136380) |
+| `lossless-webp` | **FAIL** | 0 | 0 | 16.3 s | 8 / 703 (47571) |
+| `indexed-4-colors` | pass | 6 | 1 | 29.9 s | 16 / 1042 (123861) |
+| `dominant-color` | pass | 9 | 1 | 21.6 s | 16 / 1147 (123024) |
+| `print-resolution` | pass | 5 | 0 | 20.8 s | 14 / 926 (113082) |
+
+## Details
+
+### `resize-export`
+
+* pass: the session finished (success)
+* pass: photo-600.jpg exists and is an image
+* pass: photo-600.jpg is JPEG (JPEG)
+* pass: photo-600.jpg is 600x400 (600x400)
+* pass: the gradient is kept, not cropped
+* gimp tools: gimp_open_image, gimp_resize_image, gimp_export_image
+* other tools tried: ToolSearch
+
+### `crop-quadrant`
+
+* pass: the session finished (success)
+* pass: green.png exists and is an image
+* pass: green.png is PNG (PNG)
+* pass: green.png is 200x200 (200x200)
+* pass: only the green quadrant
+* gimp tools: gimp_open_image, gimp_crop_image, gimp_export_image
+* other tools tried: ToolSearch
+
+### `text-title`
+
+* pass: the session finished (success)
+* pass: hello.xcf is a GIMP project
+* pass: hello.png exists and is an image
+* pass: hello.png is PNG (PNG)
+* pass: hello.png is 800x200 (800x200)
+* pass: dark text in the middle, white corners (11306 dark pixels, corners [255, 255, 255, 255])
+* gimp tools: gimp_create_image, gimp_create_text_layer, gimp_set_layer_offsets, gimp_save_image, gimp_export_image
+* other tools tried: ToolSearch
+
+### `logo-overlay`
+
+* pass: the session finished (success)
+* pass: branded.png exists and is an image
+* pass: branded.png is PNG (PNG)
+* pass: branded.png is 1200x800 (1200x800)
+* pass: logo at 50% in the bottom-right corner only
+* gimp tools: gimp_open_image, gimp_import_layer, gimp_set_layer_offsets, gimp_set_layer_properties, gimp_export_image
+* other tools tried: ToolSearch
+
+### `rotate`
+
+* pass: the session finished (success)
+* pass: rotated.png exists and is an image
+* pass: rotated.png is PNG (PNG)
+* pass: rotated.png is 200x300 (200x300)
+* pass: rotated clockwise (black half on top)
+* gimp tools: gimp_open_image, gimp_inspect_image, gimp_rotate_layer, gimp_inspect_image, gimp_resize_canvas, gimp_set_layer_offsets, gimp_export_image
+* other tools tried: Bash, ToolSearch, ToolSearch
+
+### `red-rectangle`
+
+* pass: the session finished (success)
+* pass: rect.png exists and is an image
+* pass: rect.png is PNG (PNG)
+* pass: rect.png is 400x300 (400x300)
+* pass: red rectangle at x 100-300, y 50-150 on white
+* gimp tools: gimp_create_image, gimp_select_rectangle, gimp_inspect_image, gimp_fill, gimp_export_image
+* other tools tried: Bash, ToolSearch
+
+### `blur`
+
+* pass: the session finished (success)
+* pass: blurred.png exists and is an image
+* pass: blurred.png is PNG (PNG)
+* pass: blurred.png is 256x256 (256x256)
+* pass: the checkerboard is blurred (contrast down, average kept) (mean 188, std dev 2 (input 128, 128; 188 is the linear-light average))
+* gimp tools: gimp_open_image, gimp_inspect_image, gimp_gaussian_blur, gimp_export_image
+* other tools tried: ToolSearch
+
+### `darken`
+
+* pass: the session finished (success)
+* pass: darker.png exists and is an image
+* pass: darker.png is PNG (PNG)
+* pass: darker.png is 300x200 (300x200)
+* **FAIL**: about 30% darker (mean between 60 and 110, input 128) (mean 119)
+* gimp tools: gimp_open_image, gimp_inspect_image, gimp_brightness_contrast, gimp_export_image
+* other tools tried: ToolSearch
+
+### `white-border`
+
+* pass: the session finished (success)
+* pass: framed.png exists and is an image
+* pass: framed.png is PNG (PNG)
+* pass: framed.png is 240x140 (240x140)
+* pass: a 20 px white border around the unchanged image
+* gimp tools: gimp_open_image, gimp_resize_canvas, gimp_export_image
+* other tools tried: ToolSearch
+
+### `undo`
+
+* pass: the session finished (success)
+* pass: step1-blurred.png exists and is an image
+* pass: step1-blurred.png is PNG (PNG)
+* pass: step1-blurred.png is 256x256 (256x256)
+* pass: step2-restored.png exists and is an image
+* pass: step2-restored.png is PNG (PNG)
+* pass: step2-restored.png is 256x256 (256x256)
+* pass: blurred, then exactly restored (blurred std dev 2; restored (0, 0, 0), (255, 255, 255))
+* gimp tools: gimp_open_image, gimp_inspect_image, gimp_create_checkpoint, gimp_gaussian_blur, gimp_export_image, gimp_remove_filter, gimp_export_image
+* other tools tried: ToolSearch
+
+### `grayscale`
+
+* pass: the session finished (success)
+* pass: gray.png exists and is an image
+* pass: gray.png is PNG (PNG)
+* pass: gray.png is 400x100 (400x100)
+* pass: gray tones only, bars still distinct ([(125, 125, 125), (105, 105, 105), (120, 120, 120), (140, 140, 140)])
+* gimp tools: gimp_open_image, gimp_inspect_image, gimp_hue_saturation, gimp_export_image
+* other tools tried: Bash, ToolSearch
+
+### `invert`
+
+* pass: the session finished (success)
+* pass: inverted.png exists and is an image
+* pass: inverted.png is PNG (PNG)
+* pass: inverted.png is 400x400 (400x400)
+* pass: every color inverted
+* error returned: `gimp_invert: Error executing tool gimp_invert: 1 validation error for gimp_invertArguments
+item
+  Field required [type=missing, input_value={'image': 'image:1@4ff4da95'}, input_type=dict]
+    For further informati`
+* gimp tools: gimp_open_image, gimp_list_toolsets, gimp_enable_toolsets, gimp_invert, gimp_inspect_image, gimp_invert, gimp_export_image
+* other tools tried: Bash, ToolSearch
+
+### `batch-thumbnails`
+
+* pass: the session finished (success)
+* pass: a.jpg exists and is an image
+* pass: a.jpg is JPEG (JPEG)
+* pass: a.jpg is 200x150 (200x150)
+* pass: a.jpg keeps its color
+* pass: b.jpg exists and is an image
+* pass: b.jpg is JPEG (JPEG)
+* pass: b.jpg is 200x150 (200x150)
+* pass: b.jpg keeps its color
+* pass: c.jpg exists and is an image
+* pass: c.jpg is JPEG (JPEG)
+* pass: c.jpg is 200x150 (200x150)
+* pass: c.jpg keeps its color
+* pass: only the three JPEGs in ~/out/batch (['a.jpg', 'b.jpg', 'c.jpg'])
+* gimp tools: gimp_status, gimp_list_toolsets, gimp_enable_toolsets, gimp_run_batch, gimp_open_image, gimp_open_image, gimp_open_image, gimp_resize_image, gimp_resize_image, gimp_resize_image, gimp_export_image, gimp_export_image, gimp_export_image, gimp_close_image, gimp_close_image, gimp_close_image
+* other tools tried: Bash, ToolSearch, ListMcpResourcesTool, ToolSearch
+
+### `animated-gif`
+
+* pass: the session finished (success)
+* pass: blink.gif is an animated GIF of 100x100 (GIF (100, 100))
+* pass: 3 frames: red, green, blue ([(255, 0, 0), (0, 255, 0), (0, 0, 255)])
+* pass: 500 ms per frame ([500, 500, 500])
+* pass: loops forever (0)
+* gimp tools: gimp_list_toolsets, gimp_enable_toolsets, gimp_create_image, gimp_add_frame, gimp_add_frame, gimp_list_frames, gimp_set_frame, gimp_export_animation
+* other tools tried: Bash, ToolSearch, ToolSearch
+
+### `lossless-webp`
+
+* pass: the session finished (success)
+* **FAIL**: photo.webp exists and is an image
+* **FAIL**: lossless: pixels identical to the source (no image of the right size)
+* gimp tools: none
+* other tools tried: Bash, ToolSearch, ToolSearch
+
+### `indexed-4-colors`
+
+* pass: the session finished (success)
+* pass: indexed.png exists and is an image
+* pass: indexed.png is PNG (PNG)
+* pass: indexed.png is 400x100 (400x100)
+* pass: indexed, at most 4 colors (mode P, 4 colors)
+* error returned: `gimp_convert_mode: Error executing tool gimp_convert_mode: 2 validation errors for gimp_convert_modeArguments
+image
+  Field required [type=missing, input_value={}, input_type=dict]
+    For further information visit http`
+* gimp tools: gimp_list_toolsets, gimp_open_image, gimp_enable_toolsets, gimp_convert_mode, gimp_convert_mode, gimp_export_image
+* other tools tried: Bash, ToolSearch
+
+### `dominant-color`
+
+* pass: the session finished (success)
+* pass: the answer gives the dominant color's hex code (#e63946) (#e63946, #ffffff)
+* error returned: `gimp_sample_colors: Error executing tool gimp_sample_colors: 2 validation errors for gimp_sample_colorsArguments
+target
+  Field required [type=missing, input_value={}, input_type=dict]
+    For further information visit h`
+* gimp tools: gimp_open_image, gimp_list_toolsets, gimp_enable_toolsets, gimp_dominant_colors, gimp_inspect_image, gimp_dominant_colors, gimp_sample_colors, gimp_sample_colors, gimp_histogram
+* other tools tried: ToolSearch, ToolSearch
+
+### `print-resolution`
+
+* pass: the session finished (success)
+* pass: print.png exists and is an image
+* pass: print.png is PNG (PNG)
+* pass: print.png is 1200x800 (1200x800)
+* pass: the PNG says 300 dpi ((299.9994, 299.9994))
+* gimp tools: gimp_open_image, gimp_list_toolsets, gimp_enable_toolsets, gimp_set_print_size, gimp_export_image
+* other tools tried: ToolSearch, ToolSearch

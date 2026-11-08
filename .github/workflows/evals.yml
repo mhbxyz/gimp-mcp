@@ -1,0 +1,71 @@
+name: Agent evaluation
+
+# The agent evaluation suite (#106, docs/evals/README.md): real Claude Code sessions drive GIMP through
+# gimp-mcp in isolated containers; outputs are checked by facts and compared with docs/evals/baseline.json.
+# Runs on demand, and on release pull requests (scripts/prepare_release.py opens them from release/*).
+# Needs the repository secret CLAUDE_CODE_OAUTH_TOKEN (`claude setup-token`); without it the job says so
+# and stops. The token is given to the evaluation step only, and reaches each container as an
+# environment variable; files containing it are deleted and fail the run (evals/harness.py).
+on:
+  workflow_dispatch:
+    inputs:
+      tasks:
+        description: "Task names separated by spaces, or --all"
+        type: string
+        default: "--all"
+      package:
+        description: "pip requirement to evaluate (empty: this commit)"
+        type: string
+        default: ""
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evals-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evals:
+    name: Agent evaluation (real Claude Code, GIMP 3.2)
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'release/')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - id: token
+        name: Is the token secret set?
+        env:
+          HAS_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        run: |
+          if [ "$HAS_TOKEN" != "true" ]; then
+            echo "::warning::CLAUDE_CODE_OAUTH_TOKEN is not set: the agent evaluation is skipped (see #106)."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.token.outputs.run == 'true'
+      - uses: astral-sh/setup-uv@v6
+        if: steps.token.outputs.run == 'true'
+      - name: Claude Code 2.1.319 (native build, mounted read-only into each container)
+        if: steps.token.outputs.run == 'true'
+        run: |
+          curl -fsSL https://claude.ai/install.sh | bash -s 2.1.319
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Run the evaluation
+        if: steps.token.outputs.run == 'true'
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          TASKS: ${{ inputs.tasks || '--all' }}
+          PACKAGE: ${{ inputs.package }}
+        run: |
+          # shellcheck disable=SC2086 # TASKS is a list of names
+          uv run evals/run.py $TASKS ${PACKAGE:+--package "$PACKAGE"} --out evals/out/ci
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.token.outputs.run == 'true'
+        with:
+          name: agent-evaluation
+          path: evals/out/ci/
+          if-no-files-found: ignore
