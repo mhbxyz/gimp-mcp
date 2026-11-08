@@ -643,7 +643,10 @@ are the same (absolute paths, `overwrite`); metadata is written only when listed
   procedure matches by name goes through GIMP's own format detection. RAW files: GIMP 3.2 hands them
   to darktable or RawTherapee, which open their own editing window; the image reaches GIMP when the
   user closes it, so RAW needs GIMP with its interface and a person at the screen. Without a RAW
-  developer GIMP's placeholder loader fails (`UNSUPPORTED_FORMAT`).
+  developer GIMP's placeholder loader fails (`UNSUPPORTED_FORMAT`). The darktable loaders are one per
+  RAW family (`procedure: "file-darktable-dng-load"` for DNG); allow the call time (the server's
+  `--timeout`) while the photo is developed. Verified on Linux with darktable 5.6.2: a synthetic DNG
+  reaches GIMP at its size with its colors in order once darktable is quit (`tests/gui/test_raw.py`).
 * `gimp_export_layers(image, directory, extension="png", items?, template="{index:02d}-{name}",
   crop=true, options, overwrite)`: one file per top-level layer (or per given layer/group), cropped
   to the layer unless `crop=false`; names are made file-system safe. Refused as a whole
