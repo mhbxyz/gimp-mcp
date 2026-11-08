@@ -33,11 +33,26 @@ values read back from exported files, XCF reopened), never on aesthetics.
 GIMP's console output is kept in `<tmp>/gimp.log`; start failures include its
 tail in the error details.
 
-## Headless limits
+## GIMP with its interface (`tests/gui`)
 
-Everything runs without a display (`gimp-console`). GUI-only behaviour
-(display shells, dialogs) is not covered by automated tests; the bridge was
-verified manually against the GUI build (see ADR 0001).
+`tests/e2e` drives a headless `gimp-console`. `tests/gui` starts GIMP **with its interface** (a window,
+on a fresh profile) and plays the user with the keyboard next to the MCP calls; it runs only with
+`GIMP_MCP_GUI=1`:
+
+```sh
+ci/run-gui.sh                                  # Linux: Xvfb + xdotool in ci/gui/Dockerfile
+GIMP_MCP_GUI=1 uv run pytest tests/gui -ra     # macOS / Windows desktop session
+```
+
+| User action | How it is sent | Verified on |
+|---|---|---|
+| Undo, select all, fill with FG, close, quit (`ctrl+z`, `ctrl+comma`, `ctrl+w`, `ctrl+q`) | Linux: `xdotool key --window`; macOS: `osascript` (System Events, Command key); Windows: `SetForegroundWindow` + `keybd_event` (WScript's `SendKeys` cannot take the focus on a runner) | CI jobs `gui-linux`, `gui-macos`, `gui-windows` |
+
+What they prove: an image the user opened is listed and editable; one MCP call is one step of GIMP's
+undo history (the user's Undo restores the pixels, stroke included); the user's edits between calls
+keep ids and checkpoints; an image closed by the user gives `NOT_FOUND` ("closed?"); quitting GIMP from
+its interface makes the next call fail with a bridge error, and the same MCP session works again when
+GIMP starts again.
 
 ## Continuous integration
 

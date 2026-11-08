@@ -14,6 +14,11 @@ what is covered by the compatibility promise.
 - Demo: social media kit from one design (#110). `uv run demo/run.py social-media-kit` makes a post, a
   story, a banner and a thumbnail with safe-area guides, the brand colors, the logo and an editable
   headline, checked in the reopened XCFs and in the PNGs; its agent version is an evaluation task.
+- End-to-end tests with GIMP's interface open (#105): `tests/gui` starts GIMP with a window on Linux
+  (Xvfb), macOS and Windows and plays the user with the keyboard: images opened by the user are listed
+  and editable, one MCP call is one step of GIMP's undo history, user edits keep ids and checkpoints, an
+  image closed by the user gives `NOT_FOUND`, and the session recovers after the user quits and restarts
+  GIMP. CI jobs `gui-linux`, `gui-macos`, `gui-windows`.
 - Demo: product photo cut-out for an online store (#109). `uv run demo/run.py product-cutout` cuts a
   bottle out of its backdrop with a layer mask, adds a contact shadow on pure white, centers it on a
   2000×2000 square and exports JPEG and WebP at three sizes with an sRGB profile; its agent version is an

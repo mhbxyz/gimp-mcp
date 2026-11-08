@@ -82,6 +82,58 @@ jobs:
           GIMP_MCP_REQUIRE_GIMP: "1"
         run: uv run pytest tests/e2e -ra
 
+  gui-linux:
+    name: GIMP with its interface on Linux (Xvfb)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: GUI end-to-end tests (GIMP 3.2 window on a virtual display, keys sent with xdotool)
+        run: ci/run-gui.sh
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: gui-linux-diagnostics
+          path: ci-artifacts/
+          if-no-files-found: ignore
+
+  gui-macos:
+    name: GIMP with its interface on macOS 15
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install GIMP 3.2.6 from gimp.org (SHA-256 verified)
+        run: ci/install-gimp-macos.sh
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --frozen
+      - name: GUI end-to-end tests (GIMP.app window, keys sent with osascript)
+        env:
+          GIMP_MCP_GUI: "1"
+          GIMP_MCP_REQUIRE_GIMP: "1"
+        run: uv run pytest tests/gui -ra
+
+  gui-windows:
+    name: GIMP with its interface on Windows Server 2025
+    runs-on: windows-2025
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install GIMP 3.2.6 from gimp.org (SHA-256 verified)
+        shell: pwsh
+        run: ci/install-gimp-windows.ps1
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --frozen
+      - name: GUI end-to-end tests (GIMP window, keys sent with WScript.Shell)
+        env:
+          GIMP_MCP_GUI: "1"
+          GIMP_MCP_REQUIRE_GIMP: "1"
+        run: uv run pytest tests/gui -ra
+
   e2e:
     name: End-to-end with GIMP 3.2.6 (pinned Arch snapshot)
     runs-on: ubuntu-24.04
