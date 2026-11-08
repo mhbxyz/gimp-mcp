@@ -17,6 +17,11 @@ what is covered by the compatibility promise.
   histogram of a composite, layer, region or selection), `gimp_sample_colors` (points, averaging
   radius), `gimp_compare` (images, layers or checkpoints: changed pixels, bounds, mean/max difference,
   difference preview), `gimp_dominant_colors`, `gimp_preview_region` (full-resolution crops).
+- Effects toolset (#47): the whole GEGL filter catalog (about 200 operations, parameters introspected
+  from GIMP and validated before anything changes) with `gimp_list_filter_operations`,
+  `gimp_describe_filter_operation`, `gimp_apply_filter` (editable or destructive), and editable-filter
+  management: `gimp_inspect_filter`, `gimp_set_filter` (parameters, visibility, opacity, blend mode),
+  `gimp_move_filter`, `gimp_merge_filters`. New error code `UNSUPPORTED`.
 
 ### Fixed
 

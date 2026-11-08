@@ -14,6 +14,7 @@ from .bridge import BridgeClient
 from .toolkit import Toolkit
 from .tools import (
     analysis,
+    effects,
     files,
     filters,
     history,
@@ -76,6 +77,7 @@ def build_server(
         pdb,
         history,
         analysis,
+        effects,
     ):
         module.register(kit)
     return mcp
