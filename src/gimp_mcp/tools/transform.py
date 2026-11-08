@@ -6,6 +6,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
+from ..colors import parse_color
 from ..models import LayerNode, encode_layer
 from ..toolkit import DESTRUCTIVE, MUTATING, Toolkit
 from .inspect import ImageId, ItemId
@@ -55,16 +56,24 @@ def register(kit: Toolkit) -> None:
         name="gimp_resize_canvas",
         title="Resize canvas",
         description=(
-            "Change the canvas size without resampling. Layers keep their size and are moved by "
-            "(offset_x, offset_y); content outside the new canvas is kept in the layers but not visible. "
-            "One undo step."
+            "Change the canvas size without resampling. Layers move by (offset_x, offset_y) and keep their "
+            "size, unless resize_layers is 'all' or 'image-sized' (layers that covered the old canvas): those "
+            "grow or shrink to the canvas, new areas transparent or fill_color. One undo step."
         ),
         annotations=MUTATING,
     )
     async def gimp_resize_canvas(
-        image: ImageId, width: Size, height: Size, offset_x: int = 0, offset_y: int = 0
+        image: ImageId,
+        width: Size,
+        height: Size,
+        offset_x: int = 0,
+        offset_y: int = 0,
+        resize_layers: Literal["none", "all", "image-sized"] = "none",
+        fill_color: Annotated[str | None, Field(description="Fill new layer areas (default: transparent).")] = None,
     ) -> ImageGeometry:
-        return await image_call("image.resize", image, width=width, height=height, offset_x=offset_x, offset_y=offset_y)
+        fill = None if fill_color is None else parse_color(fill_color).to_wire()
+        return await image_call("image.resize", image, width=width, height=height, offset_x=offset_x,
+                                offset_y=offset_y, resize_layers=resize_layers, fill_color=fill)  # fmt: skip
 
     @kit.tool(
         toolset="transform",

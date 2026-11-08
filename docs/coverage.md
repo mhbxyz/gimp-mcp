@@ -4,7 +4,7 @@
 
 Inventory: GIMP **3.2.6**, 1030 PDB procedures (722 internal, 3 persistent, 244 plugin, 61 temporary), 200 GEGL operations available to filters.
 
-MCP tools: **133**. PDB procedures relied upon by tools: **243** (23.6% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
+MCP tools: **136**. PDB procedures relied upon by tools: **248** (24.1% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
 
 ## Capabilities
 
@@ -14,6 +14,8 @@ MCP tools: **133**. PDB procedures relied upon by tools: **243** (23.6% of the i
 | Session | Toolsets: list the tool groups, enable more during a session | tested | `gimp_list_toolsets`, `gimp_enable_toolsets` | `tests/unit/test_toolsets.py`, `tests/e2e/test_thumbnail_journey.py` | 3.2 | MCP-side only, no GIMP procedure; see docs/toolsets.md |
 | Inspection | Image properties and ordered layer tree (groups, masks) | tested | `gimp_inspect_image`, `gimp_inspect_item` | `tests/e2e/test_inspect.py` | 3.2 |  |
 | Preview | Composite preview as PNG (max 1024 px) | tested | `gimp_preview` | `tests/e2e/test_preview.py` | 3.2 | 8-bit sRGB rendering of the visible layers; larger renders go through export. |
+| Geometry | Perspective, shear, matrix and rotation around a point on layers, groups, paths, channels and selection | tested | `gimp_transform` | `tests/e2e/test_geometry.py` | 3.2 |  |
+| Geometry | Image rotation by 90/180/270, image flip, canvas resize with layer resize and fill | tested | `gimp_rotate_image`, `gimp_flip_image`, `gimp_resize_canvas` | `tests/e2e/test_geometry.py` | 3.2 |  |
 | Painting | Paint along strokes: paintbrush, pencil, airbrush, ink, eraser, smudge, dodge/burn, clone, heal | tested | `gimp_paint_stroke` | `tests/e2e/test_painting.py` | 3.2 |  |
 | Painting | Gradient fill (named or inline, shapes, repeat, offset) and bucket fill (color, pattern, gradient) | tested | `gimp_gradient_fill`, `gimp_bucket_fill` | `tests/e2e/test_painting.py` | 3.2 |  |
 | Formats | Export to every GIMP format with introspected options (WebP, AVIF/HEIF, TIFF, BMP, GIF, ICO, PDF, PSD…) | tested | `gimp_list_file_formats`, `gimp_describe_file_format`, `gimp_export_as` | `tests/e2e/test_formats.py`, `tests/unit/test_formats.py` | 3.2 |  |
@@ -61,12 +63,12 @@ MCP tools: **133**. PDB procedures relied upon by tools: **243** (23.6% of the i
 
 | Family | Procedures in GIMP | Used by MCP tools |
 |---|---|---|
-| `gimp-image-*` | 137 | 57 |
+| `gimp-image-*` | 137 | 59 |
 | `gimp-context-*` | 121 | 19 |
 | `plug-in-*` | 68 | 1 |
 | `gimp-drawable-*` | 56 | 32 |
 | `gimp-text-*` | 50 | 14 |
-| `gimp-item-*` | 46 | 8 |
+| `gimp-item-*` | 46 | 11 |
 | `script-fu-*` | 43 | 0 |
 | `gimp-layer-*` | 34 | 22 |
 | `gimp-gradient-*` | 28 | 3 |

@@ -83,6 +83,28 @@ CAPABILITIES: tuple[Capability, ...] = (
         notes="8-bit sRGB rendering of the visible layers; larger renders go through export.",
     ),
     Capability(
+        "Geometry",
+        "Perspective, shear, matrix and rotation around a point on layers, groups, paths, channels and selection",
+        "tested",
+        tools=("gimp_transform",),
+        procedures=(
+            "gimp-item-transform-perspective",
+            "gimp-item-transform-shear",
+            "gimp-item-transform-matrix",
+            "gimp-item-transform-rotate",
+            "gimp-context-set-transform-resize",
+        ),
+        tests=("tests/e2e/test_geometry.py",),
+    ),
+    Capability(
+        "Geometry",
+        "Image rotation by 90/180/270, image flip, canvas resize with layer resize and fill",
+        "tested",
+        tools=("gimp_rotate_image", "gimp_flip_image", "gimp_resize_canvas"),
+        procedures=("gimp-image-rotate", "gimp-image-flip", "gimp-image-resize", "gimp-layer-resize-to-image-size"),
+        tests=("tests/e2e/test_geometry.py",),
+    ),
+    Capability(
         "Painting",
         "Paint along strokes: paintbrush, pencil, airbrush, ink, eraser, smudge, dodge/burn, clone, heal",
         "tested",

@@ -53,6 +53,9 @@ what is covered by the compatibility promise.
   dodge/burn, clone and heal (brush, size, hardness, spacing, dynamics all explicit; GIMP's context is
   restored), gradient fills (named or inline gradients, every shape and repeat mode) and bucket fill
   by similar colors or selection with a color, pattern or gradient.
+- Geometry toolset (#55): perspective, shear, 3×3 matrices and rotation around any point for layers,
+  groups, paths, channels and the selection; whole-image rotation and flips. `gimp_resize_canvas` can
+  resize the layers with the canvas and fill the new areas.
 
 ### Fixed
 
