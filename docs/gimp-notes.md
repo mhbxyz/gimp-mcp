@@ -173,5 +173,19 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   into a new path named after the (localized) word "Selection". `import_paths_from_string(svg,
   length, merge, scale)` → `(ok, paths)`; `export_path_to_string(path or None)` writes inches
   from the image resolution. `Gimp.Path.new_from_text_layer(image, layer)`. Paths survive XCF.
+* **Resources** (checked 2026-11-08): `Gimp.Brush/Gradient/Pattern/Palette.get_by_name(name)`
+  (`None` when missing), `Gimp.brushes_get_list(filter)` etc.; built-in names are localized.
+  `Gimp.Brush.new(name)` makes an editable generated brush; setters return `(ok, value)`.
+  `brush.get_buffer()` exists only for color brushes (a mask-only brush logs a GLib warning and
+  returns `None`): use `get_mask(w, h, Babl.format("Y' u8"))`. `Gimp.Gradient.new` starts with one
+  black-to-white segment; `segment_range_split_uniform`, `segment_range_delete`,
+  `segment_set_right_pos`, `segment_set_left/right_color`, `segment_range_set_blending_function`,
+  `segment_range_set_coloring_type`, `get_uniform_samples(n, reverse)`. `Gimp.Palette.add_entry`,
+  `delete_entry`, `set_columns`, `get_entry_name(i)` → `(ok, name)`. `resource.duplicate()` names
+  the copy after the original (localized "Copy of"), `rename`, `delete` (built-ins:
+  `is_editable()` is false). A created resource's file is written at once; edits are written only
+  when GIMP exits normally (SIGTERM loses them). The data folder loads palettes from `.gpl` only;
+  `gimp-palette-export-{css,java,php,python,text}` (Script-Fu, context palette, `dirname` +
+  file name) and `python-fu-palette-export-as-kpl` export palettes.
 * AF_UNIX socket paths longer than ~107 bytes fail with `OSError: AF_UNIX path
   too long`.

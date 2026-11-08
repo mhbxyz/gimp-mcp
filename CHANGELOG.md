@@ -35,6 +35,10 @@ what is covered by the compatibility promise.
   outline; inspect, rename, show, duplicate, delete; edit strokes; length and point at distance;
   path ↔ selection; stroke (line or brush) and fill; SVG import and export. `gimp_inspect_image`
   lists the image's paths.
+- Resources toolset (#52): list and inspect brushes, gradients, patterns and palettes with previews;
+  create, edit (generated brushes, gradient segments, palette entries), duplicate, rename and delete
+  user resources (built-ins are read-only: new error code `READ_ONLY`); import `.gpl` palettes and
+  export palettes as gpl, css, text, python, php, java or kpl.
 
 ### Fixed
 
