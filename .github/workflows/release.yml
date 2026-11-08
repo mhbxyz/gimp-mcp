@@ -229,6 +229,17 @@ jobs:
           path: dist
       - name: Same files on PyPI as built (SHA-256)
         run: python3 scripts/verify_published.py pypi "${{ needs.build.outputs.version }}" dist/SHA256SUMS
+      - name: Wait until PyPI's index serves the release (its CDN lags behind the JSON API)
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          for attempt in $(seq 1 40); do
+            if pip download --quiet --no-deps --no-cache-dir --dest "$RUNNER_TEMP/probe" "gimp-mcp==$VERSION"; then
+              echo "served after $attempt attempt(s)"; exit 0
+            fi
+            sleep 15
+          done
+          echo "PyPI's index still does not serve gimp-mcp==$VERSION after 10 minutes"; exit 1
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
