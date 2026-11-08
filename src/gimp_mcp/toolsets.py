@@ -27,6 +27,8 @@ TOOLSETS: dict[str, str] = {
     "history": "Undo groups and checkpoints (undo/redo for agents).",
     "analysis": "Measure pixels: histograms and statistics, color sampling, image comparison, dominant colors, "
     "full-resolution crops.",
+    "color": "Color adjustments: levels, curves, color balance, colorize, desaturate, invert, threshold, "
+    "posterize, exposure, shadows-highlights, automatic corrections.",
     "effects": "The full GEGL filter catalog: list operations, apply any of them, edit, reorder and merge "
     "editable filters.",
     "procedures": "Search, describe and call allowlisted GIMP procedures (advanced).",

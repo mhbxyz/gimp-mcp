@@ -11,6 +11,7 @@ import os
 import gi
 
 gi.require_version("Babl", "0.1")
+import gmb_color  # noqa: E402
 import gmb_filters  # noqa: E402
 import gmb_policy  # noqa: E402
 import gmb_stats  # noqa: E402
@@ -1591,6 +1592,101 @@ def filter_merge(params):
     return {"merged": merged, "filters": [filter_info(f) for f in drawable.get_filters()]}
 
 
+# -- color adjustments (#48) -------------------------------------------------------------
+
+DESTRUCTIVE_ONLY = {"equalize": "equalize", "white-balance": "levels_stretch"}
+HISTOGRAM_CHANNELS = {v.value_nick: v for v in Gimp.HistogramChannel.__enum_values__.values()}
+
+
+def _config_enum(config, name, nick):
+    pspec = config.find_property(name)
+    for value in pspec.enum_class.__enum_values__.values():
+        if value.value_nick == nick:
+            return value
+    allowed = [v.value_nick for v in pspec.enum_class.__enum_values__.values()]
+    raise BridgeError("INVALID_ARGUMENT", "%s must be one of %s" % (name, ", ".join(allowed)), {"allowed": allowed})
+
+
+@mutation
+def color_adjust(params):
+    drawable = get_layer(params)
+    adjustment = params["adjustment"]
+    destructive = bool(params.get("destructive"))
+    try:
+        operation, props = gmb_color.plan(adjustment, params.get("settings") or {})
+    except ValueError as error:
+        raise BridgeError("INVALID_ARGUMENT", str(error)) from None
+    if operation is None and not destructive:
+        raise BridgeError(
+            "UNSUPPORTED", "%s is only available destructively in GIMP 3.2: use destructive=true" % adjustment
+        )
+    _check_filterable(drawable, destructive)
+    drawable_filter = None
+    if operation is not None:  # resolve every value before changing anything
+        drawable_filter = Gimp.DrawableFilter.new(drawable, operation, adjustment)
+        config = drawable_filter.get_config()
+        values = {}
+        for name, value in props.items():
+            if isinstance(value, tuple) and value[0] == "enum":
+                value = _config_enum(config, name, value[1])
+            elif isinstance(value, tuple) and value[0] == "color":
+                value = color(value[1])
+            values[name] = value
+    image = drawable.get_image()
+    restricted = not Gimp.Selection.is_empty(image)
+    filter_id = None
+    with undo_step(image):
+        if drawable_filter is None:
+            getattr(drawable, DESTRUCTIVE_ONLY[adjustment])(*([False] if adjustment == "equalize" else []))
+        else:
+            for name, value in values.items():
+                config.set_property(name, value)
+            drawable_filter.update()
+            if destructive:
+                drawable.merge_filter(drawable_filter)
+            else:
+                drawable.append_filter(drawable_filter)
+                filter_id = drawable_filter.get_id()
+                if filter_id not in [f.get_id() for f in drawable.get_filters()]:
+                    raise BridgeError("GIMP_ERROR", "GIMP did not keep the editable filter on %r" % drawable.get_name())
+    return {
+        "adjustment": adjustment,
+        "operation": operation,
+        "destructive": destructive,
+        "filter": filter_id,
+        "restricted_to_selection": restricted,
+    }
+
+
+@mutation
+def color_curves(params):
+    drawable = get_layer(params)
+    _check_filterable(drawable, True)
+    channel = HISTOGRAM_CHANNELS.get(params.get("channel", "value"))
+    if channel is None:
+        raise BridgeError("INVALID_ARGUMENT", "unknown channel %r" % params.get("channel"))
+    try:
+        if params.get("points") is not None:
+            values, spline = gmb_color.curve_points(params["points"]), True
+        else:
+            values, spline = gmb_color.curve_samples(params.get("samples") or []), False
+    except ValueError as error:
+        raise BridgeError("INVALID_ARGUMENT", str(error)) from None
+    image = drawable.get_image()
+    restricted = not Gimp.Selection.is_empty(image)
+    with undo_step(image):
+        ok = drawable.curves_spline(channel, values) if spline else drawable.curves_explicit(channel, values)
+    if not ok:
+        raise BridgeError("GIMP_ERROR", "GIMP refused the curve")
+    return {
+        "adjustment": "curves",
+        "operation": None,
+        "destructive": True,
+        "filter": None,
+        "restricted_to_selection": restricted,
+    }
+
+
 # -- text --------------------------------------------------------------------------------
 
 JUSTIFICATIONS = {"left": "LEFT", "right": "RIGHT", "center": "CENTER", "fill": "FILL"}
@@ -2267,6 +2363,8 @@ def build_operations():
         "filter.list": filter_list,
         "filter.remove": filter_remove,
         "filter.operations": filter_operations,
+        "color.adjust": color_adjust,
+        "color.curves": color_curves,
         "filter.describe": filter_operation_describe,
         "filter.apply_any": filter_apply_any,
         "filter.inspect": filter_inspect,

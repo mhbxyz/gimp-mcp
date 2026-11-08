@@ -4,7 +4,7 @@
 
 Inventory: GIMP **3.2.6**, 1030 PDB procedures (722 internal, 3 persistent, 244 plugin, 61 temporary), 200 GEGL operations available to filters.
 
-MCP tools: **66**. PDB procedures relied upon by tools: **124** (12.0% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
+MCP tools: **77**. PDB procedures relied upon by tools: **134** (13.0% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
 
 ## Capabilities
 
@@ -14,6 +14,9 @@ MCP tools: **66**. PDB procedures relied upon by tools: **124** (12.0% of the in
 | Session | Toolsets: list the tool groups, enable more during a session | tested | `gimp_list_toolsets`, `gimp_enable_toolsets` | `tests/unit/test_toolsets.py`, `tests/e2e/test_thumbnail_journey.py` | 3.2 | MCP-side only, no GIMP procedure; see docs/toolsets.md |
 | Inspection | Image properties and ordered layer tree (groups, masks) | tested | `gimp_inspect_image`, `gimp_inspect_item` | `tests/e2e/test_inspect.py` | 3.2 |  |
 | Preview | Composite preview as PNG (max 1024 px) | tested | `gimp_preview` | `tests/e2e/test_preview.py` | 3.2 | 8-bit sRGB rendering of the visible layers; larger renders go through export. |
+| Color | Levels, color balance, colorize, desaturate, invert, threshold, posterize (editable or destructive) | tested | `gimp_levels`, `gimp_color_balance`, `gimp_colorize`, `gimp_desaturate`, `gimp_invert`, `gimp_threshold`, `gimp_posterize` | `tests/unit/test_color_plans.py`, `tests/e2e/test_color.py` | 3.2 | Through GIMP's own operations (gimp:levels…) as filters, merged for destructive mode. |
+| Color | Curves (spline points or explicit samples) | tested | `gimp_curves` | `tests/e2e/test_color.py` | 3.2 | Destructive only: an editable curves filter needs a GimpCurve object. |
+| Color | Exposure, shadows-highlights, white balance, equalize, stretch contrast | tested | `gimp_exposure`, `gimp_shadows_highlights`, `gimp_auto_adjust` | `tests/e2e/test_color.py` | 3.2 |  |
 | Filters | GEGL filter catalog: list and describe operations (introspected from GIMP) | tested | `gimp_list_filter_operations`, `gimp_describe_filter_operation` | `tests/unit/test_filter_catalog.py`, `tests/e2e/test_effects.py` | 3.2 | Scripts, auxiliary-input and internal operations are listed as unsupported, with the reason. |
 | Filters | Apply any supported GEGL operation, destructive or editable, respecting the selection | tested | `gimp_apply_filter` | `tests/e2e/test_effects.py` | 3.2 | Curated pixel checks (unsharp mask, noise reduction, pixelize, drop shadow, vignette, lens distortion) and a smoke test of every supported operation with its defaults. |
 | Filters | Editable filters: inspect, change parameters, visibility, opacity, blend mode, reorder, merge | tested | `gimp_inspect_filter`, `gimp_set_filter`, `gimp_move_filter`, `gimp_merge_filters` | `tests/e2e/test_effects.py` | 3.2 | No reorder or single-filter merge in GIMP 3.2: filters above are re-created (new ids). |
@@ -40,7 +43,7 @@ MCP tools: **66**. PDB procedures relied upon by tools: **124** (12.0% of the in
 | `gimp-image-*` | 137 | 31 |
 | `gimp-context-*` | 121 | 15 |
 | `plug-in-*` | 68 | 0 |
-| `gimp-drawable-*` | 56 | 20 |
+| `gimp-drawable-*` | 56 | 30 |
 | `gimp-text-*` | 50 | 14 |
 | `gimp-item-*` | 46 | 8 |
 | `script-fu-*` | 43 | 0 |

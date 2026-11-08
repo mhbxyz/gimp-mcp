@@ -14,6 +14,7 @@ from .bridge import BridgeClient
 from .toolkit import Toolkit
 from .tools import (
     analysis,
+    color,
     effects,
     files,
     filters,
@@ -77,6 +78,7 @@ def build_server(
         pdb,
         history,
         analysis,
+        color,
         effects,
     ):
         module.register(kit)
