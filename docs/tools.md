@@ -388,6 +388,25 @@ image dirty. Procedure names, arguments and availability depend on the GIMP
 version; check with `gimp_list_callable_procedures` (the committed matrix lists
 422 callable procedures on GIMP 3.2.6).
 
+## Advanced transforms (toolset `geometry`)
+
+* `gimp_transform(transform, item | image + selection=true, …, interpolation, clip)` on a layer,
+  group, text layer, path, channel or the selection:
+  * `perspective`: `corners` = new positions of the top-left, top-right, bottom-left and
+    bottom-right corners of the item's bounds;
+  * `shear`: `orientation` and `magnitude` (pixels the far edge moves);
+  * `matrix`: 3×3 matrix in pixel coordinates (`[[1, 0, dx], [0, 1, dy], [0, 0, 1]]` translates);
+  * `rotate`: `angle` (degrees, clockwise) around `center_x`, `center_y`.
+
+  `clip`: `adjust` (grow to fit), `clip` (keep the original bounds), `crop` / `crop-with-aspect`
+  (largest inner rectangle). With interpolation, a transformed selection gets a soft edge one pixel
+  wide (`interpolation="none"` keeps it hard). Locked layers are refused (`LOCKED`).
+* `gimp_rotate_image(image, 90|180|270)`, `gimp_flip_image(image, horizontal|vertical)`: the
+  whole image, lossless.
+* `gimp_resize_canvas` (toolset `transform`) takes `resize_layers` (`none`, `all`, or
+  `image-sized` for layers that covered the old canvas) and `fill_color` for the new areas of the
+  resized layers (default transparent).
+
 ## Painting with GIMP's tools (toolset `painting`)
 
 Every setting is explicit and GIMP's context (colors, brush, dynamics…) is saved before and
