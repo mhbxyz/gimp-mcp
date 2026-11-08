@@ -19,6 +19,13 @@ what is covered by the compatibility promise.
   `%APPDATA%`, `%USERPROFILE%`), with the same backups; on Windows the configured command is the
   environment's `Scripts\gimp-mcp.exe` (or `uvx`), and works from a path with spaces.
 
+- `gimp-mcp doctor` on macOS and Windows (#103): each fix is written for the OS it is shown on
+  (where gimp.org's GIMP is looked for, the default profile, the pipe), GIMP's bundled Python is the
+  one checked, and running GIMP processes are listed there too (`ps`, `tasklist`), so the
+  `instances` check and "GIMP runs but does not answer" work on every OS. `docs/troubleshooting.md`
+  gives the fix of each OS; install, architecture, compatibility (verified platform matrix), client
+  guides and the README cover Linux, macOS and Windows.
+
 ### Changed
 
 - The README demo is re-recorded with 0.4.0.
@@ -28,6 +35,11 @@ what is covered by the compatibility promise.
 
 ### Fixed
 
+- `gimp-mcp setup` and `uninstall` print `+`, `x` and `->` instead of `\u2713`-style escapes when their
+  output goes to a console or file that cannot encode the symbols (Windows redirects in cp1252) (#103).
+- `gimp-mcp doctor` uses `%USERPROFILE%` as home on Windows, even when `HOME` is set (#103).
+- `gimp-mcp doctor` no longer stops (exit code 2) on Windows when `GIMP_MCP_SOCKET` is a file path: the
+  socket-permissions check is skipped there (#103).
 - macOS: the bridge plug-in no longer crashes while listing filters. Operations with a format, pointer or
   buffer parameter (read from GEGL, which the plug-in now initializes) are never instantiated: libgimp
   cannot carry those values, and doing it corrupted the plug-in on macOS. Of the 200 operations GIMP

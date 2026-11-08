@@ -57,12 +57,27 @@ digest) and drives the distribution's own GIMP over MCP (`ci/run-distro.sh <id>`
 * The bridge is a named pipe, `\\.\pipe\gimp-mcp-<user>`: its DACL grants the current user only, remote
   clients are rejected, and the plug-in refuses a client whose process belongs to another user (the
   server checks the pipe's owner the same way). The token lives in `%LOCALAPPDATA%\gimp-mcp\`.
-* Skipped there: the Flatpak test (Linux only) and the guided setup test (Windows locations: #101).
-  Unit tests of Unix-socket specifics are skipped and replaced by `tests/unit/test_windows_pipe.py`.
+* Skipped there: the Flatpak test (Linux only). Unit tests of Unix-socket specifics are skipped and
+  replaced by `tests/unit/test_windows_pipe.py`.
+* NTFS ignores case but not the Unicode normalization form; file tools compare names accordingly
+  (`docs/security.md#file-paths`). GIMP for Windows starts its own D-Bus bus (`gdbus.exe`), on
+  loopback only.
+
+## Verified platform matrix
+
+| OS | Version | Architecture | GIMP | How |
+|---|---|---|---|---|
+| Linux (Arch Linux, pinned snapshot) | rolling | x86_64 | 3.2.6 | CI job `e2e` (full e2e suite) |
+| Linux (Flathub `org.gimp.GIMP`) | Ubuntu 24.04 host | x86_64 | 3.2.6 | CI job `flatpak` |
+| macOS | 15 | arm64 (Apple Silicon) | 3.2.6 (gimp.org `.dmg`) | CI job `e2e-macos` (full e2e suite) |
+| Windows | Server 2025 | x86_64 | 3.2.6 (gimp.org installer) | CI job `e2e-windows` (full e2e suite) |
 
 ## Not supported (not verified)
 
 * **Windows 10/11 desktops** and Windows on ARM — not verified directly (CI uses Windows Server 2025, x86_64).
+* **Intel Macs** and macOS versions other than 15 — not verified (GitHub offers no Intel macOS runner).
+* GIMP installed from the Microsoft Store, Homebrew, MacPorts or MSYS2 — not verified; point
+  `GIMP_MCP_GIMP_CONSOLE` at its `gimp-console-3.2` if it is not found.
 * **Snap GIMP** — different confinement; untested. (Flatpak is supported, see above.)
 * **GIMP 2.10 / 3.0** — refused at connection time.
 * Remote GIMP over a network — by design the bridge is local only.
@@ -71,10 +86,12 @@ digest) and drives the distribution's own GIMP over MCP (`ci/run-distro.sh <id>`
 
 Everything runs as the user, without privileges:
 
-* the plug-in is copied to `~/.config/GIMP/3.2/plug-ins/gimp-mcp-bridge/`
-  (or `$GIMP3_DIRECTORY`);
-* the socket and its token live in `$XDG_RUNTIME_DIR/gimp-mcp/` (`0700`,
-  socket and token `0600`);
+* the plug-in is copied to the GIMP 3.2 profile's `plug-ins/gimp-mcp-bridge/`
+  (`~/.config/GIMP/3.2`, `~/Library/Application Support/GIMP/3.2`, `%APPDATA%\GIMP\3.2`, or
+  `$GIMP3_DIRECTORY`);
+* the socket and its token live in `$XDG_RUNTIME_DIR/gimp-mcp/` on Linux and
+  `~/Library/Application Support/gimp-mcp/` on macOS (`0700`, socket and token `0600`); on
+  Windows the pipe admits only the user and the token is in `%LOCALAPPDATA%\gimp-mcp\`;
 * file tools read/write only the absolute paths they are given, with the user's
   permissions, and never overwrite without `overwrite: true`.
 

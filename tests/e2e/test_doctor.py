@@ -45,6 +45,11 @@ def test_doctor_explains_a_missing_plugin_and_a_stale_socket(gimp_factory: Calla
     code, checks = doctor(gimp, tmp_path)
     assert code == 1
     assert checks["plugin"]["status"] == "fail" and "install-plugin" in checks["plugin"]["fix"]
-    # a Unix socket file stays behind after a crash ("stale"); a Windows pipe disappears with its process
-    expected = "not running" if platforms.CURRENT == "windows" else "stale"
-    assert checks["connection"]["status"] == "fail" and expected in checks["connection"]["message"]
+    # a Unix socket file stays behind after a crash ("stale"); a Windows pipe disappears with its process,
+    # and the other GIMPs of this test session are seen running without answering on this pipe
+    message = checks["connection"]["message"]
+    assert checks["connection"]["status"] == "fail"
+    if platforms.CURRENT == "windows":
+        assert "not running" in message or "does not answer" in message, message
+    else:
+        assert "stale" in message, message

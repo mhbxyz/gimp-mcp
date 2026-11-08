@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import re
+import subprocess
 import sys
 import unicodedata
 from collections.abc import Callable, Mapping
@@ -198,10 +199,44 @@ def bundled_gimp_python(console: str, kind: OsKind | None = None) -> str | None:
     return str(_pure(kind)(console).parent / name)
 
 
+_GIMP_PROCESS = re.compile(r"gimp(-console)?(-\d.*)?")
+
+
+def parse_gimp_processes(output: str, kind: OsKind) -> list[tuple[int, str]]:
+    """GIMP main processes in the output of ``ps -x -o pid=,comm=`` (macOS) or ``tasklist /FO CSV /NH``
+    (Windows): its plug-ins and gimp-mcp itself are not GIMP."""
+    found = []
+    for line in output.splitlines():
+        if kind == "windows":
+            fields = [field.strip('"') for field in line.strip().split('","')]
+            if len(fields) < 2 or not fields[1].isdigit():
+                continue
+            pid, name = int(fields[1]), re.sub(r"\.exe$", "", fields[0], flags=re.IGNORECASE)
+        else:
+            parts = line.strip().split(None, 1)
+            if len(parts) != 2 or not parts[0].isdigit():
+                continue
+            pid, name = int(parts[0]), PurePosixPath(parts[1]).name
+        if _GIMP_PROCESS.fullmatch(name):
+            found.append((pid, name))
+    return found
+
+
 def gimp_processes(kind: OsKind | None = None) -> list[tuple[int, str]] | None:
-    """GIMP main processes of this user (not its plug-ins); None where it cannot be listed (non-Linux)."""
+    """GIMP main processes of this user (not its plug-ins); None when they cannot be listed."""
     kind = _kind(kind)
-    if kind != "linux" or not Path("/proc").is_dir():
+    if kind != "linux":
+        if kind == "windows":
+            user = os.environ.get("USERNAME", "")
+            args = ["tasklist", "/FO", "CSV", "/NH", "/FI", f"USERNAME eq {user}"]
+        else:
+            args = ["ps", "-x", "-o", "pid=,comm="]  # this user's processes, with or without a terminal
+        try:
+            proc = subprocess.run(args, capture_output=True, text=True, timeout=30)
+        except (OSError, subprocess.TimeoutExpired):
+            return None
+        return parse_gimp_processes(proc.stdout, kind) if proc.returncode == 0 else None
+    if not Path("/proc").is_dir():
         return None
     found = []
     for entry in Path("/proc").iterdir():
@@ -213,6 +248,6 @@ def gimp_processes(kind: OsKind | None = None) -> list[tuple[int, str]] | None:
             comm = (entry / "comm").read_text(encoding="utf-8").strip()
         except OSError:
             continue
-        if re.fullmatch(r"gimp(-console)?(-\d.*)?", comm):
+        if _GIMP_PROCESS.fullmatch(comm):
             found.append((int(entry.name), comm))
     return found
