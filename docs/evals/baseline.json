@@ -3,7 +3,7 @@
     "package": "0.5.0 (checkout)",
     "model": "claude-sonnet-5-5",
     "date": "2026-11-08",
-    "updated": "old-photo-restoration, product-cutout and social-media-kit on 2026-11-08; screenshot-annotation on 2026-11-08; web-photo-batch on 2026-11-08; animated-sticker on 2026-11-08"
+    "updated": "old-photo-restoration, product-cutout and social-media-kit on 2026-11-08; screenshot-annotation on 2026-11-08; web-photo-batch on 2026-11-08; animated-sticker on 2026-11-08; print-flyer on 2026-11-08"
   },
   "tasks": {
     "resize-export": {
@@ -1793,6 +1793,73 @@
       "output_tokens": 12380,
       "cache_read_tokens": 769104,
       "cache_creation_tokens": 47997,
+      "model": "claude-sonnet-5-5",
+      "gimp_tools": 50,
+      "date": "2026-11-08",
+      "package": "0.5.0 (checkout)"
+    },
+    "print-flyer": {
+      "passed": false,
+      "checks": [
+        {
+          "description": "the session finished",
+          "passed": true,
+          "detail": "success"
+        },
+        {
+          "description": "the PDF page is 154x216 mm (A5 with 3 mm bleed)",
+          "passed": true,
+          "detail": "436.6 x 612.2 pt, expected 436.5 x 612.3"
+        },
+        {
+          "description": "the TIFF is 1819x2551 at 300 dpi",
+          "passed": true,
+          "detail": "(1819, 2551), (300.0, 300.0)"
+        },
+        {
+          "description": "the photo is printed up to the bleed edge (no white on the top and left edges)",
+          "passed": false,
+          "detail": "69 white samples"
+        },
+        {
+          "description": "the XCF keeps guides on the trim and the safe margins",
+          "passed": true,
+          "detail": "[('horizontal', 35), ('horizontal', 94), ('horizontal', 2457), ('horizontal', 2516), ('vertical', 35), ('vertical', 94), ('vertical', 1725), ('vertical', 1784)]"
+        }
+      ],
+      "tool_calls": 19,
+      "tools": [
+        "gimp_list_toolsets",
+        "gimp_enable_toolsets",
+        "gimp_create_image",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_add_guide",
+        "gimp_import_layer",
+        "gimp_scale_layer",
+        "gimp_create_text_layer",
+        "gimp_create_text_layer",
+        "gimp_preview",
+        "gimp_save_image",
+        "gimp_export_as",
+        "gimp_export_as"
+      ],
+      "errors": [],
+      "other_tools": [
+        "ToolSearch",
+        "ToolSearch"
+      ],
+      "duration_s": 29.4,
+      "turns": 22,
+      "input_tokens": 16,
+      "output_tokens": 3472,
+      "cache_read_tokens": 172711,
+      "cache_creation_tokens": 21520,
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-08",
