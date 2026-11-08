@@ -201,7 +201,8 @@ Not in the default. Brushes, gradients, patterns and palettes: `gimp_list_resour
 Not in the default. Paths (vectors): `gimp_create_path`, `gimp_add_path_stroke`, `gimp_path_from_text`,
 `gimp_inspect_path`, `gimp_set_path`, `gimp_duplicate_path`, `gimp_delete_path`,
 `gimp_edit_path_stroke`, `gimp_path_point_at`, `gimp_path_to_selection`, `gimp_selection_to_path`,
-`gimp_stroke_path`, `gimp_fill_path`, `gimp_import_svg_paths`, `gimp_export_path_svg`.
+`gimp_stroke_path`, `gimp_fill_path`, `gimp_import_svg_paths`, `gimp_export_path_svg`,
+`gimp_text_along_path`.
 
 ### `modes`
 

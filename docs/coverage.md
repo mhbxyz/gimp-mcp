@@ -4,7 +4,7 @@
 
 Inventory: GIMP **3.2.6**, 1030 PDB procedures (722 internal, 3 persistent, 244 plugin, 61 temporary), 200 GEGL operations available to filters.
 
-MCP tools: **158**. PDB procedures relied upon by tools: **285** (27.7% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
+MCP tools: **159**. PDB procedures relied upon by tools: **285** (27.7% of the inventory). Most PDB procedures are low-level getters/setters, so this percentage measures breadth, not usefulness.
 
 ## Capabilities
 
@@ -16,7 +16,7 @@ MCP tools: **158**. PDB procedures relied upon by tools: **285** (27.7% of the i
 | Preview | Composite preview as PNG (max 1024 px) | tested | `gimp_preview` | `tests/e2e/test_preview.py` | 3.2 | 8-bit sRGB rendering of the visible layers; larger renders go through export. |
 | Animation | Frames with duration and disposal, frame previews, optimize/unoptimize, animated GIF and WebP export | tested | `gimp_list_frames`, `gimp_add_frame`, `gimp_set_frame`, `gimp_preview_frame`, `gimp_optimize_animation`, `gimp_export_animation` | `tests/e2e/test_animation.py`, `tests/unit/test_animation_names.py` | 3.2 | No APNG exporter in GIMP 3.2. |
 | Batch processing | A recipe of tool calls run over explicit files or a confined glob, with naming patterns and per-file reports | tested | `gimp_run_batch` | `tests/e2e/test_batch.py`, `tests/unit/test_batch_tools.py` | 3.2 | Server-side: each step is an ordinary call of a listed tool; images are closed without saving. |
-| Text | Rich text markup, outline, kerning, hinting, indent, language, base direction, text box | tested | `gimp_set_text_style`, `gimp_inspect_text_style` | `tests/e2e/test_typography.py`, `tests/unit/test_text_markup.py` | 3.2 | Text along a path: no GIMP 3.2 API (#88). |
+| Text | Rich text markup, outline, kerning, hinting, indent, language, base direction, text box | tested | `gimp_set_text_style`, `gimp_inspect_text_style` | `tests/e2e/test_typography.py`, `tests/unit/test_text_markup.py` | 3.2 | Text along a path: gimp_text_along_path (Paths). |
 | Vector layers | Vector layers from paths with editable fill and stroke; link layers to external files | tested | `gimp_create_vector_layer`, `gimp_set_vector_layer`, `gimp_inspect_vector_layer`, `gimp_create_link_layer`, `gimp_set_link_layer`, `gimp_inspect_link_layer` | `tests/e2e/test_vector_layers.py` | 3.2 |  |
 | Selections | Select by color, fuzzy select, from alpha / text / path / channel | tested | `gimp_select_by_color`, `gimp_select_item` | `tests/e2e/test_channels.py` | 3.2 |  |
 | Selections | Grow, shrink, border, feather, sharpen, round, remove holes, translate | tested | `gimp_modify_selection_shape` | `tests/e2e/test_channels.py` | 3.2 |  |
@@ -37,7 +37,7 @@ MCP tools: **158**. PDB procedures relied upon by tools: **285** (27.7% of the i
 | Resources | List and inspect brushes, gradients, patterns, palettes with previews | tested | `gimp_list_resources`, `gimp_inspect_resource` | `tests/e2e/test_resources.py`, `tests/unit/test_resource_helpers.py` | 3.2 |  |
 | Resources | Create, edit (generated brushes, gradients, palettes), duplicate, rename, delete user resources | tested | `gimp_create_resource`, `gimp_duplicate_resource`, `gimp_rename_resource`, `gimp_delete_resource`, `gimp_edit_brush`, `gimp_edit_gradient`, `gimp_edit_palette` | `tests/e2e/test_resources.py` | 3.2 | Patterns cannot be created from a plug-in in GIMP 3.2. |
 | Resources | Palette import (.gpl, .act, .aco, .ase, .pal) and export (gpl, css, text, python, php, java, kpl) | tested | `gimp_import_palette`, `gimp_export_palette` | `tests/e2e/test_resources.py`, `tests/unit/test_palette_files.py` | 3.2 | Formats other than .gpl are read by gimp-mcp (GIMP 3.2 reads them only in its dialog); CMYK and Lab swatches are refused. |
-| Paths | Create paths (polylines, Bézier, ellipses, text outlines), inspect, rename, show, duplicate, delete | tested | `gimp_create_path`, `gimp_add_path_stroke`, `gimp_path_from_text`, `gimp_inspect_path`, `gimp_set_path`, `gimp_duplicate_path`, `gimp_delete_path` | `tests/e2e/test_paths.py` | 3.2 |  |
+| Paths | Create paths (polylines, Bézier, ellipses, text outlines, text along a path), inspect, rename, show, duplicate, delete | tested | `gimp_create_path`, `gimp_add_path_stroke`, `gimp_path_from_text`, `gimp_text_along_path`, `gimp_inspect_path`, `gimp_set_path`, `gimp_duplicate_path`, `gimp_delete_path` | `tests/e2e/test_paths.py`, `tests/unit/test_path_warp.py` | 3.2 |  |
 | Paths | Edit strokes (translate, scale, rotate, flip, reverse, close, remove); length and point at distance | tested | `gimp_edit_path_stroke`, `gimp_path_point_at` | `tests/e2e/test_paths.py` | 3.2 |  |
 | Paths | Path to selection, selection to path, stroke (line or brush), fill | tested | `gimp_path_to_selection`, `gimp_selection_to_path`, `gimp_stroke_path`, `gimp_fill_path` | `tests/e2e/test_paths.py` | 3.2 |  |
 | Paths | SVG import (file or string) and export; paths kept in XCF | tested | `gimp_import_svg_paths`, `gimp_export_path_svg` | `tests/e2e/test_paths.py` | 3.2 |  |

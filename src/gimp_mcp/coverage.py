@@ -131,7 +131,7 @@ CAPABILITIES: tuple[Capability, ...] = (
             "gimp-text-layer-resize",
         ),
         tests=("tests/e2e/test_typography.py", "tests/unit/test_text_markup.py"),
-        notes="Text along a path: no GIMP 3.2 API (#88).",
+        notes="Text along a path: gimp_text_along_path (Paths).",
     ),
     Capability(
         "Vector layers",
@@ -449,12 +449,14 @@ CAPABILITIES: tuple[Capability, ...] = (
     ),
     Capability(
         "Paths",
-        "Create paths (polylines, Bézier, ellipses, text outlines), inspect, rename, show, duplicate, delete",
+        "Create paths (polylines, Bézier, ellipses, text outlines, text along a path), inspect, rename, show, "
+        "duplicate, delete",
         "tested",
         tools=(
             "gimp_create_path",
             "gimp_add_path_stroke",
             "gimp_path_from_text",
+            "gimp_text_along_path",
             "gimp_inspect_path",
             "gimp_set_path",
             "gimp_duplicate_path",
@@ -475,8 +477,9 @@ CAPABILITIES: tuple[Capability, ...] = (
             "gimp-path-copy",
             "gimp-image-remove-path",
             "gimp-image-get-paths",
+            "gimp-path-stroke-new-from-points",
         ),
-        tests=("tests/e2e/test_paths.py",),
+        tests=("tests/e2e/test_paths.py", "tests/unit/test_path_warp.py"),
     ),
     Capability(
         "Paths",
