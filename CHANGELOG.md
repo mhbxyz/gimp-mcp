@@ -12,6 +12,11 @@ what is covered by the compatibility promise.
 - The eval baseline names the commit it ran on by its SHA after the history rewrite of 2026-11-09
   (`fb2b474`, was `f9d1da5`); the evaluated content is unchanged.
 
+### Fixed
+
+- The agent evaluation runs on GitHub's runners: the container user (uid 1000) could not write its
+  transcript and outputs in directories made by the runner user (uid 1001), so every session ended at once.
+
 ## [0.6.0] - 2026-11-09
 
 ### Added
