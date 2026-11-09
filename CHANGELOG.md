@@ -9,6 +9,8 @@ what is covered by the compatibility promise.
 ### Changed
 
 - The README demo is re-recorded with 0.6.0, through `demo/video/record.sh 0.6.0 thumbnail`.
+- The README shows Linux, macOS and Windows support: platform badges and a table of what is verified
+  on each OS; it also gives the current tool count (159, 50 by default) and the named pipe used on Windows.
 - The eval baseline names the commit it ran on by its SHA after the history rewrite of 2026-11-09
   (`fb2b474`, was `f9d1da5`); the evaluated content is unchanged.
 

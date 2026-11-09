@@ -11,6 +11,9 @@ filters and exports, step by step, right in front of you.
 [![Python](https://img.shields.io/pypi/pyversions/gimp-mcp)](https://pypi.org/project/gimp-mcp/)
 [![CI](https://github.com/mhbxyz/gimp-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/mhbxyz/gimp-mcp/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/mhbxyz/gimp-mcp/blob/main/LICENSE)
+[![Linux](https://img.shields.io/badge/Linux-tested-FCC624?logo=linux&logoColor=black)](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/compatibility.md#verified-platform-matrix)
+[![macOS](https://img.shields.io/badge/macOS-tested-000000?logo=apple&logoColor=white)](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/compatibility.md#verified-platform-matrix)
+[![Windows](https://img.shields.io/badge/Windows-tested-0078D6?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xIDMuNSAxMC41IDIuMnY5LjFIMXpNMTEuNiAyLjEgMjMgLjV2MTAuOEgxMS42ek0xIDEyLjdoOS41djkuMUwxIDIwLjV6TTExLjYgMTIuN0gyM3YxMC44bC0xMS40LTEuNnoiLz48L3N2Zz4=)](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/compatibility.md#verified-platform-matrix)
 
 <p align="center">
   <a href="https://github.com/mhbxyz/gimp-mcp/releases/download/v0.6.0/gimp-mcp-demo.mp4">
@@ -48,6 +51,21 @@ Then ask your assistant: *"Use GIMP to create a 1280×720 image with the title '
 * Something wrong? `uvx gimp-mcp doctor` says what and how to fix it
   ([troubleshooting](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/troubleshooting.md)).
 
+## Linux, macOS and Windows
+
+The same package, the same `uvx gimp-mcp setup`, and the same tools on all three. Every change runs the full
+end-to-end suite against a real GIMP 3.2 on each of them, plus tests with GIMP's interface open, and each release is
+installed back from TestPyPI and PyPI and tested on all three.
+
+| | [![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/compatibility.md#linux-distributions) | [![macOS](https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/compatibility.md#macos-what-differs) | [![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xIDMuNSAxMC41IDIuMnY5LjFIMXpNMTEuNiAyLjEgMjMgLjV2MTAuOEgxMS42ek0xIDEyLjdoOS41djkuMUwxIDIwLjV6TTExLjYgMTIuN0gyM3YxMC44bC0xMS40LTEuNnoiLz48L3N2Zz4=)](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/compatibility.md#windows-what-differs) |
+|---|---|---|---|
+| **Verified on** | Arch, Ubuntu, Debian, Fedora, openSUSE, Alpine (x86_64) | macOS 15, Apple Silicon (arm64) | Windows Server 2025 (x86_64) |
+| **GIMP 3.2 from** | your distribution, or Flathub | gimp.org (`.dmg`) | gimp.org (installer) |
+| **Bridge** | Unix socket, `0600`, peer uid checked | Unix socket, `0600`, peer uid checked | named pipe, current user only |
+| **Tested in CI** | ✅ headless · ✅ with GIMP's interface | ✅ headless · ✅ with GIMP's interface | ✅ headless · ✅ with GIMP's interface |
+
+Exact versions and what differs per OS: [compatibility](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/compatibility.md).
+
 ## Why gimp-mcp
 
 **Your GIMP, live.** The assistant works in the GIMP you have open, not in a hidden copy. Every layer it adds shows up
@@ -60,11 +78,12 @@ flattened PNG.
 **It checks its own work.** Previews come back to the model as images, so it can see the result, fix what looks off and
 only then export. Checkpoints let it try an idea and go back to an earlier state when it doesn't work out.
 
-**Local and locked down.** No network port: one Unix socket that only you can open, a fresh token at every GIMP start,
+**Local and locked down.** No network port: one Unix socket (a named pipe on Windows) that only you can open, a fresh token at every GIMP start,
 a fixed set of operations, and an allowlist for the GIMP procedures it may call (no eval, no Script-Fu passthrough).
 Details in the [security model](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/security.md).
 
-**Set up in one command.** `gimp-mcp setup` finds GIMP (distribution package or Flatpak), installs the plug-in and
+**Set up in one command.** `gimp-mcp setup` finds GIMP (distribution package, Flatpak, or gimp.org's app on macOS
+and Windows), installs the plug-in and
 adds the server to Claude Code, Claude Desktop, VS Code and Cursor, asking before it changes any file.
 
 ## Things to ask
@@ -117,7 +136,7 @@ and Windows, and an agent version (one plain-language request) in the evaluation
 | **History** | undo groups (one Ctrl+Z in GIMP) and checkpoints the assistant can restore |
 | **Everything else** | about 420 more GIMP procedures, allowlisted (`procedures` toolset, opt-in) |
 
-54 tools in all, grouped into [toolsets](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/toolsets.md) so your client
+159 tools in all (50 enabled by default), grouped into [toolsets](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/toolsets.md) so your client
 only loads what it needs: see the [tool reference](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/tools.md) and the
 [coverage matrix](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/coverage.md).
 
@@ -125,9 +144,10 @@ only loads what it needs: see the [tool reference](https://github.com/mhbxyz/gim
 
 ```text
  Claude / Codex / Cursor / …            gimp-mcp serve                 GIMP 3.2
- ───────────────────────────  MCP   ─────────────────────  Unix   ─────────────────────────
-  "make the colors pop"      stdio   validates, maps ids  socket   gimp-mcp-bridge plug-in
-                            ──────▶  to GIMP operations  ──────▶   runs them in your session
+ ───────────────────────────  MCP   ─────────────────────  Unix socket  ──────────────────────────
+  "make the colors pop"      stdio   validates, maps ids  (named pipe   gimp-mcp-bridge plug-in
+                            ──────▶  to GIMP operations   on Windows)   runs them in your session
+                                                         ────────────▶
 ```
 
 `gimp-mcp setup` copies a small Python plug-in into your GIMP profile. GIMP starts it with the application, and it
