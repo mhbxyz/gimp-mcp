@@ -6,6 +6,10 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+### Changed
+
+- The README demo is re-recorded with 0.6.0, through `demo/video/record.sh 0.6.0 thumbnail`.
+
 ## [0.6.0] - 2026-11-09
 
 ### Added
