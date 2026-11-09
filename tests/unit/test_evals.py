@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -138,6 +139,7 @@ def test_the_token_is_passed_by_name_only(tmp_path):
     assert "--network=host" not in command and "--privileged" not in command
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX modes; the evals run Linux containers")
 def test_the_container_user_can_write_its_directories_whatever_the_host_uid(tmp_path):
     # The container runs as uid 1000; a CI runner is uid 1001 (#106: Permission denied on transcript.jsonl).
     task = next(t for t in TASKS if t.out_dirs)
