@@ -8,11 +8,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 import pytest
 
-from evals.harness import TOKEN_ENV, docker_command, oauth_token, parse_transcript, regressions, scrub
+from evals.harness import TOKEN_ENV, docker_command, oauth_token, parse_transcript, prepare_work, regressions, scrub
 from evals.tasks import TASKS
 from gimp_mcp.toolsets import DEFAULT_TOOLSETS, check_toolset
 
@@ -136,6 +137,20 @@ def test_the_token_is_passed_by_name_only(tmp_path):
     assert command[position - 1] == "-e" and command.count(TOKEN_ENV) == 1
     assert not any(arg.startswith(f"{TOKEN_ENV}=") for arg in command)
     assert "--network=host" not in command and "--privileged" not in command
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX modes; the evals run Linux containers")
+def test_the_container_user_can_write_its_directories_whatever_the_host_uid(tmp_path):
+    # The container runs as uid 1000; a CI runner is uid 1001 (#106: Permission denied on transcript.jsonl).
+    task = next(t for t in TASKS if t.out_dirs)
+    prompt = tmp_path / "prompt.txt"
+    prompt.write_text("do it")
+    work = tmp_path / "work"
+    prepare_work(task, work, prompt)
+    writable = [work / "out", work / "run", *(work / "out" / d for d in task.out_dirs)]
+    assert [oct(path.stat().st_mode & 0o777) for path in writable] == ["0o777"] * len(writable)
+    assert (work / "run" / "prompt.txt").read_text() == "do it"
+    assert (work / "inputs").stat().st_mode & 0o002 == 0  # inputs are mounted read-only, never opened up
 
 
 def test_a_file_containing_the_token_is_deleted_and_reported(tmp_path):

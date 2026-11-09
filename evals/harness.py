@@ -181,15 +181,26 @@ def scrub(directory: Path, token: str) -> list[Path]:
     return leaked
 
 
-def run_task(task: Task, work: Path, package: str, prompt_file: Path, token: str, *, claude_bin: str,
-             budget_usd: float, model: str | None, timeout_s: int) -> TaskResult:  # fmt: skip
-    """Run ``task`` in a fresh container and check what it produced."""
+def prepare_work(task: Task, work: Path, prompt_file: Path) -> None:
+    """Inputs, prompt and empty output directories of one task under ``work``. The directories the
+    agent writes to (``out``, ``run``) are opened to every user: the container runs as uid 1000,
+    which is not the host user on a CI runner (uid 1001). Inputs stay closed (mounted read-only)."""
     for sub in ("inputs", "out", "run"):
         (work / sub).mkdir(parents=True, exist_ok=True)
     task.make_inputs(work / "inputs")
+    writable = [work / "out", work / "run"]
     for directory in task.out_dirs:
         (work / "out" / directory).mkdir(parents=True, exist_ok=True)
+        writable.append(work / "out" / directory)
     shutil.copyfile(prompt_file, work / "run" / "prompt.txt")
+    for path in writable:
+        path.chmod(0o777)  # chmod, not mkdir(mode=): the umask does not apply
+
+
+def run_task(task: Task, work: Path, package: str, prompt_file: Path, token: str, *, claude_bin: str,
+             budget_usd: float, model: str | None, timeout_s: int) -> TaskResult:  # fmt: skip
+    """Run ``task`` in a fresh container and check what it produced."""
+    prepare_work(task, work, prompt_file)
     env = {**os.environ, TOKEN_ENV: token}
     name = f"gimp-mcp-eval-{task.name}-{os.getpid()}"
     started = time.monotonic()
