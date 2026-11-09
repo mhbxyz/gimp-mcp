@@ -9,6 +9,8 @@ what is covered by the compatibility promise.
 ### Changed
 
 - The README demo is re-recorded with 0.6.0, through `demo/video/record.sh 0.6.0 thumbnail`.
+- The eval baseline names the commit it ran on by its SHA after the history rewrite of 2026-11-09
+  (`fb2b474`, was `f9d1da5`); the evaluated content is unchanged.
 
 ## [0.6.0] - 2026-11-09
 
