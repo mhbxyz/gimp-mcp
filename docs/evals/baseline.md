@@ -1,6 +1,6 @@
 # gimp-mcp agent evaluation
 
-**21/26 tasks passed** — gimp-mcp main at f9d1da5, released as 0.6.0, model claude-sonnet-5-5, 2026-11-09. Default toolsets; the agent enables others itself.
+**21/26 tasks passed** — gimp-mcp main at fb2b474, released as 0.6.0, model claude-sonnet-5-5, 2026-11-09. Default toolsets; the agent enables others itself.
 
 | Task | Result | Tool calls | Errors returned | Duration | Tokens in / out (cache read) |
 |---|---|---|---|---|---|

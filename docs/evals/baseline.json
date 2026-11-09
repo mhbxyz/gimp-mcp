@@ -1,6 +1,6 @@
 {
   "meta": {
-    "package": "main at f9d1da5, released as 0.6.0",
+    "package": "main at fb2b474, released as 0.6.0",
     "model": "claude-sonnet-5-5",
     "date": "2026-11-09"
   },
@@ -53,7 +53,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "crop-quadrant": {
       "passed": true,
@@ -103,7 +103,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "text-title": {
       "passed": true,
@@ -160,7 +160,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "logo-overlay": {
       "passed": true,
@@ -212,7 +212,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "rotate": {
       "passed": true,
@@ -267,7 +267,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "red-rectangle": {
       "passed": true,
@@ -320,7 +320,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "blur": {
       "passed": true,
@@ -371,7 +371,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "darken": {
       "passed": false,
@@ -422,7 +422,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "white-border": {
       "passed": true,
@@ -472,7 +472,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "undo": {
       "passed": true,
@@ -540,7 +540,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "grayscale": {
       "passed": true,
@@ -591,7 +591,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "invert": {
       "passed": true,
@@ -646,7 +646,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "batch-thumbnails": {
       "passed": true,
@@ -754,7 +754,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "animated-gif": {
       "passed": true,
@@ -811,7 +811,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "lossless-webp": {
       "passed": true,
@@ -869,7 +869,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "indexed-4-colors": {
       "passed": true,
@@ -923,7 +923,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "dominant-color": {
       "passed": true,
@@ -965,7 +965,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "print-resolution": {
       "passed": true,
@@ -1019,7 +1019,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "animated-sticker": {
       "passed": true,
@@ -1146,7 +1146,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "old-photo-restoration": {
       "passed": false,
@@ -1324,7 +1324,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "print-flyer": {
       "passed": false,
@@ -1395,7 +1395,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "product-cutout": {
       "passed": false,
@@ -1535,7 +1535,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "screenshot-annotation": {
       "passed": true,
@@ -1625,7 +1625,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "sky-replacement": {
       "passed": true,
@@ -1696,7 +1696,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "social-media-kit": {
       "passed": true,
@@ -1879,7 +1879,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     },
     "web-photo-batch": {
       "passed": false,
@@ -2022,7 +2022,7 @@
       "model": "claude-sonnet-5-5",
       "gimp_tools": 50,
       "date": "2026-11-09",
-      "package": "main at f9d1da5, released as 0.6.0"
+      "package": "main at fb2b474, released as 0.6.0"
     }
   }
 }
