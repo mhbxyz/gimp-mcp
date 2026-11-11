@@ -126,6 +126,16 @@ minor versions may break compatibility; every change is listed in
 * **Internal**: the bridge protocol (versioned: `protocol: 1`) and the Python
   modules.
 
+### Deprecations
+
+Nothing in the public API disappears without warning ([ADR 0011](adr/0011-deprecation-policy.md)): a
+renamed or replaced tool, parameter, field, code, prompt, resource or CLI option is first **deprecated**.
+It keeps working for at least one minor version and is removed only in the next major version
+(`1.0.0` for deprecations made in `0.x`). Each call using it returns a deprecation notice naming the
+replacement (result `_meta` `io.github.mhbxyz/deprecations`, and a text block); its description says
+`Deprecated since …`; `CHANGELOG.md` lists it under `### Deprecated` and `docs/upgrading.md` tells how
+to migrate.
+
 ### Plug-in / server versions
 
 The version is defined once, in `pyproject.toml`; the package, `gimp-mcp

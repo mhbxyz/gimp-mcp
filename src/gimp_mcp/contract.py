@@ -78,6 +78,10 @@ def _cli_contract(parser: argparse.ArgumentParser) -> JSON:
     return contract
 
 
+def _deprecation(deprecation: Any) -> JSON:
+    return {"since": deprecation.since, "replacement": deprecation.replacement, "removal": deprecation.removal}
+
+
 async def _collect() -> JSON:
     from mcp import Client
 
@@ -95,12 +99,20 @@ async def _collect() -> JSON:
     contract_tools: JSON = {}
     for tool in tools:
         data = tool.model_dump(mode="json", by_alias=True, exclude_none=True)
+        entry = catalog[tool.name]
         contract_tools[tool.name] = {
-            "toolset": catalog[tool.name].toolset,
+            "toolset": entry.toolset,
             "annotations": data.get("annotations", {}),
             "inputSchema": _strip_docs(data["inputSchema"]),
             **({"outputSchema": _strip_docs(data["outputSchema"])} if "outputSchema" in data else {}),
         }
+        # Deprecations (ADR 0011): what still works but will go in the next major version.
+        if entry.deprecation is not None:
+            contract_tools[tool.name]["deprecated"] = _deprecation(entry.deprecation)
+        if entry.deprecated_parameters:
+            contract_tools[tool.name]["deprecatedParameters"] = {
+                name: _deprecation(deprecation) for name, deprecation in entry.deprecated_parameters.items()
+            }
     return {
         "tools": contract_tools,
         "error_codes": sorted(ERROR_CODES),
@@ -303,6 +315,16 @@ class _Schemas:
 
 def _compare_tool(name: str, old: JSON, new: JSON) -> Iterator[Change]:
     where = f"tool {name}"
+    if "deprecated" in new and "deprecated" not in old:
+        deprecation = new["deprecated"]
+        yield Change("compatible", where, f"deprecated since {deprecation['since']}: {deprecation['replacement']}")
+    for parameter, deprecation in new.get("deprecatedParameters", {}).items():
+        if parameter not in old.get("deprecatedParameters", {}):
+            yield Change(
+                "compatible",
+                f"{where}: input {parameter}",
+                f"deprecated since {deprecation['since']}: {deprecation['replacement']}",
+            )
     if old.get("toolset") != new.get("toolset"):
         yield Change("breaking", where, f"moved from toolset {old.get('toolset')} to {new.get('toolset')}")
     old_ann, new_ann = old.get("annotations", {}), new.get("annotations", {})
