@@ -8376,6 +8376,14 @@
           "image": {
             "type": "string"
           },
+          "layers": {
+            "default": "keep",
+            "enum": [
+              "keep",
+              "flatten"
+            ],
+            "type": "string"
+          },
           "metadata": {
             "default": [],
             "items": {
