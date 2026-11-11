@@ -7,6 +7,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field
 
 from ..colors import parse_color
+from ..errors import GimpMcpError
 from ..models import LayerNode, encode_layer
 from ..toolkit import DESTRUCTIVE, MUTATING, Toolkit
 from .inspect import ImageId, ItemId
@@ -16,6 +17,29 @@ Interpolation = Annotated[
     Field(description="Resampling: none (nearest neighbour, hard edges), linear, cubic, nohalo, lohalo."),
 ]
 Size = Annotated[int, Field(ge=1, le=65536, description="Pixels.")]
+OptionalSize = Annotated[
+    int | None, Field(ge=1, le=65536, description="Pixels; omit one of width/height to keep the aspect ratio.")
+]
+
+
+def proportional(width: int | None, height: int | None, current: tuple[int, int]) -> tuple[int, int]:
+    """The missing dimension from the current aspect ratio (at least 1 pixel)."""
+    if width is not None and height is not None:
+        return width, height
+    old_width, old_height = current
+    if width is not None:
+        return width, max(1, round(old_height * width / old_width))
+    assert height is not None
+    return max(1, round(old_width * height / old_height)), height
+
+
+def need_a_dimension(width: int | None, height: int | None) -> None:
+    if width is None and height is None:
+        raise GimpMcpError(
+            "INVALID_ARGUMENT",
+            "give width, height or both",
+            hint="One dimension alone keeps the aspect ratio: e.g. width=200.",
+        )
 
 
 class ImageGeometry(BaseModel):
@@ -42,13 +66,22 @@ def register(kit: Toolkit) -> None:
         title="Scale image",
         description=(
             "Scale the whole image and every layer to width x height pixels (layer sizes and offsets scale "
-            "proportionally). Lossy: pixels are resampled with the given interpolation. One undo step."
+            "proportionally). Give only width or only height to keep the aspect ratio. Lossy: pixels are "
+            "resampled with the given interpolation. One undo step."
         ),
         annotations=DESTRUCTIVE,
     )
     async def gimp_resize_image(
-        image: ImageId, width: Size, height: Size, interpolation: Interpolation = "cubic"
+        image: ImageId,
+        width: OptionalSize = None,
+        height: OptionalSize = None,
+        interpolation: Interpolation = "cubic",
     ) -> ImageGeometry:
+        need_a_dimension(width, height)
+        if width is None or height is None:
+            codec = await kit.codec()
+            data = await kit.call("image.inspect", {"image": codec.parse_image(image)}, codec=codec)
+            width, height = proportional(width, height, (data["width"], data["height"]))
         return await image_call("image.scale", image, width=width, height=height, interpolation=interpolation)
 
     @kit.tool(
@@ -106,18 +139,24 @@ def register(kit: Toolkit) -> None:
         name="gimp_scale_layer",
         title="Scale layer",
         description=(
-            "Resample a layer or group to width x height pixels. anchor='center' keeps its center, "
-            "'top-left' keeps its top-left corner. Lossy. One undo step."
+            "Resample a layer or group to width x height pixels; give only width or only height to keep "
+            "its aspect ratio. anchor='center' keeps its center, 'top-left' keeps its top-left corner. Lossy. "
+            "One undo step."
         ),
         annotations=DESTRUCTIVE,
     )
     async def gimp_scale_layer(
         item: ItemId,
-        width: Size,
-        height: Size,
+        width: OptionalSize = None,
+        height: OptionalSize = None,
         anchor: Literal["center", "top-left"] = "center",
         interpolation: Interpolation = "cubic",
     ) -> LayerNode:
+        need_a_dimension(width, height)
+        if width is None or height is None:
+            codec = await kit.codec()
+            data = await kit.call("item.inspect", {"item": codec.parse_item(item)}, codec=codec)
+            width, height = proportional(width, height, (data["width"], data["height"]))
         return await layer_call(
             "layer.scale", item, width=width, height=height, anchor=anchor, interpolation=interpolation
         )

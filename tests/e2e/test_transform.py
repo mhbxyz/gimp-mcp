@@ -95,6 +95,22 @@ async def test_image_resize_canvas_and_crop(gimp: HeadlessGimp):
         await call(client, "gimp_close_image", image=image, discard_changes=True)
 
 
+async def test_resize_with_one_dimension_keeps_the_proportions(gimp: HeadlessGimp):
+    """#150: 'scale to 50 pixels wide' without computing the height."""
+    async with mcp_client(gimp) as client:
+        image, ids = await make_scene(client)  # 100x50
+        resized = await call(client, "gimp_resize_image", image=image, width=50, interpolation="none")
+        assert (resized["width"], resized["height"]) == (50, 25)
+        shot = await preview(client, image)
+        assert shot.size == (50, 25)
+        # the red and blue squares (10..20 and 20..30, y 5..15) are now at 5..10 and 10..15, y 3..8
+        assert rgba(shot, 7, 5)[:3] == (255, 0, 0) and rgba(shot, 12, 5)[:3] == (0, 0, 255)
+        assert rgba(shot, 40, 20)[:3] == (255, 255, 255)
+        layer = await call(client, "gimp_scale_layer", item=ids["red"], height=10, interpolation="none")
+        assert (layer["width"], layer["height"]) == (10, 10)  # 5x5 -> 10x10
+        await call(client, "gimp_close_image", image=image, discard_changes=True)
+
+
 async def test_invalid_transforms_are_rejected(gimp: HeadlessGimp):
     async with mcp_client(gimp) as client:
         image, ids = await make_scene(client)
