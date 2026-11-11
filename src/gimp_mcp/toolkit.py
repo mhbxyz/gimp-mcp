@@ -266,13 +266,6 @@ class Toolkit:
                     return success_result(value, notices=notices)
 
                 return wrapper
-            def register() -> None:
-                self.mcp.add_tool(wrapper, name=name, title=title, description=description, annotations=annotations)
-                tool = self.mcp._tool_manager.get_tool(name)  # pyright: ignore[reportPrivateUsage]
-                assert tool is not None
-                tool.parameters = strip_titles(tool.parameters)
-                if tool.fn_metadata.output_schema is not None:
-                    tool.fn_metadata.output_schema = strip_titles(tool.fn_metadata.output_schema)
 
             def add(tool_name: str, tool_description: str, tool_deprecation: Deprecation | None) -> None:
                 wrapper = make_wrapper(tool_name, tool_deprecation)
@@ -283,6 +276,9 @@ class Toolkit:
                     )
                     tool = self.mcp._tool_manager.get_tool(tool_name)  # pyright: ignore[reportPrivateUsage]
                     assert tool is not None
+                    tool.parameters = strip_titles(tool.parameters)
+                    if tool.fn_metadata.output_schema is not None:
+                        tool.fn_metadata.output_schema = strip_titles(tool.fn_metadata.output_schema)
                     for parameter in parameter_deprecations:
                         tool.parameters["properties"][parameter]["deprecated"] = True
 
