@@ -54,7 +54,11 @@ Read-only. `toolsets[]`: `name`, `description`, `enabled`, `tools[]` (every tool
 ### `gimp_enable_toolsets(toolsets)`
 
 Adds the tools of the given toolsets for the rest of the session → `enabled[]`, `added_tools[]`
-(empty when they were already enabled). Notifies the client that its tool list changed.
+(empty when they were already enabled) and `usage[]`: for each added tool its `required` parameters,
+a one-line signature `call` (`gimp_convert_mode(image: string, mode: 'rgb'|'gray'|'indexed',
+palette?, …)`) and a `summary`, so the tool can be called right away even before the client has loaded
+its schema ([ADR 0012](adr/0012-enable-toolsets-usage.md)). Notifies the client that its tool list
+changed.
 `INVALID_ARGUMENT` (nothing enabled) for an unknown name.
 
 ## Resources, prompts and progress

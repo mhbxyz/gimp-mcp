@@ -8267,6 +8267,34 @@
         "type": "object"
       },
       "outputSchema": {
+        "$defs": {
+          "ToolUsage": {
+            "properties": {
+              "call": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "required": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "summary": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "required",
+              "call",
+              "summary"
+            ],
+            "type": "object"
+          }
+        },
         "properties": {
           "added_tools": {
             "items": {
@@ -8277,6 +8305,12 @@
           "enabled": {
             "items": {
               "type": "string"
+            },
+            "type": "array"
+          },
+          "usage": {
+            "items": {
+              "$ref": "#/$defs/ToolUsage"
             },
             "type": "array"
           }

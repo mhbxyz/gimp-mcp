@@ -8,6 +8,7 @@ from typing import Annotated
 from mcp.server.mcpserver import Context
 from pydantic import BaseModel, Field
 
+from ..arguments import signature
 from ..errors import GimpMcpError
 from ..toolkit import MUTATING, READ_ONLY, Toolkit
 from ..toolsets import ENV_VAR, TOOLSETS, ToolsetError
@@ -26,9 +27,22 @@ class ToolsetList(BaseModel):
     toolsets: list[ToolsetInfo]
 
 
+class ToolUsage(BaseModel):
+    name: str
+    required: list[str]
+    call: str  # signature: required parameters with their types, optional ones with '?'
+    summary: str  # first sentence of the description
+
+
 class EnabledToolsets(BaseModel):
     enabled: list[str] = Field(description="Toolsets enabled now.")
     added_tools: list[str] = Field(description="Tools added to the tool list by this call.")
+    usage: list[ToolUsage] = Field(default_factory=list, description="How to call each added tool.")
+
+
+def _first_sentence(text: str) -> str:
+    end = text.find(". ")
+    return text if end < 0 else text[: end + 1]
 
 
 def register(kit: Toolkit) -> None:
@@ -59,8 +73,9 @@ def register(kit: Toolkit) -> None:
         title="Enable toolsets",
         description=(
             "Add the tools of one or more toolsets (see gimp_list_toolsets) to your tool list for this session. "
-            "The server notifies the client that its tool list changed; a client that does not refresh its "
-            f"tool list needs a restart with the toolsets in --toolsets or {ENV_VAR}."
+            "The result gives each added tool's signature (usage): call them with those arguments. The server "
+            "notifies the client that its tool list changed; a client that does not refresh its tool list "
+            f"needs a restart with the toolsets in --toolsets or {ENV_VAR}."
         ),
         annotations=MUTATING,
     )
@@ -74,7 +89,21 @@ def register(kit: Toolkit) -> None:
             raise GimpMcpError("INVALID_ARGUMENT", str(error), outcome="not_applied") from error
         if added:
             await notify_tools_changed(ctx)
-        return EnabledToolsets(enabled=[name for name in TOOLSETS if name in kit.enabled], added_tools=added)
+        usage = []
+        for name in added:
+            tool = kit.mcp._tool_manager.get_tool(name)  # pyright: ignore[reportPrivateUsage]
+            if tool is None:
+                continue
+            usage.append(
+                ToolUsage(
+                    name=name,
+                    required=list(tool.parameters.get("required", [])),
+                    call=signature(name, tool.parameters),
+                    summary=_first_sentence(tool.description or ""),
+                )
+            )
+        enabled = [name for name in TOOLSETS if name in kit.enabled]
+        return EnabledToolsets(enabled=enabled, added_tools=added, usage=usage)
 
 
 async def notify_tools_changed(ctx: Context) -> None:

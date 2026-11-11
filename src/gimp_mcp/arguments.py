@@ -77,6 +77,16 @@ def invalid_arguments(
     )
 
 
+def signature(tool: str, schema: dict[str, Any]) -> str:
+    """One line to call a tool: required parameters with their types, optional ones with '?'."""
+    properties: dict[str, Any] = schema.get("properties", {})
+    defs: dict[str, Any] = schema.get("$defs", {})
+    required = list(schema.get("required", []))
+    parts = [f"{name}: {_describe(properties.get(name, {}), defs)}" for name in required]
+    parts += [f"{name}?" for name in properties if name not in required]
+    return f"{tool}({', '.join(parts)})"
+
+
 def toolset_disabled(tool: str, toolset: str) -> GimpMcpError:
     return GimpMcpError(
         "TOOLSET_DISABLED",
