@@ -7,6 +7,7 @@ See docs/adr/0006-batch-recipes.md.
 from __future__ import annotations
 
 import os
+import re
 import string
 from collections.abc import Mapping, Sequence
 from pathlib import Path, PurePath, PureWindowsPath
@@ -21,6 +22,21 @@ FILE_PLACEHOLDERS = ("file", "name", "stem", "ext", "dir", "index")
 RUN_PLACEHOLDERS = ("image", "layer", "output")
 PLACEHOLDERS = FILE_PLACEHOLDERS + RUN_PLACEHOLDERS
 OUTPUT_PLACEHOLDERS = ("name", "stem", "ext", "dir", "index")
+# {steps[N].field}: a top-level field of the result of an earlier step N (0-based), e.g. the id of a layer it
+# created (#162).
+STEP_REFERENCE = re.compile(r"steps\[(\d+)\]\.([a-z_][a-z0-9_]*)")
+_WHOLE_STEP_REFERENCE = re.compile(r"\{(steps\[\d+\]\.[a-z_][a-z0-9_]*)\}")
+
+
+class StepResult(dict[str, Any]):
+    """A step's structured result; attribute access lets the formatter read {steps[N].field}."""
+
+    def __getattr__(self, name: str) -> Any:
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(name) from None
+
 
 _FORMATTER = string.Formatter()
 
@@ -29,13 +45,19 @@ def invalid(message: str, hint: str | None = None, **details: Any) -> GimpMcpErr
     return GimpMcpError("INVALID_ARGUMENT", message, hint=hint, details=details)
 
 
-def placeholders(text: str, allowed: Sequence[str] = PLACEHOLDERS) -> set[str]:
-    """The placeholders used in ``text`` ({{ and }} are literal braces)."""
+def placeholders(text: str, allowed: Sequence[str] = PLACEHOLDERS, step: int | None = None) -> set[str]:
+    """The placeholders used in ``text`` ({{ and }} are literal braces). In the arguments of step ``step``,
+    {steps[N].field} may name the result of an earlier step."""
     try:
         fields = [field for _, field, _, _ in _FORMATTER.parse(text) if field is not None]
     except ValueError as error:
         raise invalid(f"malformed placeholder in {text!r}: {error}") from error
     for field in fields:
+        reference = STEP_REFERENCE.fullmatch(field)
+        if reference is not None and step is not None:
+            if int(reference.group(1)) >= step:
+                raise invalid(f"{{{field}}} in {text!r}: a step can only use the result of an earlier step")
+            continue
         if field not in allowed:
             raise invalid(
                 f"unknown placeholder {{{field}}} in {text!r}",
@@ -44,14 +66,14 @@ def placeholders(text: str, allowed: Sequence[str] = PLACEHOLDERS) -> set[str]:
     return set(fields)
 
 
-def placeholders_in(value: Any) -> set[str]:
-    """Placeholders used anywhere in a JSON-like argument value."""
+def placeholders_in(value: Any, step: int | None = None) -> set[str]:
+    """Placeholders used anywhere in a JSON-like argument value (of step ``step``, see placeholders)."""
     if isinstance(value, str):
-        return placeholders(value)
+        return placeholders(value, step=step)
     if isinstance(value, Mapping):
-        return set().union(*(placeholders_in(v) for v in value.values())) if value else set()
+        return set().union(*(placeholders_in(v, step) for v in value.values())) if value else set()
     if isinstance(value, list | tuple):
-        return set().union(*(placeholders_in(v) for v in value)) if value else set()
+        return set().union(*(placeholders_in(v, step) for v in value)) if value else set()
     return set()
 
 
@@ -60,6 +82,11 @@ def substitute(value: Any, values: Mapping[str, Any]) -> Any:
     if isinstance(value, str):
         if value == "{index}":
             return values["index"]
+        whole = _WHOLE_STEP_REFERENCE.fullmatch(value)
+        if whole is not None:  # a whole value keeps its type (a number stays a number)
+            reference = STEP_REFERENCE.fullmatch(whole.group(1))
+            assert reference is not None
+            return values["steps"][int(reference.group(1))].get(reference.group(2))
         try:
             return _FORMATTER.vformat(value, (), dict(values))
         except (ValueError, KeyError) as error:

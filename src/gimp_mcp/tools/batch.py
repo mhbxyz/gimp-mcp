@@ -16,7 +16,16 @@ from mcp.server.mcpserver import Context
 from mcp.server.mcpserver.tools.base import Tool
 from pydantic import BaseModel, Field, ValidationError
 
-from ..batch import file_values, invalid, list_inputs, placeholders_in, plan_outputs, substitute
+from ..batch import (
+    STEP_REFERENCE,
+    StepResult,
+    file_values,
+    invalid,
+    list_inputs,
+    placeholders_in,
+    plan_outputs,
+    substitute,
+)
 from ..errors import GimpMcpError
 from ..ids import IdCodec
 from ..toolkit import DESTRUCTIVE, Toolkit, inside_batch
@@ -33,7 +42,9 @@ class RecipeStep(BaseModel):
         Field(
             description="The tool's arguments. Strings may use placeholders: {image} (the opened image), "
             "{layer} (its top layer), {output} (the output path, as a whole value), {file}, {name}, {stem}, "
-            "{ext}, {dir}, {index} (1-based; '{index}' alone is a number, {index:03d} is formatted)."
+            "{ext}, {dir}, {index} (1-based; '{index}' alone is a number, {index:03d} is formatted), and "
+            "{steps[N].id} (any top-level field of the result of the earlier step N, 0-based: e.g. the layer "
+            "a gimp_import_layer step created)."
         ),
     ] = {}
 
@@ -75,6 +86,19 @@ def register(kit: Toolkit) -> None:
             models[name] = Tool.from_function(entry.handler, name=name)
         return models[name]
 
+    def result_fields(name: str) -> dict[str, Any]:
+        """Top-level fields of a tool's result (its output schema), for {steps[N].field}."""
+        tool = kit.mcp._tool_manager.get_tool(name)  # pyright: ignore[reportPrivateUsage]
+        return dict(((tool.output_schema if tool else None) or {}).get("properties", {}))
+
+    def sample_value(schema: dict[str, Any], codec: IdCodec) -> Any:
+        """A value of the field's type, to type-check the recipe before running it."""
+        for variant in schema.get("anyOf", []):
+            if variant.get("type") != "null":
+                return sample_value(variant, codec)
+        samples: dict[str, Any] = {"integer": 1, "number": 1.0, "boolean": True, "array": [], "object": {}}
+        return samples.get(str(schema.get("type")), codec.item(0))  # strings: ids, the usual reference
+
     def check_steps(recipe: list[RecipeStep]) -> set[str]:
         """Static checks; returns the placeholders the recipe uses."""
         used: set[str] = set()
@@ -98,9 +122,21 @@ def register(kit: Toolkit) -> None:
             if unknown:
                 raise invalid(f"{where}: unknown arguments {unknown}", step=index, arguments=sorted(names))
             try:
-                step_used = placeholders_in(step.arguments)
+                step_used = placeholders_in(step.arguments, step=index)
             except GimpMcpError as error:
                 raise invalid(f"{where}: {error.message}", step=index) from error
+            for reference in [name for name in step_used if STEP_REFERENCE.fullmatch(name)]:
+                match = STEP_REFERENCE.fullmatch(reference)
+                assert match is not None
+                source = recipe[int(match.group(1))].tool
+                fields = result_fields(source)
+                if match.group(2) not in fields:
+                    raise invalid(
+                        f"{where}: {{{reference}}}: {source} returns no field {match.group(2)!r}",
+                        step=index,
+                        fields=sorted(fields),
+                    )
+            step_used = {name for name in step_used if not STEP_REFERENCE.fullmatch(name)}
             if "output" in step_used:
                 if "overwrite" not in names:
                     raise invalid(f"{where}: {{output}} is only for tools that write a file", step=index)
@@ -175,6 +211,10 @@ def register(kit: Toolkit) -> None:
             "image": codec.image(0),
             "layer": codec.item(0),
             "output": str(outputs[0]),
+            "steps": [
+                StepResult({name: sample_value(field, codec) for name, field in result_fields(step.tool).items()})
+                for step in recipe
+            ],
         }
         check_types(recipe, sample)
 
@@ -229,7 +269,13 @@ def register(kit: Toolkit) -> None:
                 return result
             result.image = data["id"]
             track(data)
-            values = {**file_values(path, index), "image": data["id"], "output": str(out) if out else ""}
+            steps: list[StepResult] = []
+            values = {
+                **file_values(path, index),
+                "image": data["id"],
+                "output": str(out) if out else "",
+                "steps": steps,
+            }
             if "layer" in used:
                 layers = (await kit.call("image.inspect", {"image": codec.parse_image(data["id"])}, codec=codec))[
                     "layers"
@@ -241,6 +287,7 @@ def register(kit: Toolkit) -> None:
                     result.status, result.error = "failed", error
                     return result
                 track(data)
+                steps.append(StepResult(data or {}))
             if out is not None and out.exists():
                 result.outputs.append(str(out))
             finished = True

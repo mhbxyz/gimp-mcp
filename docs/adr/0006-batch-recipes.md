@@ -43,3 +43,10 @@ step and per file, and a failure halfway leaves images open. Options considered:
   halfway is closed without saving, and outputs already written by earlier steps stay on disk.
 * An image created by a step whose id is not in the step's result would not be closed; every tool
   that creates an image returns its id.
+
+## Amendment (2026-11-11, #162)
+
+A step may use a top-level field of an earlier step's result: `{steps[N].field}`, usually
+`{steps[N].id}` (the object that step created or changed, docs/api-conventions.md). References are
+checked with the rest of the recipe: only earlier steps, only fields in that tool's output schema, and
+type-checked with a sample of the field's type.
