@@ -19,12 +19,15 @@ TOOLSETS: dict[str, str] = {
     "core": "Connection status, inspection, previews and toolset management. Always enabled.",
     "files": "Create, open, save, export and close images.",
     "layers": "Create, import, duplicate, group, reorder, change and delete layers.",
-    "transform": "Scale and crop images, resize the canvas, move, scale, rotate and flip layers.",
+    "transform": "Scale, crop and rotate images (quarter turns), resize the canvas, move, scale, rotate and flip "
+    "layers.",
     "selection": "Rectangle and ellipse selections, selection state, layer masks.",
     "paint": "Fill areas, draw paths and shapes.",
     "filters": "Color corrections and blur, destructive or as editable filters; list and remove filters.",
     "text": "Editable text layers and fonts.",
-    "history": "Undo groups and checkpoints (undo/redo for agents).",
+    "history": "Checkpoints: undo/redo for agents.",
+    "undo": "GIMP undo groups: several changes as one step in GIMP's Edit > Undo, for people working in GIMP's "
+    "window.",
     "analysis": "Measure pixels: histograms and statistics, color sampling, image comparison, dominant colors, "
     "full-resolution crops.",
     "color": "Color adjustments: levels, curves, color balance, colorize, desaturate, invert, threshold, "
@@ -39,7 +42,7 @@ TOOLSETS: dict[str, str] = {
     "channels": "Select by color, fuzzy select, select from items; grow, shrink, border, feather, round, "
     "remove holes; channels to store and combine selections.",
     "geometry": "Perspective, shear, arbitrary matrices and rotation around a point for layers, paths, channels "
-    "and the selection; image rotation and flips.",
+    "and the selection; image flips.",
     "painting": "GIMP's paint tools along strokes (paintbrush, pencil, airbrush, ink, eraser, smudge, dodge/burn, "
     "clone, heal) with explicit brush settings, gradient fills and bucket fill.",
     "formats": "Every file format GIMP reads and writes: options introspected from GIMP, open with options "

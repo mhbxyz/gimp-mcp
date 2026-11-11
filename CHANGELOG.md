@@ -6,6 +6,14 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+### Breaking
+
+- Toolsets (#151): `gimp_rotate_image` moves from `geometry` to the default `transform` toolset, so
+  rotating a photo is one call with the default toolsets; `gimp_begin_undo_group` and
+  `gimp_end_undo_group` move from `history` to the new optional toolset `undo`, which keeps the default
+  selection at 49 tools. Clients listing toolsets explicitly add `transform` for image rotation and
+  `undo` for undo groups.
+
 ### Added
 
 - Public API contract (#116): `docs/api/contract.json` snapshots every tool (toolset, input and output

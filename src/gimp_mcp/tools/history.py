@@ -50,7 +50,7 @@ class DeleteCheckpointResult(BaseModel):
 
 def register(kit: Toolkit) -> None:
     @kit.tool(
-        toolset="history",
+        toolset="undo",
         name="gimp_begin_undo_group",
         title="Begin undo group",
         description=(
@@ -69,7 +69,7 @@ def register(kit: Toolkit) -> None:
         return UndoGroupState(image=image, depth=data["depth"])
 
     @kit.tool(
-        toolset="history",
+        toolset="undo",
         name="gimp_end_undo_group",
         title="End undo group",
         description="Close the innermost undo group this client opened on the image (NO_OPEN_GROUP otherwise).",

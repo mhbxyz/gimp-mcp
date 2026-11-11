@@ -1823,7 +1823,7 @@
         ],
         "type": "object"
       },
-      "toolset": "history"
+      "toolset": "undo"
     },
     "gimp_brightness_contrast": {
       "annotations": {
@@ -8257,7 +8257,7 @@
         ],
         "type": "object"
       },
-      "toolset": "history"
+      "toolset": "undo"
     },
     "gimp_export_animation": {
       "annotations": {
@@ -17558,7 +17558,7 @@
         ],
         "type": "object"
       },
-      "toolset": "geometry"
+      "toolset": "transform"
     },
     "gimp_rotate_layer": {
       "annotations": {

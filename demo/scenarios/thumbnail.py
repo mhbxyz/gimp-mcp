@@ -230,7 +230,7 @@ async def steps(gimp: Session, report: Report) -> None:
 SCENARIO = Scenario(
     name="thumbnail",
     title="video thumbnail",
-    toolsets=("files", "layers", "transform", "selection", "paint", "filters", "text", "history"),
+    toolsets=("files", "layers", "transform", "selection", "paint", "filters", "text", "history", "undo"),
     assets=("lake-sunset.png",),
     outputs=("thumbnail.xcf", "thumbnail.png", "thumbnail.jpg"),
     steps=steps,
