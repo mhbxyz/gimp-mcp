@@ -9,11 +9,12 @@ them to GIMP's (docs/tools.md#color-adjustments-toolset-color). Editable mode ad
 from __future__ import annotations
 
 import itertools
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, ClassVar, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from ..errors import GimpMcpError
+from ..models import ChangedObject
 from ..toolkit import DESTRUCTIVE, MUTATING, Toolkit
 from .inspect import ItemId
 
@@ -28,7 +29,8 @@ Editable = Annotated[
 ]
 
 
-class AdjustmentResult(BaseModel):
+class AdjustmentResult(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("item",)
     item: str
     adjustment: str
     operation: str | None = Field(description="GIMP/GEGL operation used, null for GIMP's built-in destructive tools.")

@@ -6,13 +6,14 @@ its layer name ("Frame 2 (100ms) (replace)"), the way GIMP's GIF and WebP export
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, ClassVar, Literal
 
 from mcp_types import ImageContent
 from pydantic import BaseModel, Field
 
 from ..colors import parse_color
 from ..errors import GimpMcpError
+from ..models import ChangedObject
 from ..paths import check_output_file
 from ..toolkit import MUTATING, READ_ONLY, Toolkit, ToolResult
 from .formats import Exported
@@ -33,7 +34,8 @@ class Frame(BaseModel):
     disposal: str
 
 
-class FrameList(BaseModel):
+class FrameList(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("added", "image")
     image: str
     frames: list[Frame]
     added: str | None = None
@@ -47,16 +49,18 @@ class FramePreview(BaseModel):
     frames_shown: list[int] = Field(description="Frames visible at that moment (disposal applied).")
 
 
-class Optimized(BaseModel):
+class Optimized(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("image",)
     image: str = Field(description="The new, optimized (or unoptimized) image.")
     frames: list[Frame]
 
 
 def register(kit: Toolkit) -> None:
-    def frame_list(codec: Any, data: dict[str, Any], image: str) -> FrameList:
+    def frame_list(codec: Any, data: dict[str, Any], image: str, changed: str | None = None) -> FrameList:
+        """``changed``: the frame a call changed, its ``id`` (else the added frame, else the image)."""
         frames = [Frame(**{**f, "item": codec.item(f["item"])}) for f in data["frames"]]
         added = codec.item(data["added"]) if data.get("added") is not None else None
-        return FrameList(image=image, frames=frames, added=added)
+        return FrameList(image=image, frames=frames, added=added, id=changed or "")
 
     @kit.tool(
         toolset="animation",
@@ -120,7 +124,7 @@ def register(kit: Toolkit) -> None:
             codec=codec,
             mutating=True,
         )
-        return frame_list(codec, data, codec.image(data["image"]))
+        return frame_list(codec, data, codec.image(data["image"]), changed=item)
 
     @kit.tool(
         toolset="animation",

@@ -5,10 +5,11 @@ Parameters are introspected from GIMP and validated by the bridge before anythin
 
 from __future__ import annotations
 
-from typing import Annotated, Any
+from typing import Annotated, Any, ClassVar
 
 from pydantic import BaseModel, Field
 
+from ..models import ChangedObject
 from ..toolkit import DESTRUCTIVE, MUTATING, READ_ONLY, Toolkit
 from .filters import FilterInfo
 from .inspect import ItemId
@@ -62,20 +63,23 @@ class FilterState(BaseModel):
     parameters: dict[str, Value | None]
 
 
-class AppliedFilter(BaseModel):
+class AppliedFilter(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("item",)
     item: str
     filter: FilterState
     destructive: bool = Field(description="True when the layer's pixels were changed.")
     restricted_to_selection: bool = Field(description="True when a selection limited the effect.")
 
 
-class ReorderedFilters(BaseModel):
+class ReorderedFilters(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("item",)
     item: str
     filters: list[FilterInfo] = Field(description="Top of the filter stack first.")
     recreated: dict[str, str] = Field(description="Old filter id -> new id, for the filters GIMP had to re-create.")
 
 
-class MergedFilters(BaseModel):
+class MergedFilters(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("item",)
     item: str
     merged: int = Field(description="Number of filters baked into the pixels.")
     filters: list[FilterInfo] = Field(description="Filters left on the layer (new ids), top first.")

@@ -2,14 +2,38 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from .ids import IdCodec
 
 LayerKind = Literal["layer", "group", "text", "vector", "link"]
 ItemKind = Literal["layer", "group", "text", "vector", "link", "mask", "channel", "path"]
+
+
+class ChangedObject(BaseModel):
+    """A result naming, in ``id``, the image or item the call created or changed (docs/api-conventions.md,
+    Results): agents and batch recipes chain on it. Subclasses list where ``id`` comes from, in order:
+    a field holding an id string, or an object with an ``id`` (a LayerNode)."""
+
+    id: str = ""  # explained once in the server instructions, not in every schema (default toolset budget)
+    id_from: ClassVar[tuple[str, ...]] = ("item", "image")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _fill_id(cls, data: Any) -> Any:
+        if not isinstance(data, dict) or data.get("id"):
+            return data
+        for key in cls.id_from:
+            value = data.get(key)
+            if isinstance(value, dict):
+                value = value.get("id")
+            elif isinstance(value, BaseModel):
+                value = getattr(value, "id", None)
+            if isinstance(value, str) and value:
+                return {**data, "id": value}
+        return data
 
 
 class Locks(BaseModel):

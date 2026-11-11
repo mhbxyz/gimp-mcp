@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, ClassVar, Literal
 
 from pydantic import BaseModel, Field
 
+from ..models import ChangedObject
 from ..toolkit import DESTRUCTIVE, MUTATING, READ_ONLY, Toolkit
 from .inspect import ItemId
 
@@ -20,7 +21,8 @@ Destructive = Annotated[
 ]
 
 
-class FilterResult(BaseModel):
+class FilterResult(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("item",)
     item: str
     operation: str = Field(description="GEGL/GIMP operation that was applied.")
     destructive: bool = Field(description="True when the layer's pixels were changed.")
@@ -36,7 +38,8 @@ class FilterInfo(BaseModel):
     opacity: float = Field(description="0-100.")
 
 
-class FilterList(BaseModel):
+class FilterList(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("item",)
     item: str
     filters: list[FilterInfo] = Field(
         description="Editable filters on the layer, top of the filter stack first (most recently added first)."

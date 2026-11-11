@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, ClassVar, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from ..colors import parse_color
 from ..errors import GimpMcpError
-from ..models import LayerNode, encode_layer
+from ..models import ChangedObject, LayerNode, encode_layer
 from ..toolkit import DESTRUCTIVE, MUTATING, Toolkit
 from .inspect import ImageId, ItemId
 
@@ -42,7 +42,8 @@ def need_a_dimension(width: int | None, height: int | None) -> None:
         )
 
 
-class ImageGeometry(BaseModel):
+class ImageGeometry(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("image",)
     image: str
     width: int
     height: int

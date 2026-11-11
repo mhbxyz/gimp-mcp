@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, ClassVar, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from ..colors import COLOR_DESCRIPTION, parse_color
 from ..errors import GimpMcpError
+from ..models import ChangedObject
 from ..toolkit import DESTRUCTIVE, Toolkit
 from .inspect import ItemId
 from .layers import MODE_DESCRIPTION
@@ -19,7 +20,8 @@ Coordinate = Annotated[float, Field(ge=-1_000_000, le=1_000_000)]
 StrokeWidth = Annotated[float, Field(gt=0, le=1000, description="Line width in pixels.")]
 
 
-class PaintResult(BaseModel):
+class PaintResult(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("item",)
     item: str
     changed: bool = Field(description="False when the painted area does not intersect the layer.")
     affected: Bounds | None = Field(description="Image-space box of the pixels that may have changed.")

@@ -42,6 +42,9 @@ what is covered by the compatibility promise.
 - `gimp_export_as(..., layers="flatten")` writes the visible composite as one page or layer (TIFF, PDF,
   PSD…), as the image looks, without changing the image (#165); before, a layered image gave a TIFF
   page per layer. Needs the plug-in of this version (`image.export_as` revision 2).
+- Every tool that creates or changes an image or item returns it as a top-level `id` (#164): the new
+  layer of `gimp_merge_layers`, the new image of `gimp_optimize_animation`, the changed image of
+  `gimp_resize_image`, the changed layer of a filter or adjustment. Existing fields are unchanged.
 
 ### Changed
 

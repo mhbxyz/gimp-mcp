@@ -38,6 +38,9 @@ Opaque strings bound to the GIMP session: `image:<n>@<session>` and
   image* by renaming duplicates (`Title` → `Title #1`), but the same name can
   exist in several images. Always target objects by id.
 * Tools never depend on GIMP's active image/layer/selection in the UI.
+* A result's top-level `id` is the image or item the call created (a new layer, image, path…) or
+  else changed: chain the next call on it. Tools that change several objects or none, write files,
+  delete objects or work on guides, buffers, checkpoints and resources name those in their own fields.
 
 ## Toolsets
 

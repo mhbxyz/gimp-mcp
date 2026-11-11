@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, ClassVar, Literal
 
 from pydantic import BaseModel, Field
 
-from ..models import LayerNode, encode_layer
+from ..models import ChangedObject, LayerNode, encode_layer
 from ..toolkit import DESTRUCTIVE, MUTATING, READ_ONLY, Toolkit
 from .inspect import ImageId, ItemId
 
@@ -25,7 +25,8 @@ class Bounds(BaseModel):
     height: int
 
 
-class SelectionState(BaseModel):
+class SelectionState(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("image",)
     image: str
     empty: bool
     bounds: Bounds | None = Field(description="Bounding box of the selection, clipped to the canvas; null when empty.")

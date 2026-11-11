@@ -7,12 +7,13 @@ Text layers are never rasterized silently and locks are respected (like the exis
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, ClassVar, Literal
 
 from pydantic import BaseModel, Field
 
 from ..colors import parse_color
 from ..errors import GimpMcpError
+from ..models import ChangedObject
 from ..toolkit import MUTATING, Toolkit
 from .inspect import ItemId
 
@@ -34,7 +35,8 @@ Segments = Annotated[
 ]
 
 
-class Painted(BaseModel):
+class Painted(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("item",)
     item: str
     tool: str | None = None
     brush: str | None = None
