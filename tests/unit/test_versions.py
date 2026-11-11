@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 import gimp_mcp
+from gimp_mcp import versions
 from gimp_mcp.bridge import BridgeClient
 from gimp_mcp.errors import GimpMcpError
 from gimp_mcp.installer import install_plugin
@@ -42,19 +43,20 @@ def operations(names, value=None):
     return {name: (lambda p: value if value is not None else {}) for name in names}
 
 
-ALL = list(bundled_capabilities())
+CURRENT = bundled_capabilities()  # what an up-to-date plug-in serves
+ALL = list(CURRENT)
 
 
 @pytest.mark.parametrize(
     ("server", "plugin", "protocol", "capabilities", "verdict"),
     [
         ("0.7.0", "0.7.0", 1, None, Compatibility.MATCH),
-        ("0.7.0", "0.8.3", 1, {name: 1 for name in ALL} | {"new.op": 1}, Compatibility.COMPATIBLE),
-        ("1.4.0", "1.2.0", 1, {name: 1 for name in ALL}, Compatibility.COMPATIBLE),
+        ("0.7.0", "0.8.3", 1, CURRENT | {"new.op": 1}, Compatibility.COMPATIBLE),
+        ("1.4.0", "1.2.0", 1, dict(CURRENT), Compatibility.COMPATIBLE),
         ("0.7.0", "0.6.0", 1, None, Compatibility.PARTIAL),  # before 0.7.0: no capability list
-        ("0.7.0", "0.7.1", 1, {name: 1 for name in ALL[1:]}, Compatibility.PARTIAL),
+        ("0.7.0", "0.7.1", 1, {name: CURRENT[name] for name in ALL[1:]}, Compatibility.PARTIAL),
         ("0.7.0", "0.7.0", 2, None, Compatibility.INCOMPATIBLE),
-        ("0.7.0", "9.0.0", 99, {name: 1 for name in ALL}, Compatibility.INCOMPATIBLE),
+        ("0.7.0", "9.0.0", 99, dict(CURRENT), Compatibility.INCOMPATIBLE),
     ],
 )
 def test_compatibility_comes_from_the_protocol_and_the_operations(server, plugin, protocol, capabilities, verdict):
@@ -62,9 +64,14 @@ def test_compatibility_comes_from_the_protocol_and_the_operations(server, plugin
 
 
 def test_partial_lists_the_missing_operations():
-    check = check_plugin("0.7.0", "0.7.1", 1, {name: 1 for name in ALL[1:]})
+    check = check_plugin("0.7.0", "0.7.1", 1, {name: CURRENT[name] for name in ALL[1:]})
     assert check.missing == (ALL[0],)
     assert check_plugin("0.7.0", "0.6.0", 1, None).missing is None  # unknown: the plug-in does not say
+
+
+def test_an_older_revision_is_partial(monkeypatch):
+    monkeypatch.setattr(versions, "bundled_capabilities", lambda: {"image.scale": 2, "layer.create": 1})
+    assert check_plugin("0.7.0", "0.6.9", 1, {"image.scale": 1, "layer.create": 1}).missing == ("image.scale",)
 
 
 def test_the_bundled_plugin_lists_its_operations():

@@ -23,6 +23,7 @@ import gmb_server  # type: ignore[import-not-found]
 import gimp_mcp
 from gimp_mcp import platforms
 from gimp_mcp.bridge import BridgeEndpoint
+from gimp_mcp.versions import bundled_capabilities
 
 Op = Callable[[dict[str, Any]], Any]
 
@@ -65,12 +66,14 @@ def running_fake_bridge(
     session: dict[str, Any] | None = None,
     allowed_uid: int | None = None,
     legacy: bool = False,
+    revisions: dict[str, int] | None = None,
 ) -> Iterator[FakeBridge]:
-    """``legacy``: play a plug-in from before 0.7.0, whose hello lists no capabilities."""
+    """``legacy``: play a plug-in from before 0.7.0, whose hello lists no capabilities. ``revisions``:
+    the operations' revisions (default: those of the bundled plug-in, i.e. an up-to-date plug-in)."""
     directory = short_tmpdir()
     try:
         with running_fake_bridge_at(
-            directory / "bridge.sock", ops, session=session, allowed_uid=allowed_uid, legacy=legacy
+            directory / "bridge.sock", ops, session=session, allowed_uid=allowed_uid, legacy=legacy, revisions=revisions
         ) as bridge:
             yield bridge
     finally:
@@ -88,6 +91,7 @@ def running_fake_bridge_at(
     session_id: str | None = None,
     allowed_uid: int | None = None,
     legacy: bool = False,
+    revisions: dict[str, int] | None = None,
 ) -> Iterator[FakeBridge]:
     token = secrets.token_hex(16)
     calls: list[tuple[str, dict[str, Any]]] = []
@@ -110,6 +114,7 @@ def running_fake_bridge_at(
         session_info=info,
         allowed_uid=getattr(os, "getuid", lambda: -1)() if allowed_uid is None else allowed_uid,
         advertise_capabilities=not legacy,
+        revisions=bundled_capabilities() if revisions is None else revisions,
     )
     if platforms.CURRENT == "windows":
         with _serving_pipe(server) as served:
