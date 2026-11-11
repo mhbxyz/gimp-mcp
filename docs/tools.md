@@ -222,7 +222,8 @@ description), `pHYs` (the resolution), `IDAT`, `IEND`; with an assigned or reque
 | `jpeg_options.background` | `#ffffff` | color transparent pixels are flattened onto |
 
 Returns `path`, `format`, `width`, `height`, `bytes` and the effective `options`.
-Errors: `FILE_EXISTS`, `WRITE_FAILED`, `UNSUPPORTED_FORMAT` (e.g. `.gif`, `.xcf`).
+Errors: `FILE_EXISTS`, `WRITE_FAILED`, `UNSUPPORTED_FORMAT` (e.g. `.gif`, `.xcf`; the hint points to
+`gimp_export_as` in toolset `formats` for every other format GIMP writes).
 
 ### `gimp_close_image(image, discard_changes=false)`
 

@@ -127,7 +127,8 @@ def register(kit: Toolkit) -> None:
         title="Open image",
         description=(
             "Open a local file (XCF or any format GIMP can load: PNG, JPEG, WebP, TIFF...) as a new image. "
-            "The path must be absolute (~ allowed)."
+            "The path must be absolute (~ allowed). PDF pages, SVG size, RAW: gimp_open_with_options (toolset "
+            "formats)."
         ),
         annotations=MUTATING,
         changes_images=True,
@@ -179,7 +180,8 @@ def register(kit: Toolkit) -> None:
         description=(
             "Export the visible composite of the image to PNG or JPEG (format from the extension). The image "
             "itself is not modified. Existing files are only replaced when overwrite=true. Defaults: PNG "
-            "compression 9, not interlaced; JPEG quality 90, baseline, optimized, transparency flattened on white."
+            "compression 9, not interlaced; JPEG quality 90, baseline, optimized, transparency flattened on white. "
+            "WebP, AVIF, TIFF, PDF…: gimp_export_as (toolset formats)."
         ),
         annotations=DESTRUCTIVE,
     )

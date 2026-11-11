@@ -92,7 +92,8 @@ def register(kit: Toolkit) -> None:
         description=(
             "Rotate hue (degrees, -180..180) and change saturation and lightness (-100..100, 0 = unchanged) of "
             "a layer, for all colors or one hue range. Lightness is proportional: -30 makes it 30% darker "
-            "(mid-gray 128 -> 90), +30 goes 30% of the way to white (128 -> 166). One undo step."
+            "(mid-gray 128 -> 90), +30 goes 30% of the way to white (128 -> 166). One undo step. Levels, "
+            "curves, exposure…: gimp_levels (toolset color)."
         ),
         annotations=DESTRUCTIVE,
     )
@@ -118,7 +119,7 @@ def register(kit: Toolkit) -> None:
         title="Gaussian blur",
         description=(
             "Blur a layer with a Gaussian of standard deviation `radius` pixels (radius_y defaults to radius). "
-            "One undo step."
+            "One undo step. Any other GEGL filter: gimp_apply_filter (toolset effects)."
         ),
         annotations=DESTRUCTIVE,
     )

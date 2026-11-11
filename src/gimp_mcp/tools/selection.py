@@ -70,7 +70,7 @@ def register(kit: Toolkit) -> None:
         title="Select ellipse",
         description=(
             "Select the ellipse inscribed in the rectangle (x, y, width, height), antialiased, combined with "
-            "the current selection."
+            "the current selection. By color or magic wand: gimp_select_by_color (toolset channels)."
         ),
         annotations=MUTATING,
     )

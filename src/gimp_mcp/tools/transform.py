@@ -169,7 +169,8 @@ def register(kit: Toolkit) -> None:
         description=(
             "Rotate a layer or group by angle degrees (clockwise) around its center. clip='adjust' grows "
             "the layer to keep all pixels, 'clip' keeps the original bounds. Multiples of 90 are lossless "
-            "with interpolation 'none'; other angles resample. One undo step."
+            "with interpolation 'none'; other angles resample. One undo step. Perspective, shear: "
+            "gimp_transform (toolset geometry)."
         ),
         annotations=DESTRUCTIVE,
     )

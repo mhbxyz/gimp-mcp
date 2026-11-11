@@ -91,6 +91,10 @@ what is covered by the compatibility promise.
 - `gimp_brightness_contrast` says what its values do (#149): brightness is GIMP's curve, not a
   percentage (-30 makes mid-gray 7 % darker), and "N % darker" is `gimp_hue_saturation` lightness -N,
   whose proportional effect is now stated; both measured on GIMP 3.2.6 and checked by an e2e test.
+- Optional toolsets are easier to find (#148): `gimp_export_image` and its `UNSUPPORTED_FORMAT` hint
+  point to `gimp_export_as` (toolset `formats`) for WebP, AVIF, TIFF, PDF…, and default tools name the
+  optional tool covering related needs (open with options, any filter, levels and curves, select by
+  color, rich text, perspective).
 - The agent evaluation runs on GitHub's runners: the container user (uid 1000) could not write its
   transcript and outputs in directories made by the runner user (uid 1001), so every session ended at once.
 
