@@ -14,6 +14,14 @@ mutation may have been applied: inspect before retrying), absent for reads.
 
 Every `code` is listed under [Error codes](#error-codes).
 
+Arguments that do not match a tool's input schema (missing, wrong type, out of range, unknown name) are
+refused before anything runs, with the same format: code `INVALID_ARGUMENT`, `details.errors` listing
+each field at fault (`{"field": "png_options.compression", "problem": "should be less than or equal to
+9 (got 42)"}`), `details.required`, `details.unknown` for names the tool does not take (with a "did you
+mean" in the message), and a hint naming the tool's required parameters with their types and its
+optional ones. Calling a tool whose toolset is not enabled returns `TOOLSET_DISABLED` with the
+`gimp_enable_toolsets` call to make.
+
 ## Ids
 
 Opaque strings bound to the GIMP session: `image:<n>@<session>` and
@@ -1015,7 +1023,8 @@ appear, existing ones are never removed or renamed. Messages and hints may chang
 | `INVALID_ID` | Malformed id or wrong kind (item id where an image id is expected…). |
 | `NOT_FOUND` | The image/item no longer exists (closed, deleted). |
 | `WRONG_KIND` | The id exists but designates another kind of object (e.g. a mask where a layer is required). |
-| `INVALID_ARGUMENT` | An argument is out of range or inconsistent. |
+| `INVALID_ARGUMENT` | An argument is missing, of the wrong type, out of range or inconsistent (`details.errors` names each field). |
+| `TOOLSET_DISABLED` | The tool exists but its toolset is not enabled: call `gimp_enable_toolsets` first. |
 | `FILE_NOT_FOUND` | Input file missing. |
 | `FILE_EXISTS` | Output exists and `overwrite` is false. |
 | `PERMISSION_DENIED` | Input file not readable. |

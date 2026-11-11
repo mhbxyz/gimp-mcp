@@ -9,11 +9,14 @@ from typing import Any
 
 from mcp.server.lowlevel.server import NotificationOptions
 from mcp.server.mcpserver import Context, MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from mcp_types import Resource as MCPResource
+from pydantic import ValidationError
 
 from . import __version__, mcp_resources, prompts
+from .arguments import invalid_arguments, toolset_disabled
 from .bridge import BridgeClient
-from .toolkit import Toolkit, current_context
+from .toolkit import Toolkit, current_context, error_result
 from .tools import (
     analysis,
     animation,
@@ -64,9 +67,18 @@ class GimpServer(MCPServer):
     gimp_toolkit: Toolkit
 
     async def call_tool(self, name: str, arguments: dict[str, Any], context: Context | None = None) -> Any:
+        tool = self._tool_manager.get_tool(name)
+        entry = self.gimp_toolkit.catalog.get(name)
+        if tool is None and entry is not None:
+            return error_result(toolset_disabled(name, entry.toolset))
         token = current_context.set(context)
         try:
             return await super().call_tool(name, arguments, context)
+        except ToolError as error:
+            # Arguments that do not match the schema: gimp-mcp's error, not the framework's text (#146).
+            if tool is not None and isinstance(error.__cause__, ValidationError):
+                return error_result(invalid_arguments(name, tool.parameters, arguments, error.__cause__))
+            raise
         finally:
             current_context.reset(token)
 
