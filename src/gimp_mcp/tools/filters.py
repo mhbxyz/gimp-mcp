@@ -68,8 +68,10 @@ def register(kit: Toolkit) -> None:
         name="gimp_brightness_contrast",
         title="Brightness / contrast",
         description=(
-            "Adjust brightness and contrast of a layer, each from -100 to 100 (0 = unchanged; mapped to GIMP's "
-            "-1..1). One undo step."
+            "Adjust brightness and contrast of a layer, each from -100 to 100 (0 = unchanged; GIMP's -1..1 curve, "
+            "not a percentage: on mid-gray 128, brightness -30 gives 119 (7% darker), -100 gives 92; contrast "
+            "pivots on light gray, +30 turns 128 into 54). For 'N% darker/lighter' use gimp_hue_saturation "
+            "lightness -N/+N. One undo step."
         ),
         annotations=DESTRUCTIVE,
     )
@@ -89,7 +91,8 @@ def register(kit: Toolkit) -> None:
         title="Hue / saturation",
         description=(
             "Rotate hue (degrees, -180..180) and change saturation and lightness (-100..100, 0 = unchanged) of "
-            "a layer, for all colors or one hue range. One undo step."
+            "a layer, for all colors or one hue range. Lightness is proportional: -30 makes it 30% darker "
+            "(mid-gray 128 -> 90), +30 goes 30% of the way to white (128 -> 166). One undo step."
         ),
         annotations=DESTRUCTIVE,
     )
