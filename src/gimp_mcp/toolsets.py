@@ -26,8 +26,7 @@ TOOLSETS: dict[str, str] = {
     "filters": "Color corrections and blur, destructive or as editable filters; list and remove filters.",
     "text": "Editable text layers and fonts.",
     "history": "Checkpoints: undo/redo for agents.",
-    "undo": "GIMP undo groups: several changes as one step in GIMP's Edit > Undo, for people working in GIMP's "
-    "window.",
+    "undo": "GIMP undo groups: several changes as one step in GIMP's Edit > Undo, for people working in GIMP's window.",
     "analysis": "Measure pixels: histograms and statistics, color sampling, image comparison, dominant colors, "
     "full-resolution crops.",
     "color": "Color adjustments: levels, curves, color balance, colorize, desaturate, invert, threshold, "
