@@ -646,7 +646,8 @@ are the same (absolute paths, `overwrite`); metadata is written only when listed
   (`file-webp-export` → `webp`) with a few aliases (`tif`, `jpg`, `avif`, `heic`, `jxl`, `ora`).
 * `gimp_describe_file_format(extension | procedure, mode)`: options with `kind`, range, choices,
   default.
-* `gimp_export_as(image, path, options={}, metadata=[], procedure?, overwrite, layers="keep")`: picks the
+* `gimp_export_as(image, path, options={}, metadata=[], procedure?, overwrite, layers="keep",
+  color_profile?)`: picks the
   procedure from the extension. Returns `lossless` (`true`, `false`, or `null` when it depends on
   the content: GIF palettes, PDF) and `layers`:
 
@@ -661,7 +662,10 @@ are the same (absolute paths, `overwrite`); metadata is written only when listed
   `layers="flatten"` exports the visible composite instead, as one layer (one TIFF page, one PDF page,
   one PSD layer), as the image looks: hidden layers are left out, resolution, color profile and
   metadata are kept (`tests/e2e/test_formats.py`). It needs the plug-in of this version
-  (`image.export_as` revision 2). The image itself is never changed.
+  (`image.export_as` revision 2). `color_profile=true` embeds the profile GIMP uses (GIMP's built-in
+  sRGB when none is assigned), `false` none; by default only an assigned profile is embedded. AVIF and
+  HEIF always carry the profile (GIMP offers no choice), so `false` is `UNSUPPORTED` there, like `true`
+  for a format that cannot carry one (BMP). The image itself is never changed.
 * `gimp_open_with_options(path, options={}, procedure?)`: PDF (`pages`: page numbers from 1, only
   those pages are loaded, in the order given, the last on top — `[2, 1]` puts page 1 on top; a page
   beyond the end is `INVALID_ARGUMENT`; `width`, `height`, `keep-ratio`, `password`…), SVG
@@ -844,9 +848,11 @@ gray profile when none is assigned): `label`, `description`, `model` (`rgb`/`gra
 
 `profile`: `srgb`, `srgb-linear`, `gray`, `gray-linear` (built in) or `file` with an ICC `path`
 (`FILE_NOT_FOUND`, or `UNSUPPORTED_FORMAT` for a file that is not a usable profile). A gray profile
-on an RGB image (or the reverse) is `INVALID_ARGUMENT`. Exports embed the profile when the image
-has one assigned (`png_options.color_profile` / `jpeg_options.color_profile`: `true` always embeds,
-even GIMP's built-in sRGB; `false` never).
+on an RGB image (or the reverse) is `INVALID_ARGUMENT`. Assigning `srgb` to an RGB image leaves
+`assigned` at `null`: GIMP treats its built-in sRGB as no profile; the result's `note` says so. Exports
+embed the profile when the image has one assigned (`png_options.color_profile` /
+`jpeg_options.color_profile` / `gimp_export_as(color_profile=…)`: `true` always embeds, even GIMP's
+built-in sRGB; `false` never).
 
 ### How colors are interpreted
 

@@ -381,3 +381,7 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   some sessions even that does not stick on Windows, so `metadata.get` falls back to the orientation
   read from the file the image was opened from (Exiv2's English text, e.g. `right, top`).
   `tests/e2e/test_exif_orientation.py` opens twenty oriented JPEGs in three sessions.
+* Color profiles in exports (checked 2026-11-11, GIMP 3.2.6, #158): assigning the built-in sRGB
+  (`image.set_color_profile(Gimp.ColorProfile.new_rgb_srgb())`) leaves `get_color_profile()` at `None`.
+  `include-color-profile=True` makes PNG, JPEG, WebP and TIFF embed the effective sRGB anyway.
+  `file-heif-av1-export` / `file-heif-export` have no such argument and always embed the profile.

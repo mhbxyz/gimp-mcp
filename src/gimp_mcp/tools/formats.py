@@ -140,16 +140,24 @@ def register(kit: Toolkit) -> None:
                 "the visible composite as a single layer, without changing the image."
             ),
         ] = "keep",
+        color_profile: Annotated[
+            bool | None,
+            Field(
+                description="Embed the color profile GIMP uses (the built-in sRGB when none is assigned); default: "
+                "only when the image has one assigned."
+            ),
+        ] = None,
     ) -> Exported:
         target = str(check_output_file(path, overwrite=overwrite))
         codec = await kit.codec()
         data = await kit.call(
             "image.export_as",
             {"image": codec.parse_image(image), "path": target, "options": options, "metadata": metadata,
-             "procedure": procedure, "layers": layers},
+             "procedure": procedure, "layers": layers, "color_profile": color_profile},
             codec=codec,
             mutating=True,
-            revision=2 if layers == "flatten" else 1,  # older plug-ins would ignore `layers`
+            # older plug-ins would ignore `layers` and `color_profile`
+            revision=2 if layers == "flatten" or color_profile is not None else 1,
         )  # fmt: skip
         return Exported(**data)
 

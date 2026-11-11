@@ -93,6 +93,42 @@ async def test_flatten_exports_the_composite_as_one_page(gimp: HeadlessGimp, tmp
     assert after["dirty"] == before["dirty"]
 
 
+@pytest.mark.parametrize("extension", ["webp", "tif", "avif"])
+async def test_the_effective_srgb_profile_is_embedded_when_asked(gimp: HeadlessGimp, tmp_path: Path, extension):
+    """#158: an image with no assigned profile (GIMP's built-in sRGB) exported with color_profile=true."""
+    from io import BytesIO
+
+    from PIL import ImageCms
+
+    async with mcp_client(gimp) as client:
+        image, _, _ = await two_layers(client)
+        assigned = await call(client, "gimp_set_color_profile", image=image, action="assign", profile="srgb")
+        assert assigned["assigned"] is None and "built-in sRGB" in assigned["note"]
+        asked, plain = tmp_path / f"asked.{extension}", tmp_path / f"plain.{extension}"
+        await call(client, "gimp_export_as", image=image, path=str(asked), color_profile=True)
+        await call(client, "gimp_export_as", image=image, path=str(plain))
+        await call(client, "gimp_close_image", image=image, discard_changes=True)
+    with Image.open(asked) as img:
+        icc = img.info.get("icc_profile")
+    assert icc, f"no ICC profile in the {extension} file"
+    description = ImageCms.getProfileDescription(ImageCms.ImageCmsProfile(BytesIO(icc)))
+    assert "sRGB" in description, description
+    with Image.open(plain) as img:
+        # GIMP's AVIF export always embeds the profile (no include-color-profile argument)
+        assert bool(img.info.get("icc_profile")) is (extension == "avif")
+
+
+async def test_an_impossible_profile_choice_is_refused(gimp: HeadlessGimp, tmp_path: Path):
+    async with mcp_client(gimp) as client:
+        image, _, _ = await two_layers(client)
+        avif = await error(client, "gimp_export_as", image=image, path=str(tmp_path / "a.avif"), color_profile=False)
+        bmp = await error(client, "gimp_export_as", image=image, path=str(tmp_path / "a.bmp"), color_profile=True)
+        await call(client, "gimp_close_image", image=image, discard_changes=True)
+    assert avif["code"] == bmp["code"] == "UNSUPPORTED"
+    assert "always embeds" in avif["message"] and "cannot embed" in bmp["message"]
+    assert not (tmp_path / "a.avif").exists() and not (tmp_path / "a.bmp").exists()
+
+
 async def test_layered_formats_keep_layers_pages_or_sizes(gimp: HeadlessGimp, tmp_path: Path):
     async with mcp_client(gimp) as client:
         image, _, _ = await two_layers(client)
