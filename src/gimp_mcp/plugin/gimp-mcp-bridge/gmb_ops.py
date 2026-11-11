@@ -3054,12 +3054,21 @@ def _metadata_tags(metadata):
     for kind, getter in (("exif", "get_exif_tags"), ("xmp", "get_xmp_tags"), ("iptc", "get_iptc_tags")):
         values = {}
         for tag in getattr(metadata, getter)() or []:
-            try:
-                values[tag] = metadata.get_tag_interpreted_string(tag)
-            except Exception:
-                values[tag] = None
+            values[tag] = _interpreted(metadata, tag)
         tags[kind] = values
     return tags
+
+
+def _interpreted(metadata, tag):
+    """Exiv2's interpreted value; its untranslated value when the interpretation fails (seen on Windows)."""
+    for getter in ("get_tag_interpreted_string", "get_tag_string"):
+        try:
+            value = getattr(metadata, getter)(tag)
+        except Exception:
+            continue
+        if value is not None:
+            return value
+    return None
 
 
 def _comment(image):

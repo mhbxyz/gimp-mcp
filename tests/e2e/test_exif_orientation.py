@@ -41,8 +41,12 @@ async def test_twenty_oriented_jpegs_keep_their_orientation_in_every_session(tmp
                     image = await call(client, "gimp_open_image", path=str(path))
                     metadata = await call(client, "gimp_get_metadata", image=image["id"])
                     got = metadata["exif"].get(ORIENTATION)
-                    if got != INTERPRETED[value] or image["dirty"]:
-                        wrong.append(f"session {session} {path.name}: {got!r}, dirty={image['dirty']}")
+                    # interpreted ("right, top"), or the number when GIMP cannot interpret it
+                    if got not in (INTERPRETED[value], str(value)) or image["dirty"]:
+                        wrong.append(
+                            f"session {session} {path.name}: {got!r}, dirty={image['dirty']}, "
+                            f"exif {sorted(metadata['exif'])}"
+                        )
                     await call(client, "gimp_close_image", image=image["id"], discard_changes=True)
         finally:
             gimp.stop()
