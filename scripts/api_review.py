@@ -51,22 +51,16 @@ _PATH_ITEM = (
     "accepted: in tools working on GIMP paths (vector objects) `path` is the path's id, as in GIMP; their "
     "file argument is `file`"
 )
-_FILE = "fix #119: the file is `path` like in every other file tool; `file` stays as a deprecated alias"
 _GIMP_COMMAND = "accepted: named after GIMP's command of the same name (Colors, Edit, Filters menus)"
 DECISIONS: dict[str, str] = {
-    # references
-    **{f"references:{t}:channel_id": "fix #119: `channel`, like `checkpoint` and `filter`; `channel_id` deprecated"
-       for t in ("gimp_combine_channels", "gimp_delete_channel", "gimp_set_channel")},
-    "references:gimp_remove_guide:id": (
-        "fix #119: `guide`, the id returned by gimp_add_guide / gimp_add_sample_point; `id` deprecated"
-    ),
     # file parameters named `file`
-    **{f"files:{t}:file": _FILE for t in (
+    # deprecated aliases of the names #119 fixed: kept until 1.0.0 (ADR 0011)
+    **{f"files:{t}:file": "accepted: deprecated alias of `path`, removed in 1.0.0" for t in (
         "gimp_import_palette", "gimp_export_palette", "gimp_create_link_layer", "gimp_set_link_layer")},
+    "references:gimp_remove_guide:id": "accepted: deprecated alias of `guide`, removed in 1.0.0",
+    "enums:gimp_remove_guide:sample_point": "accepted: deprecated spelling of `sample-point`, removed in 1.0.0",
     **{f"files:{t}:file": "accepted: a tool working on GIMP paths, where `path` is the path's id"
        for t in ("gimp_import_svg_paths", "gimp_export_path_svg")},
-    # enum values
-    "enums:gimp_remove_guide:sample_point": "fix #119: `sample-point` accepted too; `sample_point` deprecated",
 }  # fmt: skip
 
 # The v0.6.0 findings (evaluation suite, demo scenarios, GUI tests) and what the review decided.
@@ -185,7 +179,15 @@ RESULT_DECISIONS: dict[str, str] = {
     "gimp_copy": "accepted: fills a clipboard buffer, named in `buffer`",
     "gimp_create_checkpoint": "accepted: creates a checkpoint, identified by `checkpoint`",
     "gimp_delete_checkpoint": "accepted: deletes a checkpoint, identified by `checkpoint`",
-}
+    "gimp_begin_undo_group": "accepted: opens an undo group, reported by `image` and `depth`",
+    "gimp_end_undo_group": "accepted: closes an undo group, reported by `image` and `depth`",
+    **{tool: "accepted: writes a file, named in `path`" for tool in (
+        "gimp_save_image", "gimp_export_image", "gimp_export_as", "gimp_export_region", "gimp_export_animation")},
+    **{tool: "accepted: the object is gone; the result names it" for tool in (
+        "gimp_close_image", "gimp_delete_layer", "gimp_delete_path", "gimp_delete_channel")},
+    **{tool: "accepted: guides and sample points are numbered, not items (`guide`, `sample_point`)" for tool in (
+        "gimp_add_guide", "gimp_add_sample_point", "gimp_remove_guide")},
+}  # fmt: skip
 
 
 def render(tools: list[dict[str, Any]], found: list[Deviation]) -> str:
