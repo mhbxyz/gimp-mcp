@@ -150,7 +150,8 @@ def register(kit: Toolkit) -> None:
         title="Optimize an animation",
         description=(
             "Make a new image from the animation: optimize (GIF-style: each frame keeps only what changes), "
-            "optimize-difference, or unoptimize (every frame complete). The original is unchanged."
+            "optimize-difference, or unoptimize (every frame complete). The original is unchanged. The source "
+            "image and its undo history are unchanged."
         ),
         annotations=MUTATING,
         changes_images=True,
@@ -171,7 +172,7 @@ def register(kit: Toolkit) -> None:
         description=(
             "Export the frames as an animated GIF (.gif) or WebP (.webp): loop forever or play once, a default "
             "duration and disposal for frames without one, or force them on every frame. GIMP 3.2 has no APNG "
-            "exporter. The image is unchanged."
+            "exporter. The image is unchanged. The undo history is unchanged."
         ),
         annotations=MUTATING,
     )

@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from ..colors import parse_color
 from ..models import LayerNode, encode_layer
 from ..paths import check_input_file
-from ..toolkit import MUTATING, READ_ONLY, Toolkit
+from ..toolkit import MUTATING, READ_ONLY, Deprecation, Toolkit, renamed
 from .inspect import ImageId, ItemId
 
 
@@ -129,11 +129,16 @@ def register(kit: Toolkit) -> None:
             "re-reads the file when the XCF is opened. One undo step."
         ),
         annotations=MUTATING,
+        deprecated_parameters={"file": Deprecation("0.7.0", "use path")},
     )
     async def gimp_create_link_layer(
-        image: ImageId, file: str, name: str | None = None, position: Annotated[int, Field(ge=0)] = 0
+        image: ImageId,
+        path: Annotated[str | None, Field(description="Absolute path of the image file to link.")] = None,
+        name: str | None = None,
+        position: Annotated[int, Field(ge=0)] = 0,
+        file: Annotated[str | None, Field(description="Deprecated since 0.7.0: use path.")] = None,
     ) -> LinkLayer:
-        source = str(check_input_file(file))
+        source = str(check_input_file(renamed("gimp_create_link_layer", "path", path, "file", file)))
         data, codec = await call("link.create", {"image": image, "file": source, "name": name, "position": position})
         return link(codec, data)
 
@@ -143,9 +148,14 @@ def register(kit: Toolkit) -> None:
         title="Change a link layer's file",
         description="Point a link layer at another image file. One undo step.",
         annotations=MUTATING,
+        deprecated_parameters={"file": Deprecation("0.7.0", "use path")},
     )
-    async def gimp_set_link_layer(item: ItemId, file: str) -> LinkLayer:
-        source = str(check_input_file(file))
+    async def gimp_set_link_layer(
+        item: ItemId,
+        path: Annotated[str | None, Field(description="Absolute path of the image file to link.")] = None,
+        file: Annotated[str | None, Field(description="Deprecated since 0.7.0: use path.")] = None,
+    ) -> LinkLayer:
+        source = str(check_input_file(renamed("gimp_set_link_layer", "path", path, "file", file)))
         data, codec = await call("link.set", {"item": item, "file": source})
         return link(codec, data)
 

@@ -15,7 +15,7 @@ from ..colors import parse_color
 from ..errors import GimpMcpError
 from ..palettes import read_palette
 from ..paths import check_input_file, check_output_file
-from ..toolkit import DESTRUCTIVE, MUTATING, READ_ONLY, Toolkit, ToolResult
+from ..toolkit import DESTRUCTIVE, MUTATING, READ_ONLY, Deprecation, Toolkit, ToolResult, renamed
 
 Kind = Literal["brush", "gradient", "pattern", "palette"]
 Editable = Literal["brush", "gradient", "palette"]
@@ -121,7 +121,8 @@ def register(kit: Toolkit) -> None:
         title="Create a resource",
         description=(
             "Create a user brush (generated), gradient or palette; GIMP makes the name unique ('Name #1'). "
-            "Edit it with gimp_edit_brush / gimp_edit_gradient / gimp_edit_palette."
+            "Edit it with gimp_edit_brush / gimp_edit_gradient / gimp_edit_palette. Resources are not in GIMP's "
+            "undo history."
         ),
         annotations=MUTATING,
     )
@@ -132,7 +133,10 @@ def register(kit: Toolkit) -> None:
         toolset="resources",
         name="gimp_duplicate_resource",
         title="Duplicate a resource",
-        description="Copy a resource (built-in or user) into an editable user resource, optionally named.",
+        description=(
+            "Copy a resource (built-in or user) into an editable user resource, optionally named. Resources are "
+            "not in GIMP's undo history."
+        ),
         annotations=MUTATING,
     )
     async def gimp_duplicate_resource(kind: Kind, name: Name, new_name: str | None = None) -> ResourceSummary:
@@ -142,7 +146,7 @@ def register(kit: Toolkit) -> None:
         toolset="resources",
         name="gimp_rename_resource",
         title="Rename a resource",
-        description="Rename a user resource (READ_ONLY for built-in ones).",
+        description="Rename a user resource (READ_ONLY for built-in ones). Resources are not in GIMP's undo history.",
         annotations=MUTATING,
     )
     async def gimp_rename_resource(kind: Kind, name: Name, new_name: Name) -> ResourceSummary:
@@ -164,7 +168,8 @@ def register(kit: Toolkit) -> None:
         title="Edit a generated brush",
         description=(
             "Change a user generated brush: shape (circle, square, diamond), radius (px), hardness (0-1), angle "
-            "(degrees), aspect_ratio (1-20), spikes (2-20), spacing (% of the size). Only the given values change."
+            "(degrees), aspect_ratio (1-20), spikes (2-20), spacing (% of the size). Only the given values change. "
+            "Resources are not in GIMP's undo history."
         ),
         annotations=MUTATING,
     )
@@ -189,7 +194,7 @@ def register(kit: Toolkit) -> None:
         description=(
             "Replace a user gradient's segments, left to right: colors at both ends, blending (linear, curved, "
             "sine, sphere-increasing, sphere-decreasing, step), coloring (rgb, hsv-ccw, hsv-cw) and optional end "
-            "positions (0-1, increasing; default even split)."
+            "positions (0-1, increasing; default even split). Resources are not in GIMP's undo history."
         ),
         annotations=MUTATING,
     )
@@ -207,7 +212,10 @@ def register(kit: Toolkit) -> None:
         toolset="resources",
         name="gimp_edit_palette",
         title="Edit a palette",
-        description="Replace a user palette's entries (colors with optional names) and/or set its columns.",
+        description=(
+            "Replace a user palette's entries (colors with optional names) and/or set its columns. Resources are "
+            "not in GIMP's undo history."
+        ),
         annotations=MUTATING,
     )
     async def gimp_edit_palette(
@@ -229,12 +237,16 @@ def register(kit: Toolkit) -> None:
             "Reads GIMP palettes (.gpl), Adobe Color Tables (.act), Photoshop swatches (.aco), Adobe Swatch "
             "Exchange (.ase) and RIFF or Paint Shop Pro palettes (.pal). Other formats are written as a .gpl "
             "named after the file; their RGB, HSB and grayscale colors are imported as sRGB, CMYK and Lab "
-            "colors are refused."
+            "colors are refused. Resources are not in GIMP's undo history."
         ),
         annotations=MUTATING,
+        deprecated_parameters={"file": Deprecation("0.7.0", "use path")},
     )
-    async def gimp_import_palette(file: str) -> ResourceDetails:
-        source = check_input_file(file)
+    async def gimp_import_palette(
+        path: Annotated[str | None, Field(description="Absolute path of the palette file.")] = None,
+        file: Annotated[str | None, Field(description="Deprecated since 0.7.0: use path.")] = None,
+    ) -> ResourceDetails:
+        source = check_input_file(renamed("gimp_import_palette", "path", path, "file", file))
         if source.suffix.lower() != ".gpl":
             palette = read_palette(source)
             entries = [{"name": e.name, "rgb": list(e.rgb)} for e in palette.entries]
@@ -249,15 +261,18 @@ def register(kit: Toolkit) -> None:
         title="Export a palette",
         description=(
             "Write a palette to a file: gpl (GIMP palette), css, text, python, php, java (GIMP's palette exports) "
-            "or kpl (Krita)."
+            "or kpl (Krita). Writing the file is not in GIMP's undo history."
         ),
         annotations=MUTATING,
+        deprecated_parameters={"file": Deprecation("0.7.0", "use path")},
     )
     async def gimp_export_palette(
         name: Name,
-        file: str,
+        path: Annotated[str | None, Field(description="Absolute path of the file to write.")] = None,
         format: Literal["gpl", "css", "text", "python", "php", "java", "kpl"] = "gpl",
         overwrite: bool = False,
+        file: Annotated[str | None, Field(description="Deprecated since 0.7.0: use path.")] = None,
     ) -> ExportResult:
-        target = str(check_output_file(file, overwrite=overwrite))
+        destination = renamed("gimp_export_palette", "path", path, "file", file)
+        target = str(check_output_file(destination, overwrite=overwrite))
         return ExportResult(**await call("palette.export", {"name": name, "file": target, "format": format}))

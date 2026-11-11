@@ -148,7 +148,10 @@ def register(kit: Toolkit) -> None:
         toolset="history",
         name="gimp_delete_checkpoint",
         title="Delete checkpoint",
-        description="Free a checkpoint's memory. Closing an image deletes its checkpoints too.",
+        description=(
+            "Free a checkpoint's memory. Closing an image deletes its checkpoints too. Checkpoints are not in "
+            "GIMP's undo history."
+        ),
         annotations=DESTRUCTIVE,
     )
     async def gimp_delete_checkpoint(checkpoint: CheckpointId) -> DeleteCheckpointResult:

@@ -68,7 +68,7 @@ def register(kit: Toolkit) -> None:
         description=(
             "Copy (or cut) layers' pixels — only the selected area when there is a selection — or the visible "
             "composite (visible=true, give image) into a GIMP buffer. Default buffer 'gimp-mcp' keeps the "
-            "user's clipboard untouched."
+            "user's clipboard untouched. The image and its undo history are unchanged."
         ),
         annotations=MUTATING,
     )

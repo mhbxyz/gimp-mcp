@@ -70,7 +70,8 @@ def register(kit: Toolkit) -> None:
         title="Select ellipse",
         description=(
             "Select the ellipse inscribed in the rectangle (x, y, width, height), antialiased, combined with "
-            "the current selection. By color or magic wand: gimp_select_by_color (toolset channels)."
+            "the current selection. One undo step. By color or magic wand: gimp_select_by_color (toolset "
+            "channels)."
         ),
         annotations=MUTATING,
     )
@@ -91,7 +92,7 @@ def register(kit: Toolkit) -> None:
         toolset="selection",
         name="gimp_modify_selection",
         title="Select all / none / invert",
-        description="'all' selects the whole canvas, 'none' clears the selection, 'invert' inverts it.",
+        description="'all' selects the whole canvas, 'none' clears the selection, 'invert' inverts it. One undo step.",
         annotations=MUTATING,
     )
     async def gimp_modify_selection(image: ImageId, action: Literal["all", "none", "invert"]) -> SelectionState:
@@ -122,7 +123,7 @@ def register(kit: Toolkit) -> None:
             "Add a mask to a layer or group. fill: 'white' (everything visible), 'black' (everything hidden), "
             "'alpha' (from the layer's transparency), 'selection' (selected = visible; EMPTY_SELECTION if "
             "nothing is selected), 'grayscale' (from the layer's luminance). invert inverts it. Non-destructive: "
-            "the layer's pixels are kept."
+            "the layer's pixels are kept. One undo step."
         ),
         annotations=MUTATING,
     )
@@ -143,7 +144,7 @@ def register(kit: Toolkit) -> None:
         title="Configure layer mask",
         description=(
             "apply: whether the mask affects the rendering (disable to see the layer unmasked); show: display "
-            "the mask itself; edit: make painting tools target the mask."
+            "the mask itself; edit: make painting tools target the mask. One undo step."
         ),
         annotations=MUTATING,
     )
@@ -165,7 +166,7 @@ def register(kit: Toolkit) -> None:
         title="Remove layer mask",
         description=(
             "Remove a layer's mask. mode='apply' bakes it into the layer's alpha (destructive: hidden pixels "
-            "become transparent); mode='discard' drops it (the layer is shown unmasked)."
+            "become transparent); mode='discard' drops it (the layer is shown unmasked). One undo step."
         ),
         annotations=DESTRUCTIVE,
     )
