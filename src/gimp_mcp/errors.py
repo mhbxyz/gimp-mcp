@@ -62,7 +62,10 @@ ERROR_CODES: dict[str, str] = {
     "INVALID_ID": "Malformed id or wrong kind (item id where an image id is expected…).",
     "NOT_FOUND": "The image/item no longer exists (closed, deleted).",
     "WRONG_KIND": "The id exists but designates another kind of object (e.g. a mask where a layer is required).",
-    "INVALID_ARGUMENT": "An argument is out of range or inconsistent.",
+    "INVALID_ARGUMENT": (
+        "An argument is missing, of the wrong type, out of range or inconsistent (`details.errors` names each field)."
+    ),
+    "TOOLSET_DISABLED": "The tool exists but its toolset is not enabled: call `gimp_enable_toolsets` first.",
     "FILE_NOT_FOUND": "Input file missing.",
     "FILE_EXISTS": "Output exists and `overwrite` is false.",
     "PERMISSION_DENIED": "Input file not readable.",
