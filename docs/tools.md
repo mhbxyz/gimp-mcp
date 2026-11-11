@@ -9,10 +9,7 @@ output schema, plus the same JSON as text. On failure `isError` is `true` and
 ```
 
 `outcome`: `not_applied` (nothing changed, safe to retry), `unknown` (a
-mutation may have been applied: inspect before retrying), absent for reads.
-
-
-Every `code` is listed under [Error codes](#error-codes).
+mutation may have been applied: inspect before retrying), absent for reads. Every `code` is listed under [Error codes](#error-codes).
 
 Arguments that do not match a tool's input schema (missing, wrong type, out of range, unknown name) are
 refused before anything runs, with the same format: code `INVALID_ARGUMENT`, `details.errors` listing
