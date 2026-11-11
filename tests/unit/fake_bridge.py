@@ -64,10 +64,14 @@ def running_fake_bridge(
     *,
     session: dict[str, Any] | None = None,
     allowed_uid: int | None = None,
+    legacy: bool = False,
 ) -> Iterator[FakeBridge]:
+    """``legacy``: play a plug-in from before 0.7.0, whose hello lists no capabilities."""
     directory = short_tmpdir()
     try:
-        with running_fake_bridge_at(directory / "bridge.sock", ops, session=session, allowed_uid=allowed_uid) as bridge:
+        with running_fake_bridge_at(
+            directory / "bridge.sock", ops, session=session, allowed_uid=allowed_uid, legacy=legacy
+        ) as bridge:
             yield bridge
     finally:
         for p in directory.iterdir():
@@ -83,6 +87,7 @@ def running_fake_bridge_at(
     session: dict[str, Any] | None = None,
     session_id: str | None = None,
     allowed_uid: int | None = None,
+    legacy: bool = False,
 ) -> Iterator[FakeBridge]:
     token = secrets.token_hex(16)
     calls: list[tuple[str, dict[str, Any]]] = []
@@ -104,6 +109,7 @@ def running_fake_bridge_at(
         operations=dispatch,
         session_info=info,
         allowed_uid=getattr(os, "getuid", lambda: -1)() if allowed_uid is None else allowed_uid,
+        advertise_capabilities=not legacy,
     )
     if platforms.CURRENT == "windows":
         with _serving_pipe(server) as served:

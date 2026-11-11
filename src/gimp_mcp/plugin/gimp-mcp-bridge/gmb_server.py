@@ -13,7 +13,10 @@ Protocol (one JSON object per line, UTF-8):
            or {"id": <int>, "error": {"code": "...", "message": "...", "details": {...}}}
 
 The first request of every connection must be ``hello`` carrying the token
-read from the token file; anything else closes the connection.
+read from the token file; anything else closes the connection. Its result
+carries the session info, ``protocol`` (this wire format) and ``capabilities``:
+every operation with its revision, so the server knows what this plug-in can do
+(docs/adr/0010-plugin-compatibility.md).
 """
 
 from __future__ import annotations
@@ -114,12 +117,18 @@ class BridgeServer:
         allowed_uid: int | None = None,
         max_request_bytes: int = DEFAULT_MAX_REQUEST_BYTES,
         token_path: str | None = None,
+        revisions: dict[str, int] | None = None,
+        advertise_capabilities: bool = True,
     ):
         self.socket_path = str(socket_path)
         self.token_path = token_path or self.socket_path + ".token"
         self.token = token
         self.operations = operations
         self.session_info = session_info
+        # Revision of each operation (default 1), bumped when one gains a parameter or changes meaning.
+        self.revisions = revisions or {}
+        # False only in tests that play a plug-in from before 0.7.0, which listed no capabilities.
+        self.advertise_capabilities = advertise_capabilities
         # Unix sockets check the peer uid; Windows pipes check the client's user SID (gmb_pipe).
         self.allowed_uid = getattr(os, "getuid", lambda: -1)() if allowed_uid is None else allowed_uid
         self.pipe_listener: Any = None
@@ -304,14 +313,10 @@ class BridgeServer:
                 self._send(conn, self._error(request_id, BridgeError("UNAUTHORIZED", "invalid bridge token")))
                 return False
             conn.authenticated = True
-            result = dict(self.session_info)
-            result["protocol"] = PROTOCOL_VERSION
-            return self._send(conn, {"id": request_id, "result": result})
+            return self._send(conn, {"id": request_id, "result": self.hello_result()})
 
         if method == "hello":
-            result = dict(self.session_info)
-            result["protocol"] = PROTOCOL_VERSION
-            return self._send(conn, {"id": request_id, "result": result})
+            return self._send(conn, {"id": request_id, "result": self.hello_result()})
 
         operation = self.operations.get(method)
         expected_session = params.pop("_session", None) if isinstance(params, dict) else None
@@ -344,6 +349,13 @@ class BridgeServer:
         if method == "session.quit" and self.on_quit is not None and "result" in response:
             self.on_quit()
         return sent
+
+    def hello_result(self) -> dict[str, Any]:
+        result = dict(self.session_info)
+        result["protocol"] = PROTOCOL_VERSION
+        if self.advertise_capabilities:
+            result["capabilities"] = {name: self.revisions.get(name, 1) for name in sorted(self.operations)}
+        return result
 
     @staticmethod
     def _error(request_id: Any, exc: BridgeError) -> dict[str, Any]:

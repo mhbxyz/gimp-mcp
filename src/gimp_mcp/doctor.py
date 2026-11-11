@@ -29,7 +29,7 @@ from .bridge import FLATPAK_APP, BridgeClient, BridgeEndpoint, parse_version
 from .errors import GimpMcpError
 from .headless import system_path
 from .installer import PLUGIN_NAME, installed_plugin_dir
-from .versions import Compatibility, check_plugin_version
+from .versions import Compatibility
 
 MIN_GIMP = (3, 2)
 
@@ -105,7 +105,8 @@ CHECKS: tuple[CheckSpec, ...] = (
     ),
     CheckSpec(
         "plugin-version",
-        "The installed plug-in matches the server version",
+        "The installed plug-in has the server's version (another version works when it speaks the same bridge "
+        "protocol; tools it cannot serve ask for an update)",
         "Run `gimp-mcp install-plugin` with the gimp-mcp you use as MCP server, then restart GIMP.",
     ),
     CheckSpec(
@@ -379,10 +380,14 @@ def check_plugin_version_file(ctx: Context) -> Result:
         installed = (directory / "VERSION").read_text(encoding="utf-8").strip()
     except OSError:
         installed = "unknown"
-    verdict = check_plugin_version(__version__, installed)
-    message = f"installed plug-in {installed}, server {__version__}: {verdict.value}"
-    status = {Compatibility.MATCH: Status.OK, Compatibility.COMPATIBLE: Status.WARN}.get(verdict, Status.FAIL)
-    return result("plugin-version", status, message)
+    if installed == __version__:
+        return result("plugin-version", Status.OK, f"installed plug-in {installed}, server {__version__}: match")
+    return result(
+        "plugin-version",
+        Status.WARN,
+        f"installed plug-in {installed}, server {__version__}: they differ; compatibility (bridge protocol and "
+        "operations) is checked when GIMP connects",
+    )
 
 
 def check_plugin_registered(ctx: Context) -> Result:
@@ -434,11 +439,25 @@ async def check_connection(ctx: Context) -> Result:
         return _connection_failure(ctx, error)
     finally:
         await client.close()
-    return result(
-        "connection",
-        Status.OK,
-        f"GIMP {session.gimp_version} answers (session {session.session_id}, plug-in {session.bridge_version})",
+    check = client.plugin_check
+    verdict = check.verdict.value if check else "unknown"
+    message = (
+        f"GIMP {session.gimp_version} answers (session {session.session_id}, plug-in {session.bridge_version}, "
+        f"server {__version__}, bridge protocol {session.protocol}: {verdict})"
     )
+    if check is not None and check.verdict is Compatibility.PARTIAL:
+        missing = (
+            f"{len(check.missing)} operations of this server are missing or older"
+            if check.missing
+            else "it does not list its operations (before 0.7.0)"
+        )
+        return result(
+            "connection",
+            Status.WARN,
+            f"{message}; {missing}: the tools using them fail with PLUGIN_VERSION_MISMATCH",
+            fix_for("plugin-version"),
+        )
+    return result("connection", Status.OK, message)
 
 
 def _connection_failure(ctx: Context, error: GimpMcpError) -> Result:
@@ -448,8 +467,8 @@ def _connection_failure(ctx: Context, error: GimpMcpError) -> Result:
         return result(
             "connection",
             Status.FAIL,
-            f"GIMP answers but its plug-in is {error.details.get('plugin_version')} (server "
-            f"{error.details.get('server_version')}): incompatible",
+            f"GIMP answers but its plug-in {error.details.get('plugin_version')} speaks bridge protocol "
+            f"{error.details.get('plugin_protocol')} (server {error.details.get('server_version')}): incompatible",
             fix_for("plugin-version"),
         )
     pids = ", ".join(str(pid) for pid, _ in running)

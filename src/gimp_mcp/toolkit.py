@@ -127,17 +127,21 @@ class Toolkit:
         codec: IdCodec | None = None,
         mutating: bool = False,
         timeout: float | None = None,
+        revision: int = 1,
     ) -> Any:
-        """Call a bridge operation, pinned to the session the ids were parsed in."""
+        """Call a bridge operation, pinned to the session the ids were parsed in.
+
+        ``revision``: the plug-in revision of ``method`` this call needs (gmb_ops.REVISIONS); an older
+        plug-in is refused with PLUGIN_VERSION_MISMATCH before anything is sent."""
         payload = dict(params or {})
         if codec is not None:
             payload["_session"] = codec.session_id
         ctx = current_context.get()
         if ctx is None or _in_batch.get():
-            return await self.bridge.call(method, payload, mutating=mutating, timeout=timeout)
+            return await self.bridge.call(method, payload, mutating=mutating, timeout=timeout, revision=revision)
         beat = asyncio.ensure_future(_heartbeat(ctx, method, time.monotonic()))
         try:
-            return await self.bridge.call(method, payload, mutating=mutating, timeout=timeout)
+            return await self.bridge.call(method, payload, mutating=mutating, timeout=timeout, revision=revision)
         finally:
             beat.cancel()
 

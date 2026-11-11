@@ -26,7 +26,7 @@ from typing import Any
 from . import __version__, platforms
 from .errors import INSTALL_HINT, GimpMcpError
 from .plugin_modules import load as load_plugin_module
-from .versions import Compatibility, check_plugin_version
+from .versions import SUPPORTED_PROTOCOLS, Compatibility, PluginCheck, check_plugin
 
 log = logging.getLogger(__name__)
 
@@ -92,15 +92,19 @@ class SessionInfo:
     pid: int | None
     protocol: int
     bridge_version: str | None = None
+    # Operation -> revision served by the plug-in; None for plug-ins before 0.7.0, which did not say.
+    capabilities: dict[str, int] | None = None
 
     @classmethod
     def from_wire(cls, data: dict[str, Any]) -> SessionInfo:
+        capabilities = data.get("capabilities")
         return cls(
             gimp_version=str(data.get("gimp_version", "")),
             session_id=str(data.get("session_id", "")),
             pid=data.get("pid"),
             protocol=int(data.get("protocol", 0)),
             bridge_version=data.get("bridge_version"),
+            capabilities={str(k): int(v) for k, v in capabilities.items()} if isinstance(capabilities, dict) else None,
         )
 
 
@@ -126,6 +130,7 @@ class BridgeClient:
         self.connect_timeout = connect_timeout
         self.request_timeout = request_timeout
         self.session: SessionInfo | None = None
+        self.plugin_check: PluginCheck | None = None
         self._reader: asyncio.StreamReader | None = None
         self._writer: asyncio.StreamWriter | None = None
         self._lock = asyncio.Lock()
@@ -143,18 +148,49 @@ class BridgeClient:
         *,
         timeout: float | None = None,
         mutating: bool = False,
+        revision: int = 1,
     ) -> Any:
+        """``revision``: the revision of ``method`` the caller relies on (new parameters or meaning); a
+        plug-in serving an older one is refused before anything is sent."""
         async with self._lock:
             await self._ensure_connected()
+            self._check_capability(method, revision)
             try:
                 return await self._request(method, params or {}, timeout or self.request_timeout, mutating)
             except GimpMcpError as error:
                 # A read can safely be retried once on a fresh connection when the
                 # previous one turned out to be dead (e.g. GIMP was restarted).
+                if error.code == "UNKNOWN_METHOD":  # a plug-in from before 0.7.0 lacking the operation
+                    raise self._outdated(method, revision) from error
                 if mutating or error.code != "DISCONNECTED":
                     raise
             await self._ensure_connected()
+            self._check_capability(method, revision)
             return await self._request(method, params or {}, timeout or self.request_timeout, mutating)
+
+    def _check_capability(self, method: str, revision: int) -> None:
+        assert self.session is not None
+        capabilities = self.session.capabilities
+        served = (1 if revision == 1 else 0) if capabilities is None else capabilities.get(method, 0)
+        if served < revision:
+            raise self._outdated(method, revision)
+
+    def _outdated(self, method: str, revision: int) -> GimpMcpError:
+        """The plug-in lacks ``method`` at ``revision``: nothing was applied."""
+        plugin = (self.session.bridge_version if self.session else None) or "unknown"
+        return GimpMcpError(
+            "PLUGIN_VERSION_MISMATCH",
+            f"the GIMP plug-in ({plugin}) does not support {method}"
+            + (f" revision {revision}" if revision > 1 else "")
+            + f": it is older than this server ({__version__})",
+            hint="Update the plug-in: run `gimp-mcp install-plugin`, then restart GIMP.",
+            details={
+                "operation": method,
+                "revision": revision,
+                "plugin_version": plugin,
+                "server_version": __version__,
+            },
+        )
 
     async def connect(self) -> SessionInfo:
         async with self._lock:
@@ -235,12 +271,20 @@ class BridgeClient:
             raise
         self._abandoned_at = None  # GIMP answered: whatever was abandoned is finished
         session = SessionInfo.from_wire(hello)
-        if session.protocol != PROTOCOL_VERSION:
+        check = check_plugin(__version__, session.bridge_version, session.protocol, session.capabilities)
+        if check.verdict is Compatibility.INCOMPATIBLE:
             await self.close()
+            supported = ", ".join(map(str, sorted(SUPPORTED_PROTOCOLS)))
             raise GimpMcpError(
-                "VERSION_INCOMPATIBLE",
-                f"bridge speaks protocol {session.protocol}, this server needs {PROTOCOL_VERSION}",
-                hint="Reinstall the plug-in with `gimp-mcp install-plugin` and restart GIMP.",
+                "PLUGIN_VERSION_MISMATCH",
+                f"the GIMP plug-in ({session.bridge_version or 'unknown'}) speaks bridge protocol "
+                f"{session.protocol}; this server ({__version__}) speaks {supported}",
+                hint="Run `gimp-mcp install-plugin`, then restart GIMP.",
+                details={
+                    "plugin_version": session.bridge_version or "unknown",
+                    "plugin_protocol": session.protocol,
+                    "server_version": __version__,
+                },
             )
         if parse_version(session.gimp_version)[:2] < MIN_GIMP_VERSION:
             await self.close()
@@ -251,22 +295,16 @@ class BridgeClient:
                 hint=f"Install GIMP {minimum} or newer.",
                 details={"gimp_version": session.gimp_version, "minimum": minimum},
             )
-        verdict = check_plugin_version(__version__, session.bridge_version)
-        if verdict is Compatibility.INCOMPATIBLE:
-            await self.close()
-            raise GimpMcpError(
-                "PLUGIN_VERSION_MISMATCH",
-                f"the GIMP plug-in is version {session.bridge_version or 'unknown'} but this server is {__version__}",
-                hint="Run `gimp-mcp install-plugin`, then restart GIMP.",
-                details={"plugin_version": session.bridge_version or "unknown", "server_version": __version__},
-            )
-        if verdict is Compatibility.COMPATIBLE:
+        if check.verdict is not Compatibility.MATCH:
             log.warning(
-                "GIMP plug-in %s differs from server %s (compatible patch versions); "
-                "run `gimp-mcp install-plugin` to align them",
+                "GIMP plug-in %s differs from server %s (%s%s); run `gimp-mcp install-plugin` and restart "
+                "GIMP to align them",
                 session.bridge_version,
                 __version__,
+                check.verdict.value,
+                f", missing {len(check.missing)} operations" if check.missing else "",
             )
+        self.plugin_check = check
         if self.session is not None and self.session.session_id != session.session_id:
             log.info("GIMP session changed: %s -> %s", self.session.session_id, session.session_id)
         self.session = session
