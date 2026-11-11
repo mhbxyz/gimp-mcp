@@ -116,16 +116,3 @@ def test_the_batch_demo_reads_exif_orientation_from_interpreted_values(value, ex
     from demo.scenarios.web_photo_batch import orientation_of
 
     assert orientation_of(value) == expected
-
-
-def test_the_batch_demo_reads_the_orientation_from_the_file_when_gimp_returns_none(tmp_path):
-    from PIL import Image
-
-    from demo.scenarios.web_photo_batch import orientation_of, orientation_value
-
-    exif = Image.Exif()
-    exif[0x0112] = 8
-    Image.new("RGB", (8, 4)).save(tmp_path / "photo.jpg", exif=exif)
-    assert orientation_value({"Exif.Image.Orientation": "right, top"}, tmp_path / "photo.jpg") == "right, top"
-    fallback = orientation_value({}, tmp_path / "photo.jpg")  # what GIMP for Windows sometimes returns
-    assert fallback == "8 (from the file)" and orientation_of(fallback.removesuffix(" (from the file)")) == 8

@@ -351,6 +351,29 @@ def image_create(params):
     return image_ref(image, show(image))
 
 
+def _restore_file_metadata(image, path):
+    """GIMP 3.2.6 on Windows sometimes loads a JPEG with almost none of its Exif (the orientation among
+    them), for every file of a session (#173, docs/gimp-notes.md): take what is missing from the file.
+    The image stays clean and nothing enters its undo history. Returns whether anything was restored."""
+    try:
+        from_file = Gimp.Metadata.load_from_file(Gio.File.new_for_path(path))
+    except Exception:
+        return False  # not a format with Exif/XMP/IPTC, or unreadable: keep what GIMP loaded
+    if from_file is None:
+        return False
+    loaded = image.get_metadata()
+    have = set(loaded.get_exif_tags() or []) if loaded is not None else set()
+    if set(from_file.get_exif_tags() or []) <= have:
+        return False
+    image.undo_disable()
+    try:
+        image.set_metadata(from_file)
+    finally:
+        image.undo_enable()
+    image.clean_all()
+    return True
+
+
 @mutation
 def image_open(params):
     path = params["path"]
@@ -361,6 +384,7 @@ def image_open(params):
             "GIMP could not load %s (unsupported format or corrupt file)" % os.path.basename(path),
             {"path": path},
         )
+    _restore_file_metadata(image, path)
     return image_ref(image, show(image))
 
 

@@ -54,6 +54,9 @@ what is covered by the compatibility promise.
 
 ### Fixed
 
+- `gimp_open_image` keeps every Exif tag on Windows (#173): GIMP 3.2.6 for Windows sometimes loaded
+  JPEGs with almost no Exif (no orientation) for a whole session; the missing tags are now read from
+  the file. The web photo demo no longer falls back to reading the orientation itself.
 - Arguments that do not match a tool's schema no longer reach agents as raw pydantic text (#146): the
   error is `INVALID_ARGUMENT` with each field at fault, unknown argument names (with a "did you mean"),
   and a hint listing the tool's required parameters and their types. Calling a tool of a disabled

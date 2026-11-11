@@ -368,3 +368,10 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   hands the developed image to GIMP (64x64, quadrants red, green, blue, gray kept). Without a window
   manager darktable ignores synthetic key events (`xdotool key --window`): focus its window and type with
   XTEST; destroying its window (`xdotool windowclose`) leaves GIMP waiting.
+* Exif lost on load on Windows (seen 2026-11-11, gimp.org's GIMP 3.2.6 on windows-2025, #173): in some
+  GIMP sessions, `Gimp.file_load` of a JPEG gives an image whose metadata has one or two Exif tags
+  instead of all of them (the orientation among them), for every file of that session; another session
+  reads the same files completely; Linux and macOS always do. `Gimp.Metadata.load_from_file` reads the
+  file completely, so `image.open` takes the missing tags from it (`_restore_file_metadata`, the image
+  stays clean and nothing enters its undo history). `tests/e2e/test_exif_orientation.py` opens twenty
+  oriented JPEGs in three sessions.
