@@ -165,3 +165,29 @@ def test_documentation_lists_every_toolset_with_its_tools():
         documented = set(re.findall(r"`(gimp_[a-z_]+)`", section.group(0)))
         assert documented == set(entry.tools), (entry.name, documented ^ set(entry.tools))
     assert "GIMP_MCP_TOOLSETS" in doc and "--toolsets" in doc
+
+
+def _titles(schema: object, path: str = "") -> list[str]:
+    """Paths of `title` keywords (not properties named title) in a schema."""
+    found: list[str] = []
+    if isinstance(schema, dict):
+        for key, value in schema.items():
+            if key == "title" and isinstance(value, str):
+                found.append(path or "(root)")
+            elif key in ("properties", "$defs") and isinstance(value, dict):
+                for name, sub in value.items():
+                    found += _titles(sub, f"{path}.{name}")
+            else:
+                found += _titles(value, path)
+    elif isinstance(schema, list):
+        for item in schema:
+            found += _titles(item, path)
+    return found
+
+
+async def test_schemas_carry_no_generated_titles():
+    """They repeat the property names: a sixth of the default budget (docs/toolsets.md#budget)."""
+    async with Client(offline_server(toolsets="all")) as client:
+        tools = (await client.list_tools()).tools
+    with_titles = {t.name: _titles(t.input_schema) + _titles(t.output_schema) for t in tools}
+    assert {name: paths for name, paths in with_titles.items() if paths} == {}

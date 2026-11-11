@@ -128,6 +128,23 @@ def success_result(
     return _with_notices(CallToolResult(content=content, structured_content=structured), notices or [])
 
 
+def strip_titles(schema: Any) -> Any:
+    """The schema without pydantic's generated ``title`` keywords ("Has Alpha" for ``has_alpha``): they
+    repeat the property names and cost about a sixth of the tool definitions (docs/toolsets.md#budget).
+    Properties *named* ``title`` are kept."""
+    if isinstance(schema, list):
+        return [strip_titles(item) for item in schema]
+    if not isinstance(schema, dict):
+        return schema
+    return {
+        key: {name: strip_titles(sub) for name, sub in value.items()}
+        if key in ("properties", "$defs")
+        else strip_titles(value)
+        for key, value in schema.items()
+        if not (key == "title" and isinstance(value, str))
+    }
+
+
 READ_ONLY = ToolAnnotations(read_only_hint=True, open_world_hint=False)
 MUTATING = ToolAnnotations(read_only_hint=False, destructive_hint=False, open_world_hint=False)
 DESTRUCTIVE = ToolAnnotations(read_only_hint=False, destructive_hint=True, open_world_hint=False)
@@ -249,6 +266,13 @@ class Toolkit:
                     return success_result(value, notices=notices)
 
                 return wrapper
+            def register() -> None:
+                self.mcp.add_tool(wrapper, name=name, title=title, description=description, annotations=annotations)
+                tool = self.mcp._tool_manager.get_tool(name)  # pyright: ignore[reportPrivateUsage]
+                assert tool is not None
+                tool.parameters = strip_titles(tool.parameters)
+                if tool.fn_metadata.output_schema is not None:
+                    tool.fn_metadata.output_schema = strip_titles(tool.fn_metadata.output_schema)
 
             def add(tool_name: str, tool_description: str, tool_deprecation: Deprecation | None) -> None:
                 wrapper = make_wrapper(tool_name, tool_deprecation)
