@@ -8591,7 +8591,8 @@
                     "xmp",
                     "iptc",
                     "comment",
-                    "thumbnail"
+                    "thumbnail",
+                    "time"
                   ],
                   "type": "string"
                 },
