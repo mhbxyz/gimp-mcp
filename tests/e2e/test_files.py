@@ -105,6 +105,31 @@ async def test_png_and_jpeg_exports_are_read_back(gimp: HeadlessGimp, layered_xc
     assert state["dirty"] is False  # exporting does not change the project
 
 
+def png_chunks(path: Path) -> list[str]:
+    """Chunk types of a PNG file, in order."""
+    data = path.read_bytes()
+    assert data[:8] == b"\x89PNG\r\n\x1a\n"
+    chunks, offset = [], 8
+    while offset < len(data):
+        length = int.from_bytes(data[offset : offset + 4], "big")
+        chunks.append(data[offset + 4 : offset + 8].decode("ascii"))
+        offset += 12 + length
+    return chunks
+
+
+async def test_png_exports_write_no_time_unless_asked(gimp: HeadlessGimp, tmp_path: Path):
+    """#160: the tIME chunk is metadata like the others: written only with metadata=["time"]."""
+    plain, timed = tmp_path / "plain.png", tmp_path / "timed.png"
+    async with mcp_client(gimp) as client:
+        image = (await call(client, "gimp_create_image", width=8, height=8))["id"]
+        await call(client, "gimp_export_image", image=image, path=str(plain))
+        await call(client, "gimp_export_image", image=image, path=str(timed), png_options={"metadata": ["time"]})
+        await call(client, "gimp_close_image", image=image, discard_changes=True)
+    # exactly what docs/tools.md lists: the header, the color description, the resolution, the pixels
+    assert png_chunks(plain) == ["IHDR", "sRGB", "gAMA", "cHRM", "pHYs", "IDAT", "IEND"]
+    assert "tIME" in png_chunks(timed)
+
+
 async def test_jpeg_flattens_transparency_on_an_explicit_background(gimp: HeadlessGimp, tmp_path: Path):
     out = tmp_path / "flat.jpg"
     async with mcp_client(gimp) as client:

@@ -424,6 +424,8 @@ def image_export(params):
     if kind == "png":
         settings = _metadata_settings(options)
         settings.update({"compression": options["compression"], "interlaced": options["interlaced"], "bkgd": False})
+        # tIME (the export time) only when asked, like the other metadata (#160)
+        settings["time"] = "time" in (options.get("metadata") or [])
         settings["include-color-profile"] = _embed_profile(image, options)
         _run_export("file-png-export", image, path, settings)
     elif kind == "jpeg":

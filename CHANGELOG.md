@@ -58,6 +58,8 @@ what is covered by the compatibility promise.
   error is `INVALID_ARGUMENT` with each field at fault, unknown argument names (with a "did you mean"),
   and a hint listing the tool's required parameters and their types. Calling a tool of a disabled
   toolset returns the new code `TOOLSET_DISABLED` with the `gimp_enable_toolsets` call to make.
+- PNG exports no longer write a `tIME` chunk (the export time) unless `png_options.metadata` contains
+  the new value `time` (#160); docs/tools.md lists the chunks a PNG export writes.
 - The agent evaluation runs on GitHub's runners: the container user (uid 1000) could not write its
   transcript and outputs in directories made by the runner user (uid 1001), so every session ended at once.
 

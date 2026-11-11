@@ -40,8 +40,9 @@ class PngOptions(BaseModel):
     color_profile: bool | None = Field(
         default=None, description="Embed the color profile (iCCP); default: only when the image has one assigned."
     )
-    metadata: list[Literal["exif", "xmp", "iptc", "comment", "thumbnail"]] = Field(
-        default_factory=list, description="Metadata to write (none by default: nothing leaks unless asked)."
+    metadata: list[Literal["exif", "xmp", "iptc", "comment", "thumbnail", "time"]] = Field(
+        default_factory=list,
+        description="Metadata to write (none by default: nothing leaks unless asked); time: the tIME chunk.",
     )
 
 
