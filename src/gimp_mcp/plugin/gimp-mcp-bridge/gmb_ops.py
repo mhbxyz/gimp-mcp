@@ -3078,11 +3078,17 @@ def guide_remove(params):
 
 
 def _metadata_tags(metadata):
-    tags = {}
+    """Interpreted values (Exiv2's text, translated in GIMP's language) per kind, and ``raw``: each tag's
+    untranslated value (e.g. Exif.Image.Orientation "6" where the interpreted one reads "right, top")."""
+    tags = {"raw": {}}
     for kind, getter in (("exif", "get_exif_tags"), ("xmp", "get_xmp_tags"), ("iptc", "get_iptc_tags")):
         values = {}
         for tag in getattr(metadata, getter)() or []:
             values[tag] = _interpreted(metadata, tag)
+            try:
+                tags["raw"][tag] = metadata.get_tag_string(tag)
+            except Exception:
+                tags["raw"][tag] = None
         tags[kind] = values
     return tags
 
@@ -3109,12 +3115,13 @@ def _comment(image):
 def metadata_get(params):
     image = get_image(params)
     metadata = image.get_metadata()
-    tags = _metadata_tags(metadata) if metadata is not None else {kind: {} for kind in METADATA_KINDS}
+    tags = _metadata_tags(metadata) if metadata is not None else {kind: {} for kind in (*METADATA_KINDS, "raw")}
     if "Exif.Image.Orientation" not in tags["exif"]:
         # GIMP for Windows can lose it for a whole session, even once restored (#173): the file says it
         orientation = _file_orientation(image)
         if orientation:
             tags["exif"]["Exif.Image.Orientation"] = ORIENTATION_TEXT[orientation]
+            tags["raw"]["Exif.Image.Orientation"] = str(orientation)
             log("orientation %d of image %d read from its file" % (orientation, image.get_id()))
     return {"image": image.get_id(), **tags, "comment": _comment(image)}
 
@@ -4865,7 +4872,10 @@ def image_preview_region(params):
 # when an operation gains a parameter or changes behaviour, and make the server ask for it
 # (``kit.call(..., revision=N)``): an older plug-in then fails with PLUGIN_VERSION_MISMATCH instead of
 # ignoring the new parameter (docs/adr/0010-plugin-compatibility.md).
-REVISIONS = {}
+REVISIONS = {
+    "metadata.get": 2,  # 0.7.0: untranslated values in "raw" (#161)
+    "metadata.set": 2,
+}
 
 
 def build_operations():

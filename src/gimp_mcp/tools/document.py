@@ -37,9 +37,13 @@ class GuideList(BaseModel):
 
 class Metadata(BaseModel):
     image: str
-    exif: dict[str, str | None]
+    exif: dict[str, str | None] = Field(description="Tag -> value as GIMP interprets it, in GIMP's language.")
     xmp: dict[str, str | None]
     iptc: dict[str, str | None]
+    raw: dict[str, str | None] = Field(
+        description="Every Exif, XMP and IPTC tag -> its untranslated value, the same in every language "
+        "(e.g. Exif.Image.Orientation '6' where exif reads 'right, top'): decide on these."
+    )
     comment: str | None
 
 
@@ -51,9 +55,10 @@ class PrintInfo(BaseModel):
 
 
 def register(kit: Toolkit) -> None:
-    async def call(method: str, image: str, mutating: bool = True, **params: object) -> dict:
+    async def call(method: str, image: str, mutating: bool = True, revision: int = 1, **params: object) -> dict:
         codec = await kit.codec()
-        data = await kit.call(method, {"image": codec.parse_image(image), **params}, codec=codec, mutating=mutating)
+        payload = {"image": codec.parse_image(image), **params}
+        data = await kit.call(method, payload, codec=codec, mutating=mutating, revision=revision)
         return {**data, "image": image}
 
     @kit.tool(
@@ -106,11 +111,14 @@ def register(kit: Toolkit) -> None:
         toolset="document",
         name="gimp_get_metadata",
         title="Read metadata",
-        description="The image's Exif, XMP and IPTC tags (interpreted values) and its comment.",
+        description=(
+            "The image's Exif, XMP and IPTC tags and its comment: values as GIMP interprets them (translated, "
+            "for people) and raw untranslated values (for decisions, e.g. EXIF orientation 6)."
+        ),
         annotations=READ_ONLY,
     )
     async def gimp_get_metadata(image: ImageId) -> Metadata:
-        return Metadata(**await call("metadata.get", image, mutating=False))
+        return Metadata(**await call("metadata.get", image, mutating=False, revision=2))
 
     @kit.tool(
         toolset="document",
@@ -128,7 +136,7 @@ def register(kit: Toolkit) -> None:
         remove: Annotated[list[Tag], Field(max_length=200)] = [],  # noqa: B006
         comment: Annotated[str | None, Field(max_length=65535)] = None,
     ) -> Metadata:
-        return Metadata(**await call("metadata.set", image, set=set, remove=remove, comment=comment))
+        return Metadata(**await call("metadata.set", image, set=set, remove=remove, comment=comment, revision=2))
 
     @kit.tool(
         toolset="document",

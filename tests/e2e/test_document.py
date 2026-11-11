@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from PIL import Image
 
 from gimp_mcp.headless import HeadlessGimp
@@ -92,3 +93,32 @@ async def test_resolution_and_print_size(gimp: HeadlessGimp, tmp_path: Path):
         assert too_small["code"] == "INVALID_ARGUMENT"
         assert abs((await call(client, "gimp_inspect_image", image=image))["resolution"]["x"] - 152.4) < 0.01
         await call(client, "gimp_close_image", image=image, discard_changes=True)
+
+
+def oriented_jpeg(path: Path) -> Path:
+    exif = Image.Exif()
+    exif[0x0112] = 6  # Orientation: rotate 90 CW to display
+    Image.new("RGB", (8, 4), "white").save(path, exif=exif)
+    return path
+
+
+@pytest.mark.parametrize("language", ["C.UTF-8", "fr_FR.UTF-8"])
+async def test_raw_metadata_is_the_same_in_every_language(language: str, tmp_path: Path, monkeypatch):
+    """#161: interpreted values follow GIMP's language; raw ones do not."""
+    monkeypatch.setenv("LANG", language)
+    monkeypatch.setenv("LC_ALL", language)
+    photo = oriented_jpeg(tmp_path / "photo.jpg")
+    gimp = HeadlessGimp()
+    gimp.start()
+    try:
+        async with mcp_client(gimp) as client:
+            image = (await call(client, "gimp_open_image", path=str(photo)))["id"]
+            metadata = await call(client, "gimp_get_metadata", image=image)
+    finally:
+        gimp.stop()
+    assert metadata["raw"]["Exif.Image.Orientation"] == "6"
+    interpreted = metadata["exif"]["Exif.Image.Orientation"]
+    if language.startswith("C"):
+        assert interpreted == "right, top"
+    else:
+        print(f"interpreted in {language}: {interpreted!r}")  # 'droit, haut' where French is installed

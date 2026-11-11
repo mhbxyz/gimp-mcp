@@ -213,7 +213,9 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   `delete_guide`. `add_sample_point(x, y)`, `find_next_sample_point`, `get_sample_point_position`
   → `(x, y)` (no ok flag), `delete_sample_point`. `image.get_metadata()` is a `Gimp.Metadata`
   (a GExiv2 metadata: `get_exif_tags`, `get_tag_interpreted_string`, `try_set_tag_string`,
-  `clear_tag`), stored back with `image.set_metadata`. The comment is the `gimp-comment`
+  `clear_tag`), stored back with `image.set_metadata`. `get_tag_interpreted_string` is Exiv2's text in
+  the process language (orientation 6: `right, top`, `droit, haut` with `LANG=fr_FR.UTF-8`);
+  `get_tag_string` is the untranslated value (`6`) (checked 2026-11-11, #161). The comment is the `gimp-comment`
   parasite; the JPEG exporter writes it with a trailing NUL. Exporters take `include-exif`,
   `include-xmp`, `include-iptc`, `include-comment`, `include-thumbnail`. `Gimp.Unit.inch()/mm()/
   point()/pica()` with `get_factor()` (units per inch); `image.set_unit`, `set_resolution`.
