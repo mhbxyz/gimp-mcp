@@ -646,7 +646,7 @@ are the same (absolute paths, `overwrite`); metadata is written only when listed
   (`file-webp-export` → `webp`) with a few aliases (`tif`, `jpg`, `avif`, `heic`, `jxl`, `ora`).
 * `gimp_describe_file_format(extension | procedure, mode)`: options with `kind`, range, choices,
   default.
-* `gimp_export_as(image, path, options={}, metadata=[], procedure?, overwrite)`: picks the
+* `gimp_export_as(image, path, options={}, metadata=[], procedure?, overwrite, layers="keep")`: picks the
   procedure from the extension. Returns `lossless` (`true`, `false`, or `null` when it depends on
   the content: GIF palettes, PDF) and `layers`:
 
@@ -658,7 +658,10 @@ are the same (absolute paths, `overwrite`); metadata is written only when listed
   | ICO | `sizes` | one icon size per layer |
   | PSD, OpenRaster | `kept` | layers stay layers |
 
-  The image itself is never changed.
+  `layers="flatten"` exports the visible composite instead, as one layer (one TIFF page, one PDF page,
+  one PSD layer), as the image looks: hidden layers are left out, resolution, color profile and
+  metadata are kept (`tests/e2e/test_formats.py`). It needs the plug-in of this version
+  (`image.export_as` revision 2). The image itself is never changed.
 * `gimp_open_with_options(path, options={}, procedure?)`: PDF (`pages`: page numbers from 1, only
   those pages are loaded, in the order given, the last on top — `[2, 1]` puts page 1 on top; a page
   beyond the end is `INVALID_ARGUMENT`; `width`, `height`, `keep-ratio`, `password`…), SVG

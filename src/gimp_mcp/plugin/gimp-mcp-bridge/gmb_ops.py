@@ -3333,7 +3333,22 @@ def _export_with(image, path, name, procedure, options, metadata):
 def image_export_as(params):
     image = get_image(params)
     name, procedure = _file_procedure("export", params)
-    return _export_with(image, params["path"], name, procedure, params.get("options"), params.get("metadata") or [])
+    metadata = params.get("metadata") or []
+    if params.get("layers") != "flatten":
+        return _export_with(image, params["path"], name, procedure, params.get("options"), metadata)
+    # The visible composite as one layer, in a copy: resolution, profile, metadata and palette are kept.
+    copy = image.duplicate()
+    try:
+        copy.undo_disable()
+        for layer in [layer for layer in copy.get_layers() if not layer.get_visible()]:
+            copy.remove_layer(layer)
+        if not copy.get_layers():
+            raise BridgeError("INVALID_ARGUMENT", "the image has no visible layer to export")
+        copy.merge_visible_layers(Gimp.MergeType.CLIP_TO_IMAGE)
+        result = _export_with(copy, params["path"], name, procedure, params.get("options"), metadata)
+        return {**result, "layers": "flattened"}
+    finally:
+        copy.delete()
 
 
 def _int32_array(values):
@@ -4875,6 +4890,7 @@ def image_preview_region(params):
 REVISIONS = {
     "metadata.get": 2,  # 0.7.0: untranslated values in "raw" (#161)
     "metadata.set": 2,
+    "image.export_as": 2,  # 0.7.0: layers="flatten" (#165)
 }
 
 

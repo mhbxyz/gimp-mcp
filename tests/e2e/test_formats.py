@@ -65,6 +65,34 @@ async def test_raster_exports_are_read_back(gimp: HeadlessGimp, tmp_path: Path, 
         await call(client, "gimp_close_image", image=image, discard_changes=True)
 
 
+async def test_flatten_exports_the_composite_as_one_page(gimp: HeadlessGimp, tmp_path: Path):
+    """#165: a layered image to TIFF and PDF as one page, as seen, without changing the image."""
+    async with mcp_client(gimp) as client:
+        image, _, _ = await two_layers(client)
+        hidden = await call(client, "gimp_create_layer", image=image, name="Hidden", width=32, height=24,
+                            fill="#00ff00")  # fmt: skip
+        await call(client, "gimp_set_layer_properties", item=hidden["id"], visible=False)
+        before = await call(client, "gimp_inspect_image", image=image)
+        tiff = await call(client, "gimp_export_as", image=image, path=str(tmp_path / "flat.tif"), layers="flatten")
+        pdf = await call(client, "gimp_export_as", image=image, path=str(tmp_path / "flat.pdf"), layers="flatten")
+        after = await call(client, "gimp_inspect_image", image=image)
+        await call(client, "gimp_close_image", image=image, discard_changes=True)
+    assert tiff["layers"] == pdf["layers"] == "flattened"
+    with Image.open(tmp_path / "flat.tif") as img:
+        assert getattr(img, "n_frames", 1) == 1
+        rgb = img.convert("RGB")
+        assert rgb.size == (32, 24) and px(rgb, 1, 1) == (255, 0, 0) and px(rgb, 8, 8) == (0, 0, 255)
+    reader = PdfReader(tmp_path / "flat.pdf")
+    assert len(reader.pages) == 1
+    [picture] = reader.pages[0].images
+    with Image.open(__import__("io").BytesIO(picture.data)) as img:
+        rgb = img.convert("RGB")
+        red, blue = px(rgb, 1, 1), px(rgb, rgb.width // 4, rgb.height // 4 + 1)
+        assert red[0] > 200 and red[1] < 60 and blue[2] > 200 and blue[1] < 60  # no hidden green
+    assert [layer["id"] for layer in after["layers"]] == [layer["id"] for layer in before["layers"]]
+    assert after["dirty"] == before["dirty"]
+
+
 async def test_layered_formats_keep_layers_pages_or_sizes(gimp: HeadlessGimp, tmp_path: Path):
     async with mcp_client(gimp) as client:
         image, _, _ = await two_layers(client)
