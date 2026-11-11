@@ -10301,6 +10301,19 @@
             },
             "type": "object"
           },
+          "raw": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object"
+          },
           "xmp": {
             "additionalProperties": {
               "anyOf": [
@@ -10320,6 +10333,7 @@
           "exif",
           "xmp",
           "iptc",
+          "raw",
           "comment"
         ],
         "type": "object"
@@ -21244,6 +21258,19 @@
             },
             "type": "object"
           },
+          "raw": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object"
+          },
           "xmp": {
             "additionalProperties": {
               "anyOf": [
@@ -21263,6 +21290,7 @@
           "exif",
           "xmp",
           "iptc",
+          "raw",
           "comment"
         ],
         "type": "object"
