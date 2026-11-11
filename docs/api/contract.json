@@ -305,6 +305,10 @@
             },
             "type": "array"
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "type": "string"
           }
@@ -1500,6 +1504,10 @@
           "empty": {
             "type": "boolean"
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "type": "string"
           }
@@ -1675,6 +1683,10 @@
           "filter": {
             "$ref": "#/$defs/FilterState"
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "item": {
             "type": "string"
           },
@@ -1750,6 +1762,10 @@
                 "type": "null"
               }
             ]
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "item": {
             "type": "string"
@@ -1872,6 +1888,10 @@
                 "type": "null"
               }
             ]
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "item": {
             "type": "string"
@@ -2121,6 +2141,10 @@
             ],
             "default": null
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "item": {
             "type": "string"
           },
@@ -2309,6 +2333,10 @@
               }
             ]
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "item": {
             "type": "string"
           },
@@ -2394,6 +2422,10 @@
                 "type": "null"
               }
             ]
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "item": {
             "type": "string"
@@ -2703,6 +2735,10 @@
           "dirty": {
             "type": "boolean"
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "type": "string"
           },
@@ -2783,6 +2819,10 @@
           },
           "dirty": {
             "type": "boolean"
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "image": {
             "type": "string"
@@ -5314,6 +5354,10 @@
           "height": {
             "type": "integer"
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "type": "string"
           },
@@ -5355,6 +5399,10 @@
           },
           "height": {
             "type": "integer"
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "image": {
             "type": "string"
@@ -5459,6 +5507,10 @@
                 "type": "null"
               }
             ]
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "item": {
             "type": "string"
@@ -5712,6 +5764,10 @@
                 "type": "null"
               }
             ]
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "item": {
             "type": "string"
@@ -6501,6 +6557,10 @@
           "changed": {
             "type": "boolean"
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "item": {
             "type": "string"
           }
@@ -6640,6 +6700,10 @@
           },
           "changed": {
             "type": "boolean"
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "item": {
             "type": "string"
@@ -9192,6 +9256,10 @@
               }
             ]
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "item": {
             "type": "string"
           },
@@ -9300,6 +9368,10 @@
           "changed": {
             "type": "boolean"
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "item": {
             "type": "string"
           }
@@ -9350,6 +9422,10 @@
       },
       "outputSchema": {
         "properties": {
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "item": {
             "type": "string"
           },
@@ -9584,6 +9660,10 @@
           }
         },
         "properties": {
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "anyOf": [
               {
@@ -9771,6 +9851,10 @@
           }
         },
         "properties": {
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "anyOf": [
               {
@@ -9825,6 +9909,10 @@
           },
           "height": {
             "type": "integer"
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "image": {
             "type": "string"
@@ -10169,6 +10257,10 @@
               }
             ]
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "item": {
             "type": "string"
           },
@@ -10250,6 +10342,10 @@
           "effective": {
             "$ref": "#/$defs/Profile"
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "type": "string"
           },
@@ -10314,6 +10410,10 @@
               ]
             },
             "type": "object"
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "image": {
             "type": "string"
@@ -10458,6 +10558,10 @@
           },
           "empty": {
             "type": "boolean"
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "image": {
             "type": "string"
@@ -10641,6 +10745,10 @@
               }
             ],
             "default": null
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "item": {
             "type": "string"
@@ -10992,6 +11100,10 @@
                 "type": "null"
               }
             ]
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "item": {
             "type": "string"
@@ -13131,6 +13243,10 @@
           "hint_style": {
             "type": "string"
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "indent": {
             "type": "number"
           },
@@ -13522,6 +13638,10 @@
               }
             ]
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "item": {
             "type": "string"
           },
@@ -13630,6 +13750,10 @@
                 "type": "null"
               }
             ]
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "item": {
             "type": "string"
@@ -14062,6 +14186,10 @@
             },
             "type": "array"
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "item": {
             "type": "string"
           }
@@ -14183,6 +14311,10 @@
               "$ref": "#/$defs/Frame"
             },
             "type": "array"
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "image": {
             "type": "string"
@@ -14532,6 +14664,10 @@
             },
             "type": "array"
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "item": {
             "type": "string"
           },
@@ -14749,6 +14885,10 @@
           }
         },
         "properties": {
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "anyOf": [
               {
@@ -14847,6 +14987,10 @@
           },
           "empty": {
             "type": "boolean"
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "image": {
             "type": "string"
@@ -14957,6 +15101,10 @@
           "empty": {
             "type": "boolean"
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "type": "string"
           }
@@ -15032,6 +15180,10 @@
               "$ref": "#/$defs/FilterInfo"
             },
             "type": "array"
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "item": {
             "type": "string"
@@ -15500,6 +15652,10 @@
           }
         },
         "properties": {
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "anyOf": [
               {
@@ -15748,6 +15904,10 @@
             },
             "type": "array"
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "type": "string"
           }
@@ -15953,6 +16113,10 @@
               }
             ],
             "default": null
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "item": {
             "type": "string"
@@ -16178,6 +16342,10 @@
           }
         },
         "properties": {
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "type": "string"
           },
@@ -16461,6 +16629,10 @@
           "empty": {
             "type": "boolean"
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "type": "string"
           }
@@ -16518,6 +16690,10 @@
                 "type": "null"
               }
             ]
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "item": {
             "type": "string"
@@ -16840,6 +17016,10 @@
               "$ref": "#/$defs/FilterInfo"
             },
             "type": "array"
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "item": {
             "type": "string"
@@ -17400,6 +17580,10 @@
           "height": {
             "type": "integer"
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "type": "string"
           },
@@ -17478,6 +17662,10 @@
           },
           "height": {
             "type": "integer"
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "image": {
             "type": "string"
@@ -17617,6 +17805,10 @@
           },
           "height": {
             "type": "integer"
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "image": {
             "type": "string"
@@ -18827,6 +19019,10 @@
           "empty": {
             "type": "boolean"
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "type": "string"
           }
@@ -18944,6 +19140,10 @@
           "empty": {
             "type": "boolean"
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "type": "string"
           }
@@ -19044,6 +19244,10 @@
           },
           "empty": {
             "type": "boolean"
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "image": {
             "type": "string"
@@ -19161,6 +19365,10 @@
           },
           "empty": {
             "type": "boolean"
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "image": {
             "type": "string"
@@ -19479,6 +19687,10 @@
           }
         },
         "properties": {
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "anyOf": [
               {
@@ -19720,6 +19932,10 @@
           },
           "effective": {
             "$ref": "#/$defs/Profile"
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "image": {
             "type": "string"
@@ -19987,6 +20203,10 @@
               "$ref": "#/$defs/Frame"
             },
             "type": "array"
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "image": {
             "type": "string"
@@ -21283,6 +21503,10 @@
             },
             "type": "object"
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "type": "string"
           },
@@ -21566,6 +21790,10 @@
       },
       "outputSchema": {
         "properties": {
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "type": "string"
           },
@@ -22280,6 +22508,10 @@
           "hint_style": {
             "type": "string"
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "indent": {
             "type": "number"
           },
@@ -22922,6 +23154,10 @@
               }
             ]
           },
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "item": {
             "type": "string"
           },
@@ -23163,6 +23399,10 @@
       },
       "outputSchema": {
         "properties": {
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "item": {
             "type": "string"
           },
@@ -23385,6 +23625,10 @@
                 "type": "null"
               }
             ]
+          },
+          "id": {
+            "default": "",
+            "type": "string"
           },
           "item": {
             "type": "string"
@@ -23774,6 +24018,10 @@
               "empty": {
                 "type": "boolean"
               },
+              "id": {
+                "default": "",
+                "type": "string"
+              },
               "image": {
                 "type": "string"
               }
@@ -23787,6 +24035,10 @@
           }
         },
         "properties": {
+          "id": {
+            "default": "",
+            "type": "string"
+          },
           "image": {
             "type": "string"
           },
