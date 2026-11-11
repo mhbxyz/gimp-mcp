@@ -18,6 +18,8 @@ mount=$(mktemp -d)
 hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$mount" >/dev/null
 cp -R "$mount/GIMP.app" /Applications/
 hdiutil detach "$mount" >/dev/null
-console=$(ls -1 /Applications/GIMP.app/Contents/MacOS/gimp-console-3.* | tail -1)  # 3.2, or a newer series
+consoles=(/Applications/GIMP.app/Contents/MacOS/gimp-console-3.*)  # 3.2, or a newer series
+console=${consoles[${#consoles[@]}-1]}
+echo "gimp-console: $console"
 "$console" --version
 if [ -n "${GITHUB_ENV:-}" ]; then echo "GIMP_MCP_GIMP_CONSOLE=$console" >> "$GITHUB_ENV"; fi
