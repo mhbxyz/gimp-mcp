@@ -11,6 +11,9 @@ output schema, plus the same JSON as text. On failure `isError` is `true` and
 `outcome`: `not_applied` (nothing changed, safe to retry), `unknown` (a
 mutation may have been applied: inspect before retrying), absent for reads.
 
+
+Every `code` is listed under [Error codes](#error-codes).
+
 ## Ids
 
 Opaque strings bound to the GIMP session: `image:<n>@<session>` and
@@ -993,16 +996,21 @@ another image), `NOT_FOUND`.
 
 ## Error codes
 
+Codes are part of the public API ([`docs/api/contract.json`](api/contract.json)): new codes may
+appear, existing ones are never removed or renamed. Messages and hints may change.
+
 | Code | Meaning |
 |---|---|
 | `GIMP_NOT_RUNNING` | No bridge socket, or stale socket (GIMP exited). |
-| `BRIDGE_UNAVAILABLE` | Socket present but no answer in time (GIMP busy/frozen) or token unreadable. |
-| `VERSION_INCOMPATIBLE` | GIMP < 3.2 or plug-in protocol mismatch. |
-| `PLUGIN_VERSION_MISMATCH` | Plug-in and server versions differ in MAJOR.MINOR (see `docs/compatibility.md`); reinstall the plug-in and restart GIMP. |
+| `BRIDGE_UNAVAILABLE` | Socket present but no answer in time (GIMP busy/frozen), token unreadable, or a pipe served by another user. |
+| `VERSION_INCOMPATIBLE` | GIMP older than 3.2. |
+| `PLUGIN_VERSION_MISMATCH` | The GIMP plug-in and the server are not compatible (see `docs/compatibility.md`); run `gimp-mcp install-plugin`, then restart GIMP. |
 | `UNAUTHORIZED` | Bad token (stale token file, wrong socket). |
 | `TIMEOUT` | No answer within the request timeout; mutation outcome `unknown`. |
 | `DISCONNECTED` | Connection lost during a request; mutation outcome `unknown`. |
 | `PROTOCOL_ERROR` | Malformed or mismatched bridge message. |
+| `REQUEST_TOO_LARGE` | A request larger than the bridge's limit (8 MiB); the connection is closed. |
+| `UNKNOWN_METHOD` | The plug-in does not know the operation (it is older than the server). |
 | `SESSION_CHANGED` | Id issued by a previous GIMP session. |
 | `INVALID_ID` | Malformed id or wrong kind (item id where an image id is expected…). |
 | `NOT_FOUND` | The image/item no longer exists (closed, deleted). |
@@ -1018,6 +1026,7 @@ another image), `NOT_FOUND`.
 | `NO_OPEN_GROUP` | `gimp_end_undo_group` without an open group from this client (closed on disconnect). |
 | `CHECKPOINT_LIMIT` | 20 checkpoints already kept for the image. |
 | `PROCEDURE_NOT_ALLOWED` | The procedure is outside the generic-access allowlist (`details.reason`). |
+| `UNSUPPORTED_TYPE` | A procedure argument has a type the generic access cannot pass. |
 | `FONT_NOT_FOUND` | Unknown font name; `details.suggestions` lists close names. |
 | `EMPTY_SELECTION` | The operation needs a selection and nothing is selected. |
 | `IMAGE_MISMATCH` | Objects from different images combined in one operation. |
@@ -1025,3 +1034,8 @@ another image), `NOT_FOUND`.
 | `UNSUPPORTED` | The operation exists but cannot be used through this tool (`message` says why). |
 | `READ_ONLY` | A built-in resource cannot be changed: duplicate it first. |
 | `GIMP_ERROR` | Unexpected failure inside GIMP; for a mutation the outcome is `unknown`. |
+| `TOOL_ERROR` | A batch step failed with an error that carries no code. |
+| `GIMP_NOT_FOUND` | `gimp-mcp` found no GIMP 3.2 executable (CLI and tests). |
+| `GIMP_START_FAILED` | A headless GIMP could not be started (CLI and tests). |
+| `BRIDGE_ALREADY_RUNNING` | Another GIMP already serves the bridge socket (plug-in log). |
+| `UNSAFE_SOCKET_DIR` | The socket directory is not private to the user (plug-in log). |

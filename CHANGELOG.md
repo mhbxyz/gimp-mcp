@@ -6,6 +6,14 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+### Added
+
+- Public API contract (#116): `docs/api/contract.json` snapshots every tool (toolset, input and output
+  schemas, annotations), error code, prompt, resource and CLI option (`uv run scripts/api_contract.py
+  write`); the unit tests fail when it is out of date, and CI classifies every difference with the base
+  branch as compatible or breaking. A breaking change needs a `### Breaking` CHANGELOG entry, and from
+  1.0 on a new major version. Error codes now have one registry, listed in `docs/tools.md`.
+
 ### Changed
 
 - The README demo is re-recorded with 0.6.0, through `demo/video/record.sh 0.6.0 thumbnail`.

@@ -106,6 +106,23 @@ minor versions may break compatibility; every change is listed in
 
 * **Public API**: MCP tool names, input schemas, output schemas and error
   `code`s, the CLI commands and their options.
+
+  Its snapshot is [`docs/api/contract.json`](api/contract.json): every tool (name, toolset, input
+  and output schemas, annotations), error code, prompt, resource and CLI option. Descriptions are left
+  out: rewording is not a change. `uv run scripts/api_contract.py write` regenerates it, and the unit
+  tests fail when it is out of date. On every pull request CI classifies each difference with the base
+  branch (`scripts/api_contract.py check`):
+
+  | Compatible | Breaking |
+  |---|---|
+  | new tool, prompt, resource, error code, CLI command or option | removed or renamed tool, parameter, output field, error code, prompt, resource, CLI command or option |
+  | new optional parameter, parameter made optional | new required parameter, parameter made required |
+  | wider type or range, new enum value | narrower type or range, removed enum value, changed default |
+  | new output field | output field that may now be missing, or may now be null |
+  | | tool moved to another toolset, read-only tool that now changes images |
+
+  A breaking change fails the check unless `CHANGELOG.md` has a `### Breaking` entry under
+  `## [Unreleased]`, and, from 1.0 on, unless the major version changes.
 * **Internal**: the bridge protocol (versioned: `protocol: 1`) and the Python
   modules.
 
