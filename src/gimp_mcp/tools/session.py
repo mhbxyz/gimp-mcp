@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from .. import __version__
 from ..toolkit import READ_ONLY, Toolkit
+from ..versions import Compatibility, PluginCheck
 
 
 class ImageSummary(BaseModel):
@@ -35,6 +36,13 @@ class StatusOutput(BaseModel):
     images: list[ImageSummary]
 
 
+def _verdict(check: PluginCheck | None) -> Literal["match", "compatible", "partial"]:
+    """An incompatible plug-in is refused at connection, so a connected one is one of these."""
+    if check is None or check.verdict is Compatibility.PARTIAL:
+        return "partial"
+    return "match" if check.verdict is Compatibility.MATCH else "compatible"
+
+
 def register(kit: Toolkit) -> None:
     @kit.tool(
         toolset="core",
@@ -58,7 +66,7 @@ def register(kit: Toolkit) -> None:
             bridge_protocol=session.protocol,
             server_version=__version__,
             plugin_version=session.bridge_version or "unknown",
-            plugin_compatibility=kit.bridge.plugin_check.verdict.value if kit.bridge.plugin_check else "partial",
+            plugin_compatibility=_verdict(kit.bridge.plugin_check),
             socket=str(kit.bridge.endpoint.socket_path),
             images=[ImageSummary(**{**image, "id": codec.image(image["id"])}) for image in result["images"]],
         )

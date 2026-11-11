@@ -47,7 +47,7 @@ def bundled_capabilities() -> dict[str, int]:
         if isinstance(node, ast.FunctionDef) and node.name == "build_operations":
             for inner in ast.walk(node):
                 if isinstance(inner, ast.Return) and isinstance(inner.value, ast.Dict):
-                    names = [key.value for key in inner.value.keys if isinstance(key, ast.Constant)]
+                    names = [str(key.value) for key in inner.value.keys if isinstance(key, ast.Constant)]
         elif isinstance(node, ast.Assign) and any(getattr(t, "id", "") == "REVISIONS" for t in node.targets):
             revisions = ast.literal_eval(node.value)
     return {name: revisions.get(name, 1) for name in names}
