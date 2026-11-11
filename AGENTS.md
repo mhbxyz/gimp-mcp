@@ -17,6 +17,7 @@ verified so far live in `docs/gimp-notes.md` (add to it, don't re-discover).
 - Generated docs, never edited by hand:
   - troubleshooting: `uv run gimp-mcp doctor --troubleshooting > docs/troubleshooting.md`
   - coverage matrix: `uv run gimp-mcp coverage --inventory docs/coverage/pdb-inventory.json --output docs/coverage.md`
+  - public API snapshot: `uv run scripts/api_contract.py write` (docs/api/contract.json; CI classifies its changes)
 - Run the server: `uv run gimp-mcp serve` · install the plug-in: `uv run gimp-mcp install-plugin` · diagnose: `uv run gimp-mcp doctor`
 
 ## Rules

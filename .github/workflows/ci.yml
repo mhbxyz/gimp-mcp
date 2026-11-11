@@ -23,6 +23,11 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run pyright
       - run: uv run pytest tests/unit -ra
+      - name: Public API changes against the base branch (docs/api/contract.json)
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF"
+          uv run scripts/api_contract.py check --base FETCH_HEAD
 
   unit-os:
     name: Unit tests on ${{ matrix.os }}
