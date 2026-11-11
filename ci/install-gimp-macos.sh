@@ -18,8 +18,11 @@ mount=$(mktemp -d)
 hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$mount" >/dev/null
 cp -R "$mount/GIMP.app" /Applications/
 hdiutil detach "$mount" >/dev/null
-consoles=(/Applications/GIMP.app/Contents/MacOS/gimp-console-3.*)  # 3.2, or a newer series
-console=${consoles[${#consoles[@]}-1]}
+console=""
+for candidate in /Applications/GIMP.app/Contents/MacOS/gimp-console-3.*; do  # 3.2, or a newer series
+  # executables only: the bundle also holds gimp-console-3.2.dSYM, a debug-symbols folder
+  if [ -f "$candidate" ] && [ -x "$candidate" ]; then console=$candidate; fi
+done
 echo "gimp-console: $console"
 "$console" --version
 if [ -n "${GITHUB_ENV:-}" ]; then echo "GIMP_MCP_GIMP_CONSOLE=$console" >> "$GITHUB_ENV"; fi
