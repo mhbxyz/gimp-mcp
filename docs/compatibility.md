@@ -131,15 +131,18 @@ minor versions may break compatibility; every change is listed in
 The version is defined once, in `pyproject.toml`; the package, `gimp-mcp
 --version`, the built artifacts and the installed plug-in (a `VERSION` file
 written by `gimp-mcp install-plugin`) all derive from it. The plug-in reports
-its version in the bridge handshake and the server applies this rule:
+its version, its bridge protocol and the operations it serves (with their revision) in the bridge
+handshake. The server accepts any plug-in speaking a protocol it supports, older or newer
+([ADR 0010](adr/0010-plugin-compatibility.md)):
 
 | Plug-in vs server | Verdict | Effect |
 |---|---|---|
-| identical | match | — |
-| same MAJOR.MINOR, different PATCH | compatible | works; a warning is logged |
-| different MAJOR or MINOR, or unknown | incompatible | every tool fails with `PLUGIN_VERSION_MISMATCH` (hint: `gimp-mcp install-plugin`, then restart GIMP) |
+| same version | match | — |
+| another version, serving every operation this server uses | compatible | works; a warning is logged |
+| an older plug-in lacking some operations (or one from before 0.7.0, which does not list them) | partial | tools it can serve work; the others fail with `PLUGIN_VERSION_MISMATCH` (hint: `gimp-mcp install-plugin`, then restart GIMP) before anything is sent |
+| another bridge protocol | incompatible | refused at connection with `PLUGIN_VERSION_MISMATCH` |
 
-`gimp_status` and `gimp-mcp doctor` show both versions and the verdict.
+`gimp_status` (`plugin_compatibility`) and `gimp-mcp doctor` show both versions, the protocol and the verdict.
 * **GIMP-dependent**: procedure availability and names (`gimp_call_procedure`,
   `gimp_search_procedures`), fonts and rendering details. The coverage matrix
   (`docs/coverage.md`) is regenerated for each supported GIMP version.

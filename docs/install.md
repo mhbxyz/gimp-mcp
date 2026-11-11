@@ -130,9 +130,10 @@ installed and whether a running GIMP answers on the socket.
 | a checkout | `git pull && uv sync` | `uv run gimp-mcp setup` |
 
 `setup` updates the plug-in in **every** GIMP profile where it is installed
-and tells you to restart GIMP. A plug-in left at another MAJOR.MINOR version is
-never used silently: every tool fails with `PLUGIN_VERSION_MISMATCH` and
-`gimp-mcp doctor` reports it.
+and tells you to restart GIMP. A plug-in left at another version keeps working as long as it
+speaks the same bridge protocol; a tool it cannot serve fails with `PLUGIN_VERSION_MISMATCH`
+(nothing is changed), and `gimp_status` and `gimp-mcp doctor` report the verdict
+([compatibility](compatibility.md#plug-in--server-versions)).
 
 ## Uninstall
 

@@ -16,6 +16,13 @@ what is covered by the compatibility promise.
 
 ### Changed
 
+- The GIMP plug-in no longer has to share the server's MAJOR.MINOR version (#120, ADR 0010): any plug-in
+  speaking bridge protocol 1 is accepted. Its handshake lists the operations it serves, with a revision;
+  a tool that needs one the plug-in lacks fails before anything is sent with `PLUGIN_VERSION_MISMATCH`
+  and the hint to run `gimp-mcp install-plugin`, then restart GIMP. `gimp_status` gains
+  `plugin_compatibility` (`match`, `compatible`, `partial`), and `gimp-mcp doctor` shows the versions,
+  the protocol and the verdict (a different installed version is now a warning, not a failure).
+
 - The README demo is re-recorded with 0.6.0, through `demo/video/record.sh 0.6.0 thumbnail`.
 - The README shows Linux, macOS and Windows support: platform badges and a table of what is verified
   on each OS; it also gives the current tool count (159, 50 by default) and the named pipe used on Windows.

@@ -4773,6 +4773,13 @@ def image_preview_region(params):
     }
 
 
+# Revision of each operation whose parameters or meaning changed since it was added (absent: 1). Bump it
+# when an operation gains a parameter or changes behaviour, and make the server ask for it
+# (``kit.call(..., revision=N)``): an older plug-in then fails with PLUGIN_VERSION_MISMATCH instead of
+# ignoring the new parameter (docs/adr/0010-plugin-compatibility.md).
+REVISIONS = {}
+
+
 def build_operations():
     return {
         "undo.begin": undo_begin,

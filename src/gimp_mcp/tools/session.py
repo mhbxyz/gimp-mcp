@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 from .. import __version__
 from ..toolkit import READ_ONLY, Toolkit
+from ..versions import Compatibility, PluginCheck
 
 
 class ImageSummary(BaseModel):
@@ -23,9 +26,21 @@ class StatusOutput(BaseModel):
     session_id: str = Field(description="Changes whenever GIMP restarts; ids from older sessions are rejected.")
     bridge_protocol: int
     server_version: str = Field(description="Version of this MCP server.")
-    plugin_version: str = Field(description="Version of the GIMP plug-in (must share MAJOR.MINOR).")
+    plugin_version: str = Field(description="Version of the GIMP plug-in.")
+    plugin_compatibility: Literal["match", "compatible", "partial"] = Field(
+        description="match: same version as the server. compatible: another version that serves every operation "
+        "this server uses. partial: an older plug-in; tools it cannot serve fail with PLUGIN_VERSION_MISMATCH "
+        "(fix: `gimp-mcp install-plugin`, then restart GIMP)."
+    )
     socket: str
     images: list[ImageSummary]
+
+
+def _verdict(check: PluginCheck | None) -> Literal["match", "compatible", "partial"]:
+    """An incompatible plug-in is refused at connection, so a connected one is one of these."""
+    if check is None or check.verdict is Compatibility.PARTIAL:
+        return "partial"
+    return "match" if check.verdict is Compatibility.MATCH else "compatible"
 
 
 def register(kit: Toolkit) -> None:
@@ -51,6 +66,7 @@ def register(kit: Toolkit) -> None:
             bridge_protocol=session.protocol,
             server_version=__version__,
             plugin_version=session.bridge_version or "unknown",
+            plugin_compatibility=_verdict(kit.bridge.plugin_check),
             socket=str(kit.bridge.endpoint.socket_path),
             images=[ImageSummary(**{**image, "id": codec.image(image["id"])}) for image in result["images"]],
         )

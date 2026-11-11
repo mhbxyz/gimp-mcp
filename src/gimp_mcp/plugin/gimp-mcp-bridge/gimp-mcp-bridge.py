@@ -70,6 +70,7 @@ def run_bridge(procedure, config, data):
                 "bridge_version": BRIDGE_VERSION,
             },
             token_path=token_path,
+            revisions=gmb_ops.REVISIONS,
         )
         gmb_ops.attach(server)
         if kind == "pipe":

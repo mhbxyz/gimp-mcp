@@ -18,7 +18,7 @@ from gimp_mcp.bridge import BridgeEndpoint
 from gimp_mcp.doctor import CHECKS, Probe, Status, render_text, run_checks
 from gimp_mcp.installer import install_plugin
 
-from .fake_bridge import running_fake_bridge, short_tmpdir
+from .fake_bridge import DEFAULT_SESSION, running_fake_bridge, short_tmpdir
 
 
 @dataclass
@@ -110,7 +110,24 @@ async def test_plugin_from_another_version(tmp_path):
     probe = healthy(tmp_path)
     (Path(probe.env["HOME"]) / ".config/GIMP/3.2/plug-ins/gimp-mcp-bridge/VERSION").write_text("0.0.1\n")
     result = by_id(await run_checks(probe))["plugin-version"]
-    assert result.status is Status.FAIL and "0.0.1" in result.message and gimp_mcp.__version__ in result.message
+    assert result.status is Status.WARN and "0.0.1" in result.message and gimp_mcp.__version__ in result.message
+    assert "when GIMP connects" in result.message
+
+
+async def test_connection_shows_versions_protocol_and_verdict(tmp_path):
+    with running_fake_bridge({}) as bridge:
+        result = by_id(await run_checks(healthy(tmp_path, bridge.endpoint)))["connection"]
+    assert result.status is Status.OK
+    assert f"plug-in {gimp_mcp.__version__}" in result.message and "protocol 1" in result.message
+    assert "match" in result.message
+
+
+async def test_connection_to_an_older_plugin_is_a_warning(tmp_path):
+    session = {**DEFAULT_SESSION, "bridge_version": "0.5.0"}
+    with running_fake_bridge({}, session=session, legacy=True) as bridge:
+        result = by_id(await run_checks(healthy(tmp_path, bridge.endpoint)))["connection"]
+    assert result.status is Status.WARN and "0.5.0" in result.message and "partial" in result.message
+    assert "gimp-mcp install-plugin" in result.fix
 
 
 async def test_gimp_python_without_pygobject(tmp_path):

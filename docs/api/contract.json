@@ -22902,6 +22902,14 @@
             },
             "type": "array"
           },
+          "plugin_compatibility": {
+            "enum": [
+              "match",
+              "compatible",
+              "partial"
+            ],
+            "type": "string"
+          },
           "plugin_version": {
             "type": "string"
           },
@@ -22922,6 +22930,7 @@
           "bridge_protocol",
           "server_version",
           "plugin_version",
+          "plugin_compatibility",
           "socket",
           "images"
         ],
