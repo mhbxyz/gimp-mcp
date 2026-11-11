@@ -19,6 +19,11 @@ mean" in the message), and a hint naming the tool's required parameters with the
 optional ones. Calling a tool whose toolset is not enabled returns `TOOLSET_DISABLED` with the
 `gimp_enable_toolsets` call to make.
 
+A call to a deprecated tool, or passing a deprecated parameter, works and also returns a notice: a text
+block `Deprecation notice: … will be removed in X: use …` and, in the result's `_meta`,
+`"io.github.mhbxyz/deprecations": [{"name", "since", "removal", "replacement"}]`
+([deprecation policy](compatibility.md#deprecations)).
+
 ## Ids
 
 Opaque strings bound to the GIMP session: `image:<n>@<session>` and

@@ -9,7 +9,7 @@ import logging
 import time
 from collections.abc import Awaitable, Callable, Iterable, Iterator
 from contextvars import ContextVar
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Generic, TypeVar
 
 from mcp.server.mcpserver import Context, MCPServer
@@ -75,21 +75,57 @@ class ToolResult(Generic[ModelT]):
         self.extra_content = extra_content or []
 
 
-def error_result(error: GimpMcpError) -> CallToolResult:
+# Key of the deprecation notices in a result's ``_meta`` (ADR 0011).
+DEPRECATIONS_META = "io.github.mhbxyz/deprecations"
+
+
+@dataclass(frozen=True)
+class Deprecation:
+    """A deprecated tool or parameter (ADR 0011): it keeps working until ``removal`` (the next major
+    version after ``since``) and every call using it returns a notice naming ``replacement``."""
+
+    since: str
+    replacement: str
+
+    @property
+    def removal(self) -> str:
+        return f"{int(self.since.split('.')[0]) + 1}.0.0"
+
+    def notice(self, name: str) -> dict[str, str]:
+        return {"name": name, "since": self.since, "removal": self.removal, "replacement": self.replacement}
+
+
+def _with_notices(result: CallToolResult, notices: list[dict[str, str]]) -> CallToolResult:
+    if not notices:
+        return result
+    for notice in notices:
+        text = (
+            f"Deprecation notice: {notice['name']} is deprecated since {notice['since']} and will be removed in "
+            f"{notice['removal']}: {notice['replacement']}."
+        )
+        result.content.append(TextContent(type="text", text=text))
+    result.meta = {**(result.meta or {}), DEPRECATIONS_META: notices}
+    return result
+
+
+def error_result(error: GimpMcpError, notices: list[dict[str, str]] | None = None) -> CallToolResult:
     payload = {"error": error.to_dict()}
     text = f"{error.code}: {error.message}"
     if error.hint:
         text += f"\nHint: {error.hint}"
     if error.outcome == "unknown":
         text += "\nOutcome: unknown - the change may or may not have been applied; inspect before retrying."
-    return CallToolResult(content=[TextContent(type="text", text=text)], structured_content=payload, is_error=True)
+    result = CallToolResult(content=[TextContent(type="text", text=text)], structured_content=payload, is_error=True)
+    return _with_notices(result, notices or [])
 
 
-def success_result(data: BaseModel, extra: list[ContentBlock] | None = None) -> CallToolResult:
+def success_result(
+    data: BaseModel, extra: list[ContentBlock] | None = None, notices: list[dict[str, str]] | None = None
+) -> CallToolResult:
     structured = data.model_dump(mode="json")
     content: list[ContentBlock] = [TextContent(type="text", text=data.model_dump_json(exclude_none=True))]
     content.extend(extra or [])
-    return CallToolResult(content=content, structured_content=structured)
+    return _with_notices(CallToolResult(content=content, structured_content=structured), notices or [])
 
 
 READ_ONLY = ToolAnnotations(read_only_hint=True, open_world_hint=False)
@@ -106,6 +142,8 @@ class CatalogEntry:
     register: Callable[[], None]
     listed: bool = False
     handler: Callable[..., Awaitable[Any]] | None = None
+    deprecation: Deprecation | None = None
+    deprecated_parameters: dict[str, Deprecation] = field(default_factory=dict)
 
 
 class Toolkit:
@@ -166,6 +204,9 @@ class Toolkit:
         annotations: ToolAnnotations,
         toolset: str,
         changes_images: bool = False,
+        deprecated: Deprecation | None = None,
+        aliases: dict[str, str] | None = None,
+        deprecated_parameters: dict[str, Deprecation] | None = None,
     ) -> Callable[[Callable[..., Awaitable[Any]]], Callable[..., Awaitable[Any]]]:
         """Register an async tool that returns a pydantic model (or ToolResult).
 
@@ -174,34 +215,73 @@ class Toolkit:
         (``structuredContent = {"error": {...}}``, ``isError = true``).
         ``changes_images``: the tool can open or close images; on success the client is told
         that the resource list (``gimp://images/...``) changed.
+
+        Deprecation (ADR 0011): ``deprecated`` marks the whole tool; ``aliases`` maps old names (a renamed
+        tool) to the version that deprecated them, registered with the same arguments and result;
+        ``deprecated_parameters`` maps parameter names to their deprecation, reported when a call passes
+        them (not None). Every such call returns a notice in ``_meta`` and as text.
         """
         check_toolset(toolset)
+        parameter_deprecations = deprecated_parameters or {}
 
         def decorator(fn: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
-            @functools.wraps(fn)
-            async def wrapper(*args: Any, **kwargs: Any) -> CallToolResult:
-                try:
-                    value = await fn(*args, **kwargs)
-                except GimpMcpError as error:
-                    log.info("tool %s failed: %s", name, error)
-                    return error_result(error)
-                ctx = current_context.get()
-                if changes_images and ctx is not None and not _in_batch.get():
-                    await notify_resources_changed(ctx)
-                if isinstance(value, ToolResult):
-                    return success_result(value.data, value.extra_content)
-                return success_result(value)
+            def make_wrapper(tool_name: str, tool_deprecation: Deprecation | None) -> Callable[..., Awaitable[Any]]:
+                @functools.wraps(fn)
+                async def wrapper(*args: Any, **kwargs: Any) -> CallToolResult:
+                    notices = [tool_deprecation.notice(tool_name)] if tool_deprecation else []
+                    notices += [
+                        deprecation.notice(f"{tool_name}.{parameter}")
+                        for parameter, deprecation in parameter_deprecations.items()
+                        if kwargs.get(parameter) is not None
+                    ]
+                    if notices:
+                        log.warning("deprecated: %s", ", ".join(notice["name"] for notice in notices))
+                    try:
+                        value = await fn(*args, **kwargs)
+                    except GimpMcpError as error:
+                        log.info("tool %s failed: %s", tool_name, error)
+                        return error_result(error, notices)
+                    ctx = current_context.get()
+                    if changes_images and ctx is not None and not _in_batch.get():
+                        await notify_resources_changed(ctx)
+                    if isinstance(value, ToolResult):
+                        return success_result(value.data, value.extra_content, notices)
+                    return success_result(value, notices=notices)
 
-            def register() -> None:
-                self.mcp.add_tool(wrapper, name=name, title=title, description=description, annotations=annotations)
+                return wrapper
 
-            if name in self.catalog:
-                raise ValueError(f"tool {name} registered twice")
-            entry = CatalogEntry(name, toolset, register, handler=wrapper)
-            self.catalog[name] = entry
-            if toolset in self.enabled:
-                register()
-                entry.listed = True
+            def add(tool_name: str, tool_description: str, tool_deprecation: Deprecation | None) -> None:
+                wrapper = make_wrapper(tool_name, tool_deprecation)
+
+                def register() -> None:
+                    self.mcp.add_tool(
+                        wrapper, name=tool_name, title=title, description=tool_description, annotations=annotations
+                    )
+                    tool = self.mcp._tool_manager.get_tool(tool_name)  # pyright: ignore[reportPrivateUsage]
+                    assert tool is not None
+                    for parameter in parameter_deprecations:
+                        tool.parameters["properties"][parameter]["deprecated"] = True
+
+                if tool_name in self.catalog:
+                    raise ValueError(f"tool {tool_name} registered twice")
+                entry = CatalogEntry(
+                    tool_name,
+                    toolset,
+                    register,
+                    handler=wrapper,
+                    deprecation=tool_deprecation,
+                    deprecated_parameters=dict(parameter_deprecations),
+                )
+                self.catalog[tool_name] = entry
+                if toolset in self.enabled:
+                    register()
+                    entry.listed = True
+
+            prefix = f"Deprecated since {deprecated.since}: {deprecated.replacement}. " if deprecated else ""
+            add(name, prefix + description, deprecated)
+            for old_name, since in (aliases or {}).items():
+                alias = Deprecation(since, f"use {name} (same arguments and result)")
+                add(old_name, f"Deprecated since {since}: use {name} (same arguments and result). {description}", alias)
             return fn
 
         return decorator

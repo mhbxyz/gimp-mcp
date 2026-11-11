@@ -13,6 +13,10 @@ what is covered by the compatibility promise.
   write`); the unit tests fail when it is out of date, and CI classifies every difference with the base
   branch as compatible or breaking. A breaking change needs a `### Breaking` CHANGELOG entry, and from
   1.0 on a new major version. Error codes now have one registry, listed in `docs/tools.md`.
+- Deprecation policy and mechanism (#117, ADR 0011): a renamed tool keeps its old name as an alias, a
+  deprecated tool or parameter keeps working until the next major version, and every call using one
+  returns a notice (result `_meta` `io.github.mhbxyz/deprecations` and a text block) naming the
+  replacement; the contract snapshot records deprecations.
 
 ### Changed
 
