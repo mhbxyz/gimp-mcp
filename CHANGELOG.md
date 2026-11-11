@@ -31,6 +31,8 @@ what is covered by the compatibility promise.
   `plugin_compatibility` (`match`, `compatible`, `partial`), and `gimp-mcp doctor` shows the versions,
   the protocol and the verdict (a different installed version is now a warning, not a failure).
 
+- Tool schemas no longer carry pydantic's generated `title` keywords, which only repeated the property
+  names: the default tool definitions shrink from 138 KB to 115 KB (#118, default budget).
 - The README demo is re-recorded with 0.6.0, through `demo/video/record.sh 0.6.0 thumbnail`.
 - The README shows Linux, macOS and Windows support: platform badges and a table of what is verified
   on each OS; it also gives the current tool count (159, 50 by default) and the named pipe used on Windows.

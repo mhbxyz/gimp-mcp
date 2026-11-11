@@ -32,7 +32,8 @@ gimp-mcp toolsets          # every toolset, its tools and the size of their defi
 The default selection is kept under **50 tools and 140 000 bytes** of tool definitions (name,
 description, input and output schemas, as sent in `tools/list`). `tests/unit/test_toolsets.py`
 fails when it grows beyond that. New features go into their own toolsets unless they belong to the
-everyday workflow. `gimp-mcp toolsets` prints the current numbers.
+everyday workflow. `gimp-mcp toolsets` prints the current numbers. Schemas carry no generated `title`
+keywords (they only repeat the property names: 23 KB of the default selection in 0.6.0).
 
 ## Per client
 
