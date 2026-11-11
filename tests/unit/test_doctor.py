@@ -296,3 +296,9 @@ async def test_the_environment_running_gimp_mcp_itself_is_not_reported(tmp_path)
     probe.executables = {**probe.executables, "python3": str(own / "python3")}
     result = by_id(await run_checks(probe))["venv-path"]
     assert result.status is Status.OK, result.message
+
+
+async def test_a_newer_gimp_is_a_best_effort_warning(tmp_path):
+    probe = healthy(tmp_path, outputs={**VERSION_OK, "--version": (0, "GNU Image Manipulation Program version 3.4.0")})
+    result = by_id(await run_checks(probe))["gimp"]
+    assert result.status is Status.WARN and "3.4.0" in result.message and "best effort" in result.message

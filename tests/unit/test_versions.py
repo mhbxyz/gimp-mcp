@@ -13,7 +13,7 @@ from gimp_mcp import versions
 from gimp_mcp.bridge import BridgeClient
 from gimp_mcp.errors import GimpMcpError
 from gimp_mcp.installer import install_plugin
-from gimp_mcp.versions import Compatibility, bundled_capabilities, check_plugin
+from gimp_mcp.versions import Compatibility, bundled_capabilities, check_plugin, gimp_support
 
 from .fake_bridge import DEFAULT_SESSION, gmb_server, running_fake_bridge
 
@@ -152,3 +152,38 @@ async def test_a_plugin_without_capability_list_gets_a_clear_error_for_unknown_o
     assert unknown.value.code == "PLUGIN_VERSION_MISMATCH" and unknown.value.outcome == "not_applied"
     assert "0.5.0" in unknown.value.message and "image.scale" in unknown.value.message
     assert newer.value.code == "PLUGIN_VERSION_MISMATCH"
+
+
+@pytest.mark.parametrize(
+    ("gimp", "support"),
+    [
+        ("3.2.6", "supported"),
+        ("3.2.8", "supported"),
+        ("3.3.2", "best_effort"),
+        ("3.4.0", "best_effort"),
+        ("4.0.0", "best_effort"),
+        ("3.0.4", "unsupported"),
+        ("2.10.38", "unsupported"),
+    ],
+)
+def test_gimp_version_policy(gimp, support):
+    assert gimp_support(gimp) == support
+
+
+async def test_a_newer_gimp_is_accepted_as_best_effort(caplog):
+    session = {**DEFAULT_SESSION, "gimp_version": "3.4.0"}
+    with running_fake_bridge({"x": lambda p: {"ok": True}}, session=session) as bridge:
+        client = BridgeClient(bridge.endpoint)
+        assert await client.call("x") == {"ok": True}
+        await client.close()
+    assert "3.4.0" in caplog.text and "best effort" in caplog.text
+
+
+async def test_an_older_gimp_is_refused():
+    session = {**DEFAULT_SESSION, "gimp_version": "3.0.4"}
+    with running_fake_bridge({"x": lambda p: {}}, session=session) as bridge:
+        client = BridgeClient(bridge.endpoint)
+        with pytest.raises(GimpMcpError) as excinfo:
+            await client.call("x")
+        assert bridge.calls == []
+    assert excinfo.value.code == "VERSION_INCOMPATIBLE"

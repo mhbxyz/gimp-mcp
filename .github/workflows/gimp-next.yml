@@ -1,0 +1,46 @@
+name: Newest GIMP (best effort)
+
+# Not a required check: it tells when a GIMP newer than the guaranteed 3.2 series (a development release
+# or a new stable one) breaks gimp-mcp. A version becomes supported only once this job is green on it and
+# the coverage matrix is regenerated for it (docs/compatibility.md, #121).
+on:
+  schedule:
+    - cron: "17 5 * * 1" # Mondays
+  workflow_dispatch:
+
+jobs:
+  e2e-newest-gimp:
+    name: End-to-end on macOS 15 with the newest GIMP from gimp.org
+    runs-on: macos-15
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the upgrade tests build the previous release from history
+      - name: Find the newest GIMP release (stable or development)
+        id: newest
+        run: python3 ci/newest_gimp.py macos-arm64 | tee -a "$GITHUB_OUTPUT"
+      - name: Install it (SHA-256 from gimp.org's manifest)
+        env:
+          GIMP_DMG_URL: ${{ steps.newest.outputs.url }}
+          GIMP_DMG_SHA256: ${{ steps.newest.outputs.sha256 }}
+        run: ci/install-gimp-macos.sh
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --frozen
+      - name: End-to-end tests on that GIMP
+        env:
+          GIMP_MCP_REQUIRE_GIMP: "1"
+        run: uv run pytest tests/e2e -ra --junitxml=ci-artifacts/gimp-next.xml
+      - name: Report
+        if: always()
+        env:
+          GIMP_VERSION: ${{ steps.newest.outputs.version }}
+        run: python3 ci/junit_summary.py "GIMP $GIMP_VERSION" ci-artifacts/gimp-next.xml >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gimp-next-report
+          path: ci-artifacts/
+          if-no-files-found: ignore

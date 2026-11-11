@@ -25,13 +25,11 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__, platforms
-from .bridge import FLATPAK_APP, BridgeClient, BridgeEndpoint, parse_version
+from .bridge import FLATPAK_APP, BridgeClient, BridgeEndpoint
 from .errors import GimpMcpError
 from .headless import system_path
 from .installer import PLUGIN_NAME, installed_plugin_dir
-from .versions import Compatibility
-
-MIN_GIMP = (3, 2)
+from .versions import Compatibility, gimp_support
 
 
 class Status(enum.Enum):
@@ -236,9 +234,7 @@ def check_gimp(ctx: Context) -> Result:
         return result("gimp", Status.FAIL, f"`{ctx.console} --version` failed: {output.strip()[:200]}")
     version = match.group(1)
     ctx.gimp_series = ".".join(version.split(".")[:2])
-    if parse_version(version)[:2] < MIN_GIMP:
-        return result("gimp", Status.FAIL, f"GIMP {version} is too old (3.2 or newer is required)")
-    return result("gimp", Status.OK, f"GIMP {version} ({ctx.console})")
+    return _gimp_result(version, f"GIMP {version} ({ctx.console})")
 
 
 def check_flatpak_gimp(ctx: Context) -> Result | None:
@@ -253,9 +249,22 @@ def check_flatpak_gimp(ctx: Context) -> Result | None:
     version = match.group(1)
     ctx.flatpak = True
     ctx.gimp_series = ".".join(version.split(".")[:2])
-    if parse_version(version)[:2] < MIN_GIMP:
-        return result("gimp", Status.FAIL, f"Flatpak GIMP {version} is too old (3.2 or newer is required)")
-    return result("gimp", Status.OK, f"GIMP {version} (Flatpak {FLATPAK_APP})")
+    return _gimp_result(version, f"GIMP {version} (Flatpak {FLATPAK_APP})")
+
+
+def _gimp_result(version: str, found: str) -> Result:
+    """The version policy (docs/compatibility.md): 3.2.x guaranteed, newer best effort, older refused."""
+    support = gimp_support(version)
+    if support == "unsupported":
+        return result("gimp", Status.FAIL, f"{found} is too old (3.2 or newer is required)")
+    if support == "best_effort":
+        return result(
+            "gimp",
+            Status.WARN,
+            f"{found}: newer than the guaranteed 3.2 series, best effort (not verified by gimp-mcp's CI)",
+            "Use GIMP 3.2.x for guaranteed results; report problems with this version as issues.",
+        )
+    return result("gimp", Status.OK, found)
 
 
 GI_PROBE = "import gi; gi.require_version('Gimp', '3.0'); from gi.repository import Gimp; print('ok')"

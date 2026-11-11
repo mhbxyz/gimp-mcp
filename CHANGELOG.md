@@ -34,6 +34,12 @@ what is covered by the compatibility promise.
 
 ### Changed
 
+- GIMP version policy (#121): GIMP 3.2.x is guaranteed; a newer GIMP (development release or later
+  series) is accepted as best effort, not verified: `gimp_status` gains `gimp_support`
+  (`supported` or `best_effort`), `gimp-mcp doctor` warns and the server logs a warning; GIMP older
+  than 3.2 is still refused. A weekly, non-blocking workflow (`gimp-next.yml`) runs the e2e suite on
+  the newest GIMP gimp.org publishes and reports the result (`docs/compatibility.md#gimp-versions`).
+
 - The GIMP plug-in no longer has to share the server's MAJOR.MINOR version (#120, ADR 0010): any plug-in
   speaking bridge protocol 1 is accepted. Its handshake lists the operations it serves, with a revision;
   a tool that needs one the plug-in lacks fails before anything is sent with `PLUGIN_VERSION_MISMATCH`

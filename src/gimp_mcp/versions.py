@@ -14,6 +14,13 @@ import enum
 import functools
 from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Literal
+
+# GIMP policy (docs/compatibility.md): the 3.2 series is guaranteed (verified by CI); newer versions are
+# accepted as best effort until the gimp-next CI job passes on them; older ones are refused.
+MIN_GIMP = (3, 2)
+SUPPORTED_GIMP_SERIES = frozenset({(3, 2)})
+GimpSupport = Literal["supported", "best_effort", "unsupported"]
 
 # Bridge protocols this server speaks (the wire format, docs/bridge-protocol.md).
 SUPPORTED_PROTOCOLS = frozenset({1})
@@ -32,6 +39,28 @@ class PluginCheck:
     # Operations of this server that the plug-in lacks or serves at an older revision; None when the
     # plug-in does not list its operations (before 0.7.0).
     missing: tuple[str, ...] | None = ()
+
+
+def parse_version(text: str) -> tuple[int, ...]:
+    """Leading numeric parts: '3.2.0-RC3' -> (3, 2, 0)."""
+    parts: list[int] = []
+    for piece in text.split("."):
+        digits = ""
+        for char in piece:
+            if not char.isdigit():
+                break
+            digits += char
+        if not digits:
+            break
+        parts.append(int(digits))
+    return tuple(parts)
+
+
+def gimp_support(version: str) -> GimpSupport:
+    series = parse_version(version)[:2]
+    if series < MIN_GIMP:
+        return "unsupported"
+    return "supported" if series in SUPPORTED_GIMP_SERIES else "best_effort"
 
 
 @functools.cache
