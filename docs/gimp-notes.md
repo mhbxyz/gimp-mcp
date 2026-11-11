@@ -371,7 +371,9 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
 * Exif lost on load on Windows (seen 2026-11-11, gimp.org's GIMP 3.2.6 on windows-2025, #173): in some
   GIMP sessions, `Gimp.file_load` of a JPEG gives an image whose metadata has one or two Exif tags
   instead of all of them (the orientation among them), for every file of that session; another session
-  reads the same files completely; Linux and macOS always do. `Gimp.Metadata.load_from_file` reads the
-  file completely, so `image.open` takes the missing tags from it (`_restore_file_metadata`, the image
-  stays clean and nothing enters its undo history). `tests/e2e/test_exif_orientation.py` opens twenty
-  oriented JPEGs in three sessions.
+  reads the same files completely; Linux and macOS always do. In such a session it hit the files
+  whose orientation is 6, not those with 8, and `Gimp.Metadata.load_from_file` (Exiv2 again) read them
+  the same way. So `image.open` reads the JPEG's Exif block itself (`gmb_formats.jpeg_exif`), hands it
+  to `Gimp.Metadata.set_from_exif` and adds the missing tags, or at least the orientation
+  (`gmb_formats.exif_orientation`); the image stays clean and nothing enters its undo history.
+  `tests/e2e/test_exif_orientation.py` opens twenty oriented JPEGs in three sessions.
