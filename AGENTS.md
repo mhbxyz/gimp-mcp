@@ -18,6 +18,7 @@ verified so far live in `docs/gimp-notes.md` (add to it, don't re-discover).
   - troubleshooting: `uv run gimp-mcp doctor --troubleshooting > docs/troubleshooting.md`
   - coverage matrix: `uv run gimp-mcp coverage --inventory docs/coverage/pdb-inventory.json --output docs/coverage.md`
   - public API snapshot: `uv run scripts/api_contract.py write` (docs/api/contract.json; CI classifies its changes)
+  - API review: `uv run scripts/api_review.py` (docs/api/review.md; every deviation needs a decision)
 - Run the server: `uv run gimp-mcp serve` · install the plug-in: `uv run gimp-mcp install-plugin` · diagnose: `uv run gimp-mcp doctor`
 
 ## Rules
@@ -27,7 +28,8 @@ verified so far live in `docs/gimp-notes.md` (add to it, don't re-discover).
 - Operations raise `BridgeError` before mutating; claim non-destructive/atomic/undoable only with a test proving it.
 - stdout of the server is MCP-only; log to stderr.
 - New tools go in a toolset (`docs/toolsets.md`) within the default-selection budget; PDB access goes
-  through the `gmb_policy.py` allowlist.
+  through the `gmb_policy.py` allowlist. Tool names, parameters, results and errors follow
+  `docs/api-conventions.md`.
 - Launch GIMP for plug-ins with the system PATH (`gimp_mcp.headless.system_path`), never venv-first.
 - Anything touching user configuration is tested with temporary `HOME`, `XDG_CONFIG_HOME` and
   `GIMP3_DIRECTORY`; the machine's real GIMP, Claude and editor configurations stay untouched.

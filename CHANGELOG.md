@@ -17,6 +17,10 @@ what is covered by the compatibility promise.
   deprecated tool or parameter keeps working until the next major version, and every call using one
   returns a notice (result `_meta` `io.github.mhbxyz/deprecations` and a text block) naming the
   replacement; the contract snapshot records deprecations.
+- API conventions and review (#118): `docs/api-conventions.md` fixes naming, image and item references,
+  colors, units, enums, booleans, files and `overwrite`, results, errors and descriptions;
+  `scripts/api_review.py` checks every tool against them and writes `docs/api/review.md`, where each
+  deviation is fixed by a named issue or accepted with its reason, and the v0.6.0 findings are decided.
 
 ### Changed
 
