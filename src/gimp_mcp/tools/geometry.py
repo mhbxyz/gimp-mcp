@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, ClassVar, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from ..errors import GimpMcpError
-from ..models import LayerNode, encode_layer
+from ..models import ChangedObject, LayerNode, encode_layer
 from ..toolkit import DESTRUCTIVE, MUTATING, Toolkit
 from .inspect import ImageId, ItemId
 from .selection import SelectionState
@@ -20,7 +20,8 @@ Clip = Annotated[
 ]
 
 
-class Transformed(BaseModel):
+class Transformed(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("layer", "item", "image")
     kind: str = Field(description="layer, group, text, path, channel or selection.")
     image: str
     layer: LayerNode | None = None
@@ -76,14 +77,14 @@ def register(kit: Toolkit) -> None:
         else:
             params["item"] = codec.parse_item(item or "")
         data = await kit.call("item.transform", params, codec=codec, mutating=True)
-        result = Transformed(kind=data["kind"], image=codec.image(data["image"]))
-        if data.get("layer"):
-            result.layer = encode_layer(codec, data["layer"])
-        if data.get("selection"):
-            result.selection = SelectionState(**{**data["selection"], "image": result.image})
-        if data.get("item") is not None:
-            result.item = codec.item(data["item"])
-        return result
+        image_id = codec.image(data["image"])
+        return Transformed(
+            kind=data["kind"],
+            image=image_id,
+            layer=encode_layer(codec, data["layer"]) if data.get("layer") else None,
+            selection=SelectionState(**{**data["selection"], "image": image_id}) if data.get("selection") else None,
+            item=codec.item(data["item"]) if data.get("item") is not None else None,
+        )
 
     @kit.tool(
         toolset="transform",

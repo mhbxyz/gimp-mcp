@@ -7,12 +7,13 @@ are image pixels; paths may extend beyond the canvas.
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, ClassVar, Literal
 
 from pydantic import BaseModel, Field
 
 from ..errors import GimpMcpError
 from ..ids import IdCodec
+from ..models import ChangedObject
 from ..paths import check_input_file, check_output_file
 from ..toolkit import DESTRUCTIVE, MUTATING, READ_ONLY, Toolkit
 from .inspect import ImageId, ItemId
@@ -90,7 +91,8 @@ class PathDeleted(BaseModel):
     deleted: str
 
 
-class PathPainted(BaseModel):
+class PathPainted(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("item",)
     item: str
     path: str
     method: str | None = None

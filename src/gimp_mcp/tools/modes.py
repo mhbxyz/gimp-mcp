@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, ClassVar, Literal
 
 from pydantic import BaseModel, Field
 
 from ..errors import GimpMcpError
+from ..models import ChangedObject
 from ..paths import check_input_file
 from ..toolkit import DESTRUCTIVE, MUTATING, READ_ONLY, Toolkit
 from .inspect import ImageId
@@ -21,7 +22,8 @@ Precision = Literal[
 ]  # fmt: skip
 
 
-class ModeResult(BaseModel):
+class ModeResult(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("image",)
     image: str
     base_type: str = Field(description="rgb, gray or indexed.")
     precision: str = Field(description="e.g. u8-non-linear, u16-linear, float-linear.")
@@ -38,7 +40,8 @@ class Profile(BaseModel):
     icc_bytes: int
 
 
-class ProfileResult(BaseModel):
+class ProfileResult(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("image",)
     image: str
     assigned: Profile | None = Field(description="Profile stored in the image; null = GIMP's built-in default.")
     effective: Profile = Field(description="Profile GIMP uses to interpret the pixels.")

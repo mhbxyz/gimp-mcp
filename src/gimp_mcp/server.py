@@ -55,7 +55,8 @@ INSTRUCTIONS = """\
 Tools to inspect and edit images in a running GIMP 3 session.
 Start with gimp_status to get the open images and their ids. More tools (procedures, ...) are grouped in
 toolsets: gimp_list_toolsets shows them, gimp_enable_toolsets adds them. Ids are opaque, bound to the current
-GIMP session, and must be passed back verbatim. Errors carry a stable `code`; when `outcome` is
+GIMP session, and must be passed back verbatim; a result's `id` is the image or item the call created or
+changed. Errors carry a stable `code`; when `outcome` is
 "unknown" the change may have been applied: inspect before retrying. Resources gimp://images and
 gimp://images/{image}/layers|preview give the same state without tool calls; prompts describe common workflows.
 """

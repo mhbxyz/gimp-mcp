@@ -7,12 +7,12 @@ a floating selection: it is anchored or turned into a layer.
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, ClassVar, Literal
 
 from pydantic import BaseModel, Field
 
 from ..errors import GimpMcpError
-from ..models import LayerNode, encode_layer
+from ..models import ChangedObject, LayerNode, encode_layer
 from ..toolkit import DESTRUCTIVE, MUTATING, Toolkit
 from .inspect import ImageId, ItemId
 from .selection import SelectionState
@@ -31,18 +31,21 @@ class Copied(BaseModel):
     selection: bool = Field(description="True when only the selected area was copied.")
 
 
-class Pasted(BaseModel):
+class Pasted(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("layer", "image")
     mode: str
     image: str
     layer: LayerNode | None = Field(description="The layer that received the pixels (null for new-image).")
 
 
-class LayerResult(BaseModel):
+class LayerResult(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("layer",)
     image: str | None = None
     layer: LayerNode
 
 
-class CropResult(BaseModel):
+class CropResult(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("image",)
     image: str
     width: int
     height: int

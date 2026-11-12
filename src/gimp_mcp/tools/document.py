@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, ClassVar, Literal
 
 from pydantic import BaseModel, Field
 
 from ..errors import GimpMcpError
+from ..models import ChangedObject
 from ..toolkit import MUTATING, READ_ONLY, Toolkit
 from .inspect import ImageId
 
@@ -35,7 +36,8 @@ class GuideList(BaseModel):
     sample_point: int | None = Field(default=None, description="Id of the sample point just added.")
 
 
-class Metadata(BaseModel):
+class Metadata(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("image",)
     image: str
     exif: dict[str, str | None] = Field(description="Tag -> value as GIMP interprets it, in GIMP's language.")
     xmp: dict[str, str | None]
@@ -47,7 +49,8 @@ class Metadata(BaseModel):
     comment: str | None
 
 
-class PrintInfo(BaseModel):
+class PrintInfo(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("image",)
     image: str
     resolution: dict[str, float] = Field(description="Pixels per inch, x and y.")
     unit: str

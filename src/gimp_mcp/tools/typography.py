@@ -5,11 +5,12 @@ Text layers stay editable text: every change goes through GIMP's text layer API.
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, ClassVar, Literal
 
 from pydantic import BaseModel, Field
 
 from ..colors import parse_color
+from ..models import ChangedObject
 from ..toolkit import MUTATING, READ_ONLY, Toolkit
 from .inspect import ItemId
 
@@ -29,7 +30,8 @@ class Box(BaseModel):
     height: Annotated[float, Field(gt=0, le=65536)]
 
 
-class TextStyle(BaseModel):
+class TextStyle(ChangedObject):
+    id_from: ClassVar[tuple[str, ...]] = ("item",)
     item: str
     text: str | None
     markup: str | None = Field(description="Pango markup when the text has per-run styles, else null.")
