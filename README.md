@@ -136,7 +136,7 @@ and Windows, and an agent version (one plain-language request) in the evaluation
 | **History** | undo groups (one Ctrl+Z in GIMP) and checkpoints the assistant can restore |
 | **Everything else** | about 420 more GIMP procedures, allowlisted (`procedures` toolset, opt-in) |
 
-159 tools in all (50 enabled by default), grouped into [toolsets](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/toolsets.md) so your client
+159 tools in all (49 enabled by default), grouped into [toolsets](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/toolsets.md) so your client
 only loads what it needs: see the [tool reference](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/tools.md) and the
 [coverage matrix](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/coverage.md).
 

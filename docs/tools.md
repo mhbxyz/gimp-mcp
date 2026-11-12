@@ -267,6 +267,7 @@ only touches the targeted image.
 | `gimp_resize_image(image, width, height, interpolation)` | Scales the image and all layers (sizes and offsets scale proportionally, GIMP rounds offsets) | resampled |
 | `gimp_resize_canvas(image, width, height, offset_x=0, offset_y=0)` | Changes the canvas only; layers keep their pixels and move by the offset | no |
 | `gimp_crop_image(image, x, y, width, height)` | Crops to a rectangle that must lie inside the canvas (`INVALID_ARGUMENT` otherwise) | **pixels outside are discarded** |
+| `gimp_rotate_image(image, 90\|180\|270)` | Rotates the whole image clockwise: canvas, layers, selection, paths | no |
 | `gimp_set_layer_offsets(item, x, y)` | Moves a layer/group's top-left corner | no |
 | `gimp_scale_layer(item, width, height, anchor="center"\|"top-left", interpolation)` | Resamples a layer/group | resampled |
 | `gimp_rotate_layer(item, angle, clip="adjust"\|"clip", interpolation)` | Rotates **clockwise** (degrees) around the center; `adjust` grows the bounds, `clip` keeps them; 0/360 is a no-op | resampled unless a multiple of 90 with `none` |
@@ -597,8 +598,8 @@ nearly unselected (> 235); `sharpen` brings every pixel back to 0 or 255.
   `clip`: `adjust` (grow to fit), `clip` (keep the original bounds), `crop` / `crop-with-aspect`
   (largest inner rectangle). With interpolation, a transformed selection gets a soft edge one pixel
   wide (`interpolation="none"` keeps it hard). Locked layers are refused (`LOCKED`).
-* `gimp_rotate_image(image, 90|180|270)`, `gimp_flip_image(image, horizontal|vertical)`: the
-  whole image, lossless.
+* `gimp_rotate_image(image, 90|180|270)` (toolset `transform`, default), `gimp_flip_image(image,
+  horizontal|vertical)`: the whole image (canvas, layers, selection, paths), lossless.
 * `gimp_resize_canvas` (toolset `transform`) takes `resize_layers` (`none`, `all`, or
   `image-sized` for layers that covered the old canvas) and `fill_color` for the new areas of the
   resized layers (default transparent).
@@ -972,7 +973,7 @@ history (only to open and close undo *groups*). Two separate mechanisms are
 therefore offered; neither is a transaction and **nothing is ever rolled back
 automatically**.
 
-### Undo groups — one step in GIMP's own history
+### Undo groups — one step in GIMP's own history (toolset `undo`)
 
 * `gimp_begin_undo_group(image, label?)` → `depth`; `gimp_end_undo_group(image)`
   → `depth` (`NO_OPEN_GROUP` if this client has no open group on the image).
@@ -987,7 +988,7 @@ automatically**.
   by automated tests (closing on disconnect is: `tests/unit/test_undo_groups.py`,
   `tests/e2e/test_history.py`).
 
-### Checkpoints — undo/redo for agents
+### Checkpoints — undo/redo for agents (toolset `history`)
 
 * `gimp_create_checkpoint(image, label?)` keeps a full copy of the image
   (layers, groups, text, masks, editable filters, selection); copies are hidden

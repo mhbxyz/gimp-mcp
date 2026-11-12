@@ -61,7 +61,8 @@ Rules of thumb:
 * Add `typography` for rich text, outlines and right-to-left or vertical text.
 * Add `vector` for editable vector shapes and layers linked to external files.
 * Add `channels` for magic wand, select by color, selection modifiers and saved selections.
-* Add `geometry` for perspective, shear, matrices and whole-image rotation.
+* Add `geometry` for perspective, shear, matrices and whole-image flips.
+* Add `undo` for GIMP undo groups, when a person undoes the agent's work in GIMP's window.
 * Add `painting` for brush strokes, retouching (clone, heal, dodge/burn), gradients and bucket fills.
 * Add `formats` for WebP, AVIF, TIFF, PDF, PSD… and layer or slice exports.
 * Add `document` for layout guides, metadata and print resolution.
@@ -97,9 +98,9 @@ Default. Create, import, duplicate, group, reorder, change and delete layers: `g
 
 ### `transform`
 
-Default. Scale and crop images, resize the canvas, move, scale, rotate and flip layers:
-`gimp_resize_image`, `gimp_resize_canvas`, `gimp_crop_image`, `gimp_set_layer_offsets`,
-`gimp_scale_layer`, `gimp_rotate_layer`, `gimp_flip_layer`.
+Default. Scale, crop and rotate images (quarter turns), resize the canvas, move, scale, rotate and flip
+layers: `gimp_resize_image`, `gimp_resize_canvas`, `gimp_crop_image`, `gimp_rotate_image`,
+`gimp_set_layer_offsets`, `gimp_scale_layer`, `gimp_rotate_layer`, `gimp_flip_layer`.
 
 ### `selection`
 
@@ -123,9 +124,14 @@ Default. Editable text layers and fonts: `gimp_create_text_layer`, `gimp_set_tex
 
 ### `history`
 
-Default. Undo groups and checkpoints: `gimp_begin_undo_group`, `gimp_end_undo_group`,
-`gimp_create_checkpoint`, `gimp_list_checkpoints`, `gimp_restore_checkpoint`,
-`gimp_delete_checkpoint`.
+Default. Checkpoints, undo/redo for agents: `gimp_create_checkpoint`, `gimp_list_checkpoints`,
+`gimp_restore_checkpoint`, `gimp_delete_checkpoint`.
+
+### `undo`
+
+Not in the default (moved out of `history` in 0.7.0, #151). GIMP undo groups, so several changes are one
+step in GIMP's Edit > Undo for someone working in GIMP's window: `gimp_begin_undo_group`,
+`gimp_end_undo_group`.
 
 ### `analysis`
 
@@ -165,7 +171,8 @@ Not in the default. Advanced selections and channels: `gimp_select_by_color`, `g
 
 ### `geometry`
 
-Not in the default. Advanced transforms: `gimp_transform`, `gimp_rotate_image`, `gimp_flip_image`.
+Not in the default. Advanced transforms: `gimp_transform`, `gimp_flip_image` (quarter-turn image
+rotation moved to `transform` in 0.7.0).
 
 ### `painting`
 

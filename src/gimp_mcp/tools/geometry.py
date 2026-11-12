@@ -86,7 +86,7 @@ def register(kit: Toolkit) -> None:
         return result
 
     @kit.tool(
-        toolset="geometry",
+        toolset="transform",
         name="gimp_rotate_image",
         title="Rotate image",
         description="Rotate the whole image (canvas, layers, selection, paths) by 90, 180 or 270 degrees "
