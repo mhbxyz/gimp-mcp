@@ -176,7 +176,8 @@ def register(kit: Toolkit) -> None:
             "(e.g. ~/out/{stem}.webp), written by a step whose path is '{output}'; existing files are never "
             "replaced unless overwrite=true, and inputs never are. Everything is validated before the first "
             "file is opened; dry_run=true only validates and returns the plan. Reports success, failure "
-            "(step, error) and outputs per file; continue_on_error=false stops at the first failure."
+            "(step, error) and outputs per file; continue_on_error=false stops at the first failure. Nothing to "
+            "undo: images it opens are closed without saving and inputs are never changed."
         ),
         annotations=DESTRUCTIVE,
         changes_images=True,

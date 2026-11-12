@@ -75,7 +75,8 @@ def register(kit: Toolkit) -> None:
             "Add the tools of one or more toolsets (see gimp_list_toolsets) to your tool list for this session. "
             "The result gives each added tool's signature (usage): call them with those arguments. The server "
             "notifies the client that its tool list changed; a client that does not refresh its tool list "
-            f"needs a restart with the toolsets in --toolsets or {ENV_VAR}."
+            f"needs a restart with the toolsets in --toolsets or {ENV_VAR}. Images and their undo history are "
+            "untouched."
         ),
         annotations=MUTATING,
     )

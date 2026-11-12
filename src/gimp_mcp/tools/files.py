@@ -128,7 +128,7 @@ def register(kit: Toolkit) -> None:
         description=(
             "Open a local file (XCF or any format GIMP can load: PNG, JPEG, WebP, TIFF...) as a new image. "
             "The path must be absolute (~ allowed). PDF pages, SVG size, RAW: gimp_open_with_options (toolset "
-            "formats)."
+            "formats). A new image: nothing in an undo history changes."
         ),
         annotations=MUTATING,
         changes_images=True,
@@ -148,7 +148,8 @@ def register(kit: Toolkit) -> None:
         description=(
             "Save the image as a GIMP project (.xcf), keeping layers, groups, masks and text. Without path, "
             "saves to the image's current XCF file (a normal 'Save'). With a path, an existing file is only "
-            "replaced when overwrite=true. Marks the image as having no unsaved changes."
+            "replaced when overwrite=true. Marks the image as having no unsaved changes. Writing the file is not "
+            "in GIMP's undo history."
         ),
         annotations=DESTRUCTIVE,
     )
@@ -181,7 +182,7 @@ def register(kit: Toolkit) -> None:
             "Export the visible composite of the image to PNG or JPEG (format from the extension). The image "
             "itself is not modified. Existing files are only replaced when overwrite=true. Defaults: PNG "
             "compression 9, not interlaced; JPEG quality 90, baseline, optimized, transparency flattened on white. "
-            "WebP, AVIF, TIFF, PDF…: gimp_export_as (toolset formats)."
+            "WebP, AVIF, TIFF, PDF…: gimp_export_as (toolset formats). The undo history is unchanged."
         ),
         annotations=DESTRUCTIVE,
     )
@@ -218,7 +219,8 @@ def register(kit: Toolkit) -> None:
         title="Close image",
         description=(
             "Close an image. Refused with UNSAVED_CHANGES when it has unsaved changes, unless "
-            "discard_changes=true. Its id (and its items' ids) become invalid."
+            "discard_changes=true. Its id (and its items' ids) become invalid. Not undoable: the image and its "
+            "undo history are gone."
         ),
         annotations=DESTRUCTIVE,
         changes_images=True,

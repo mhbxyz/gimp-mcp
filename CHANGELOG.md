@@ -13,9 +13,18 @@ what is covered by the compatibility promise.
   `gimp_end_undo_group` move from `history` to the new optional toolset `undo`, which keeps the default
   selection at 49 tools. Clients listing toolsets explicitly add `transform` for image rotation and
   `undo` for undo groups.
+### Deprecated
+
+- Renamed in the API review (#119; old names keep working until 1.0.0 with a deprecation notice,
+  `docs/upgrading.md`): `channel_id` → `channel` (`gimp_set_channel`, `gimp_combine_channels`,
+  `gimp_delete_channel`), `gimp_remove_guide`'s `id` → `guide` and `kind="sample_point"` →
+  `"sample-point"`, `file` → `path` (`gimp_import_palette`, `gimp_export_palette`,
+  `gimp_create_link_layer`, `gimp_set_link_layer`).
 
 ### Added
 
+- `docs/upgrading.md`: migration notes, starting with 0.6 → 0.7 (#119). Every tool that changes something
+  states its undo behaviour in its description (API review, #118).
 - Public API contract (#116): `docs/api/contract.json` snapshots every tool (toolset, input and output
   schemas, annotations), error code, prompt, resource and CLI option (`uv run scripts/api_contract.py
   write`); the unit tests fail when it is out of date, and CI classifies every difference with the base

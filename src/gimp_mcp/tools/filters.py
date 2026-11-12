@@ -149,7 +149,9 @@ def register(kit: Toolkit) -> None:
         toolset="filters",
         name="gimp_remove_filter",
         title="Remove editable filter",
-        description="Remove an editable filter from a layer: the layer renders as if it had never been applied.",
+        description=(
+            "Remove an editable filter from a layer: the layer renders as if it had never been applied. One undo step."
+        ),
         annotations=MUTATING,
     )
     async def gimp_remove_filter(

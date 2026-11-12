@@ -152,7 +152,7 @@ renamed or replaced tool, parameter, field, code, prompt, resource or CLI option
 It keeps working for at least one minor version and is removed only in the next major version
 (`1.0.0` for deprecations made in `0.x`). Each call using it returns a deprecation notice naming the
 replacement (result `_meta` `io.github.mhbxyz/deprecations`, and a text block); its description says
-`Deprecated since …`; `CHANGELOG.md` lists it under `### Deprecated` and `docs/upgrading.md` tells how
+`Deprecated since …`; `CHANGELOG.md` lists it under `### Deprecated` and [`docs/upgrading.md`](upgrading.md) tells how
 to migrate.
 
 ### Plug-in / server versions

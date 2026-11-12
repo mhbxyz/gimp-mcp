@@ -95,6 +95,18 @@ class Deprecation:
         return {"name": name, "since": self.since, "removal": self.removal, "replacement": self.replacement}
 
 
+def renamed(tool: str, new_name: str, new_value: Any, old_name: str, old_value: Any, required: bool = True) -> Any:
+    """The value of a renamed parameter given under its new or its deprecated name (ADR 0011)."""
+    if new_value is not None and old_value is not None and new_value != old_value:
+        raise GimpMcpError(
+            "INVALID_ARGUMENT", f"give {new_name}, or the deprecated {old_name}, not both with different values"
+        )
+    value = new_value if new_value is not None else old_value
+    if value is None and required:
+        raise GimpMcpError("INVALID_ARGUMENT", f"{tool} needs {new_name}", hint=f"{old_name} is its deprecated name.")
+    return value
+
+
 def _with_notices(result: CallToolResult, notices: list[dict[str, str]]) -> CallToolResult:
     if not notices:
         return result
@@ -224,6 +236,7 @@ class Toolkit:
         deprecated: Deprecation | None = None,
         aliases: dict[str, str] | None = None,
         deprecated_parameters: dict[str, Deprecation] | None = None,
+        deprecated_values: dict[str, dict[Any, Deprecation]] | None = None,
     ) -> Callable[[Callable[..., Awaitable[Any]]], Callable[..., Awaitable[Any]]]:
         """Register an async tool that returns a pydantic model (or ToolResult).
 
@@ -236,10 +249,12 @@ class Toolkit:
         Deprecation (ADR 0011): ``deprecated`` marks the whole tool; ``aliases`` maps old names (a renamed
         tool) to the version that deprecated them, registered with the same arguments and result;
         ``deprecated_parameters`` maps parameter names to their deprecation, reported when a call passes
-        them (not None). Every such call returns a notice in ``_meta`` and as text.
+        them (not None); ``deprecated_values`` maps a parameter to its deprecated values (an old enum
+        spelling). Every such call returns a notice in ``_meta`` and as text.
         """
         check_toolset(toolset)
         parameter_deprecations = deprecated_parameters or {}
+        value_deprecations = deprecated_values or {}
 
         def decorator(fn: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
             def make_wrapper(tool_name: str, tool_deprecation: Deprecation | None) -> Callable[..., Awaitable[Any]]:
@@ -250,6 +265,11 @@ class Toolkit:
                         deprecation.notice(f"{tool_name}.{parameter}")
                         for parameter, deprecation in parameter_deprecations.items()
                         if kwargs.get(parameter) is not None
+                    ]
+                    notices += [
+                        values[kwargs[parameter]].notice(f"{tool_name}.{parameter}={kwargs[parameter]!r}")
+                        for parameter, values in value_deprecations.items()
+                        if kwargs.get(parameter) in values
                     ]
                     if notices:
                         log.warning("deprecated: %s", ", ".join(notice["name"] for notice in notices))

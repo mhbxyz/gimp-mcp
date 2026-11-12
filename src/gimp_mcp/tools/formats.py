@@ -122,7 +122,8 @@ def register(kit: Toolkit) -> None:
             "Export an image with the format chosen from the extension (WebP, AVIF/HEIF, TIFF, BMP, GIF, ICO, PDF, "
             "PSD, JPEG XL… see gimp_list_file_formats) and validated options. Reports whether the result is "
             "lossless and what happened to layers (flattened, kept, frames, pages, sizes). layers='flatten' "
-            "writes the visible composite as one page or frame (TIFF, PDF, PSD…), as seen. The image is unchanged."
+            "writes the visible composite as one page or frame (TIFF, PDF, PSD…), as seen. The image and its "
+            "undo history are unchanged."
         ),
         annotations=MUTATING,
     )
@@ -169,7 +170,8 @@ def register(kit: Toolkit) -> None:
             "Open a file with its load procedure's options: PDF (pages: page numbers from 1, loaded in that order, "
             "the last on top; width/height or resolution), SVG (width, height), and any format GIMP reads (see "
             "gimp_describe_file_format mode=import). RAW files open in darktable's or RawTherapee's window "
-            "(installed with GIMP, GIMP with its interface); the call returns once that window is closed."
+            "(installed with GIMP, GIMP with its interface); the call returns once that window is closed. A new "
+            "image: nothing in an undo history changes."
         ),
         annotations=MUTATING,
         changes_images=True,
@@ -188,7 +190,8 @@ def register(kit: Toolkit) -> None:
         title="Export layers to separate files",
         description=(
             "Export each top-level layer (or the given layers/groups) to its own file in directory, named from "
-            "template ({index}, {name}); crop=true trims each file to the layer's bounds. The image is unchanged."
+            "template ({index}, {name}); crop=true trims each file to the layer's bounds. The image is unchanged. "
+            "The undo history is unchanged."
         ),
         annotations=MUTATING,
     )
@@ -226,7 +229,10 @@ def register(kit: Toolkit) -> None:
         toolset="formats",
         name="gimp_export_region",
         title="Export a region (slice)",
-        description="Export a rectangle of the image (inside the canvas) to a file in any format. Image unchanged.",
+        description=(
+            "Export a rectangle of the image (inside the canvas) to a file in any format. Image unchanged. The "
+            "undo history is unchanged."
+        ),
         annotations=MUTATING,
     )
     async def gimp_export_region(

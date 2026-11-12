@@ -574,7 +574,7 @@ work on them.
   only the given values; `gimp_inspect_vector_layer` returns the path id and every setting,
   including a fill or stroke pattern set in GIMP's UI. Patterns cannot be set: GIMP 3.2 has no
   setter for them (#92).
-* `gimp_create_link_layer(image, file, name?, position)`, `gimp_set_link_layer(item, file)`,
+* `gimp_create_link_layer(image, path, name?, position)`, `gimp_set_link_layer(item, path)`,
   `gimp_inspect_link_layer` (file, MIME type). The XCF stores the file's path **and** the last
   pixels: when the XCF is opened GIMP reads the file again (a changed file shows its new
   content), and when the file is gone the layer keeps the pixels saved in the XCF
@@ -593,8 +593,8 @@ work on them.
   (pixels), `feather` (radius), `sharpen` (partial → full or none), `round` (corner radius in % of
   the smaller side, GIMP's Rounded selection script), `remove-holes` (GIMP's flood), `translate`.
 * Channels: `gimp_create_channel(image, name, source=empty|selection|component, component?,
-  color, opacity)`, `gimp_set_channel` (name, color, opacity, visible, show_masked),
-  `gimp_combine_channels(channel_id, other, operation)`, `gimp_delete_channel`. They are listed in
+  color, opacity)`, `gimp_set_channel(channel, …)` (name, color, opacity, visible, show_masked),
+  `gimp_combine_channels(channel, other, operation)`, `gimp_delete_channel(channel)`. They are listed in
   `gimp_inspect_image`'s `channels` and kept in XCF; `gimp_select_item` loads one as the selection.
 
 **Antialiasing and feathering, measured** (`tests/e2e/test_channels.py`, the selection filled with
@@ -707,6 +707,9 @@ are the same (absolute paths, `overwrite`); metadata is written only when listed
   GIMP's language: EXIF orientation 6 reads `right, top` in English, `droit, haut` in French), `raw`
   (every tag → its untranslated value, the same in every language: `"Exif.Image.Orientation": "6"`;
   decide on these) and `comment`.
+  `gimp_remove_guide(image, guide, kind=guide|sample-point)` (`guide`: the number `gimp_add_guide` or
+  `gimp_add_sample_point` returned; `NOT_FOUND` for an unknown one).
+* `gimp_get_metadata(image)`: `exif`, `xmp`, `iptc` (tag → interpreted value) and `comment`.
   `gimp_set_metadata(image, set={tag: value}, remove=[tags], comment?)`: tags are full Exiv2 keys
   (`Exif.Image.Artist`, `Xmp.dc.title`, `Iptc.Application2.Keywords`); `comment=""` removes it.
 * **Exports write no metadata unless asked**: `png_options.metadata` / `jpeg_options.metadata`
@@ -764,7 +767,7 @@ language: list them rather than hard-coding them.
   `blending` linear/curved/sine/sphere-increasing/sphere-decreasing/step, `coloring`
   rgb/hsv-ccw/hsv-cw, optional increasing end positions). `gimp_edit_palette(name, entries?, columns?)`
   replaces the entries.
-* `gimp_import_palette(file)`: a GIMP palette (`.gpl`) is copied into the profile's `palettes`
+* `gimp_import_palette(path)`: a GIMP palette (`.gpl`) is copied into the profile's `palettes`
   folder and loaded. GIMP 3.2 reads other formats only through its Palettes dialog, so gimp-mcp
   reads them itself and writes `<file name>.gpl` (palette named after the file): Adobe Color Table
   (`.act`, the color count of 772-byte files is honored), Photoshop swatches (`.aco`, names from the
@@ -773,7 +776,7 @@ language: list them rather than hard-coding them.
   RGB, HSB and grayscale colors are imported; a file with CMYK or Lab colors is refused
   (`UNSUPPORTED_FORMAT`, `details.color_models`) rather than converted without a profile. Damaged
   files and other extensions are `UNSUPPORTED_FORMAT`; nothing is written to the profile then.
-* `gimp_export_palette(name, file, format="gpl", overwrite)`: `gpl`, or GIMP's own palette exports
+* `gimp_export_palette(name, path, format="gpl", overwrite)`: `gpl`, or GIMP's own palette exports
   `css`, `text`, `python`, `php`, `java`, and `kpl` (Krita).
 
 **Where resources live.** User resources are files in the GIMP profile (`~/.config/GIMP/3.2/brushes`,

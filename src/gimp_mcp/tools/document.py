@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 from ..errors import GimpMcpError
 from ..models import ChangedObject
-from ..toolkit import MUTATING, READ_ONLY, Toolkit
+from ..toolkit import MUTATING, READ_ONLY, Deprecation, Toolkit, renamed
 from .inspect import ImageId
 
 Tag = Annotated[str, Field(pattern=r"^(Exif|Xmp|Iptc)\.[A-Za-z0-9_.:-]+$", description="e.g. 'Exif.Image.Artist'.")]
@@ -78,7 +78,9 @@ def register(kit: Toolkit) -> None:
         toolset="document",
         name="gimp_add_guide",
         title="Add a guide",
-        description="Add a horizontal guide at y=position or a vertical guide at x=position (0..image size).",
+        description=(
+            "Add a horizontal guide at y=position or a vertical guide at x=position (0..image size). One undo step."
+        ),
         annotations=MUTATING,
     )
     async def gimp_add_guide(
@@ -90,7 +92,9 @@ def register(kit: Toolkit) -> None:
         toolset="document",
         name="gimp_add_sample_point",
         title="Add a sample point",
-        description="Add a sample point (GIMP's Pointer/Sample Points dialogs follow it) inside the canvas.",
+        description=(
+            "Add a sample point (GIMP's Pointer/Sample Points dialogs follow it) inside the canvas. One undo step."
+        ),
         annotations=MUTATING,
     )
     async def gimp_add_sample_point(
@@ -102,13 +106,23 @@ def register(kit: Toolkit) -> None:
         toolset="document",
         name="gimp_remove_guide",
         title="Remove a guide or sample point",
-        description="Remove a guide (kind='guide') or a sample point (kind='sample_point') by id.",
+        description=(
+            "Remove a guide (kind='guide') or a sample point (kind='sample-point'), by the number "
+            "gimp_add_guide / gimp_add_sample_point returned. One undo step."
+        ),
         annotations=MUTATING,
+        deprecated_parameters={"id": Deprecation("0.7.0", "use guide")},
+        deprecated_values={"kind": {"sample_point": Deprecation("0.7.0", "use 'sample-point'")}},
     )
     async def gimp_remove_guide(
-        image: ImageId, id: Annotated[int, Field(ge=1)], kind: Literal["guide", "sample_point"] = "guide"
+        image: ImageId,
+        guide: Annotated[int | None, Field(ge=1, description="Guide or sample point number.")] = None,
+        kind: Literal["guide", "sample-point", "sample_point"] = "guide",
+        id: Annotated[int | None, Field(ge=1, description="Deprecated since 0.7.0: use guide.")] = None,
     ) -> GuideList:
-        return GuideList(**await call("guide.remove", image, kind=kind, id=id))
+        number = renamed("gimp_remove_guide", "guide", guide, "id", id)
+        wire = "sample_point" if kind in ("sample-point", "sample_point") else "guide"
+        return GuideList(**await call("guide.remove", image, kind=wire, id=number))
 
     @kit.tool(
         toolset="document",
@@ -129,7 +143,8 @@ def register(kit: Toolkit) -> None:
         title="Write metadata",
         description=(
             "Set or remove Exif/XMP/IPTC tags (e.g. 'Exif.Image.Artist', 'Xmp.dc.title', 'Iptc.Application2.Keywords') "
-            "and set the comment ('' removes it). Exports write metadata only when asked (png/jpeg_options.metadata)."
+            "and set the comment ('' removes it). Exports write metadata only when asked "
+            "(png/jpeg_options.metadata). One undo step."
         ),
         annotations=MUTATING,
     )
