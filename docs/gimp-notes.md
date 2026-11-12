@@ -328,7 +328,8 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   enum type, does not (three full walks complete). Operations refused by name (internal `gimp:` layer
   modes, denied, auxiliary) are no longer instantiated at all. The macOS build has no
   `gegl:gluas` (no Lua), and its AVIF exporter fails on lossless output ("AOM encoder error: Invalid
-  parameter - Only --enable_chroma_deltaq=0 can be used with --lossless=1"); lossy AVIF is not affected. GIMP's own Python is used for plug-ins
+  parameter - Only --enable_chroma_deltaq=0 can be used with --lossless=1"); lossy AVIF is not affected.
+  gimp.org's macOS 3.2.8 writes lossless AVIF (gimp-next job, 2026-11-12, #121). GIMP's own Python is used for plug-ins
   (`Contents/MacOS/python3`, `bin\python.exe`): the system `python3` does not matter there.
 * **Windows named pipes** (checked 2026-11-08 on the `windows-2025` runner, ADR 0008): GIMP's Python
   serves the pipe with `ctypes` (`CreateNamedPipeW`), every Win32 function needs full `argtypes`/

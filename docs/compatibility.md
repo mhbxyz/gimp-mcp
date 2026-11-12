@@ -68,7 +68,8 @@ digest) and drives the distribution's own GIMP over MCP (`ci/run-distro.sh <id>`
   `0700`); the peer's uid comes from `LOCAL_PEERCRED`.
 * Skipped there: the Flatpak test (Linux only). Everything else in `tests/e2e` runs.
 * Known limits of gimp.org's GIMP 3.2.6 macOS build (recorded in `docs/gimp-notes.md`): no
-  `gegl:gluas` (no Lua), and lossless AVIF export fails in its AOM encoder (lossy AVIF works).
+  `gegl:gluas` (no Lua), and lossless AVIF export fails in its AOM encoder (lossy AVIF works; 3.2.8
+  writes lossless AVIF too).
 * x86_64 Macs (`gimp-3.2.6-x86_64.dmg`) are not verified: GitHub no longer offers Intel macOS runners.
 
 ## Windows: what differs
