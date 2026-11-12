@@ -200,7 +200,13 @@ was never saved). Returns `xcf_file`, `bytes`, `dirty`.
 Writes the composite of the **visible** layers to PNG or JPEG (format from the
 extension `.png`, `.jpg`, `.jpeg`; `format` may confirm it). The project is not
 modified and stays dirty/clean as before. Metadata (Exif, IPTC, XMP,
-thumbnail, comment) is not written, for reproducible files.
+thumbnail, comment, and for PNG the export time) is not written unless listed in
+`png_options.metadata` / `jpeg_options.metadata`, for reproducible files.
+
+A PNG export writes exactly these chunks by default: `IHDR`, `sRGB`, `gAMA`, `cHRM` (the color
+description), `pHYs` (the resolution), `IDAT`, `IEND`; with an assigned or requested ICC profile
+`iCCP` replaces `sRGB`/`gAMA`/`cHRM`; `tIME` only with `png_options.metadata=["time"]`
+(`tests/e2e/test_files.py`).
 
 | Option | Default | Range |
 |---|---|---|
@@ -682,8 +688,8 @@ are the same (absolute paths, `overwrite`); metadata is written only when listed
   `gimp_set_metadata(image, set={tag: value}, remove=[tags], comment?)`: tags are full Exiv2 keys
   (`Exif.Image.Artist`, `Xmp.dc.title`, `Iptc.Application2.Keywords`); `comment=""` removes it.
 * **Exports write no metadata unless asked**: `png_options.metadata` / `jpeg_options.metadata`
-  list what to keep (`exif`, `xmp`, `iptc`, `comment`, `thumbnail`); the default `[]` strips
-  everything, so nothing leaks by accident.
+  list what to keep (`exif`, `xmp`, `iptc`, `comment`, `thumbnail`, and `time` for PNG); the default
+  `[]` strips everything, so nothing leaks by accident.
 * `gimp_set_print_size(image, x_resolution?, y_resolution?, width?, height?, unit?)`: changes
   the resolution (pixels per inch) from a resolution or a print size in `unit` (`inch`, `mm`,
   `point`, `pica`), and/or the image's unit; pixels are unchanged (5-65536 ppi).
