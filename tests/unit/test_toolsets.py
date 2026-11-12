@@ -125,6 +125,21 @@ async def test_enabling_toolsets_at_runtime_adds_tools_and_notifies_legacy_clien
     assert any(isinstance(n, types.ToolListChangedNotification) for n in notifications), notifications
 
 
+async def test_enabling_toolsets_says_how_to_call_each_added_tool():
+    """#147: clients may call a new tool before its schema reaches the model; the result carries it."""
+    async with Client(offline_server(toolsets="default")) as client:
+        result = await client.call_tool("gimp_enable_toolsets", {"toolsets": ["modes", "formats"]})
+        again = await client.call_tool("gimp_enable_toolsets", {"toolsets": ["modes"]})
+    usage = {tool["name"]: tool for tool in result.structured_content["usage"]}
+    assert set(usage) == set(result.structured_content["added_tools"])
+    convert = usage["gimp_convert_mode"]
+    assert convert["required"] == ["image", "mode"]
+    assert convert["call"].startswith("gimp_convert_mode(image: string, mode: 'rgb'|'gray'|'indexed', palette?")
+    assert convert["summary"].startswith("Convert the image to rgb, gray or indexed.")
+    assert usage["gimp_export_as"]["required"] == ["image", "path"]
+    assert again.structured_content["usage"] == []  # nothing new, nothing to explain
+
+
 async def test_enabling_toolsets_notifies_listening_clients():
     async with Client(offline_server(toolsets="core")) as client:
         async with client.listen(tools_list_changed=True) as subscription:
