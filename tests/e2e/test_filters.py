@@ -30,6 +30,24 @@ async def test_destructive_brightness_contrast_respects_the_selection(gimp: Head
     assert filters["filters"] == []
 
 
+async def test_the_measured_effects_stated_in_the_descriptions(gimp: HeadlessGimp):
+    """#149: what the descriptions promise on mid-gray 128 (gimp_brightness_contrast, gimp_hue_saturation)."""
+    cases = [
+        ("gimp_brightness_contrast", {"brightness": -30}, 119),
+        ("gimp_brightness_contrast", {"brightness": -100}, 92),
+        ("gimp_brightness_contrast", {"contrast": 30}, 54),
+        ("gimp_hue_saturation", {"lightness": -30}, 90),
+        ("gimp_hue_saturation", {"lightness": 30}, 166),
+    ]
+    async with mcp_client(gimp) as client:
+        for tool, arguments, expected in cases:
+            image, layer = await gray_scene(client)
+            await call(client, tool, item=layer, **arguments)
+            value = rgba(await preview(client, image), 20, 10)[0]
+            await call(client, "gimp_close_image", image=image, discard_changes=True)
+            assert abs(value - expected) <= 2, (tool, arguments, value)
+
+
 async def test_hue_saturation_changes_colors(gimp: HeadlessGimp):
     async with mcp_client(gimp) as client:
         image = (await call(client, "gimp_create_image", width=10, height=10, fill="#ff0000"))["id"]

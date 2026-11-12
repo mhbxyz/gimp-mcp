@@ -342,8 +342,8 @@ text along a path in `paths` (`gimp_text_along_path`); whether a box is fixed ca
 
 | Tool | Parameters (0 = unchanged) | GIMP implementation |
 |---|---|---|
-| `gimp_brightness_contrast(item, brightness=0, contrast=0, destructive=true)` | brightness, contrast: −100…100 (mapped to GIMP's −1…1) | destructive: `gimp-drawable-brightness-contrast`; editable: `gimp:brightness-contrast` |
-| `gimp_hue_saturation(item, hue=0, saturation=0, lightness=0, hue_range="all", overlap=0, destructive=true)` | hue: −180…180°; saturation, lightness: −100…100; overlap 0…100; `hue_range`: `all`, `red`, `yellow`, `green`, `cyan`, `blue`, `magenta` | destructive: `gimp-drawable-hue-saturation`; editable: `gimp:hue-saturation` |
+| `gimp_brightness_contrast(item, brightness=0, contrast=0, destructive=true)` | brightness, contrast: −100…100 (mapped to GIMP's −1…1, not a percentage: on mid-gray 128, brightness −30 → 119, −100 → 92; contrast +30 → 54) | destructive: `gimp-drawable-brightness-contrast`; editable: `gimp:brightness-contrast` |
+| `gimp_hue_saturation(item, hue=0, saturation=0, lightness=0, hue_range="all", overlap=0, destructive=true)` | hue: −180…180°; saturation, lightness: −100…100 (lightness is proportional: −30 is 30 % darker, 128 → 90; +30 is 30 % of the way to white, 128 → 166); overlap 0…100; `hue_range`: `all`, `red`, `yellow`, `green`, `cyan`, `blue`, `magenta` | destructive: `gimp-drawable-hue-saturation`; editable: `gimp:hue-saturation` |
 | `gimp_gaussian_blur(item, radius, radius_y?, destructive=true)` | radius = Gaussian standard deviation in pixels (0 < r ≤ 1500) | `gegl:gaussian-blur` (merged when destructive) |
 
 `destructive` (verified by `tests/e2e/test_filters.py`):

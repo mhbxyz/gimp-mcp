@@ -385,3 +385,8 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   (`image.set_color_profile(Gimp.ColorProfile.new_rgb_srgb())`) leaves `get_color_profile()` at `None`.
   `include-color-profile=True` makes PNG, JPEG, WebP and TIFF embed the effective sRGB anyway.
   `file-heif-av1-export` / `file-heif-export` have no such argument and always embed the profile.
+* Brightness, contrast and lightness on mid-gray 128 (checked 2026-11-11, GIMP 3.2.6, #149):
+  `gimp:brightness-contrast` brightness -0.3 → 119, -1.0 → 92, +0.3 → 156, +1.0 → 205 (not a
+  percentage); contrast +0.3 → 54 (it does not pivot on mid-gray). `gimp:hue-saturation` lightness
+  is proportional: -30 → 90, -50 → 64, -100 → 0, +30 → 166 (30 % of the way to white), +50 → 192.
+  `gegl:exposure` -0.5 EV → 109, -1 EV → 92; levels output high 179 → 90.
