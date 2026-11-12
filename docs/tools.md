@@ -684,7 +684,10 @@ are the same (absolute paths, `overwrite`); metadata is written only when listed
   `gimp_add_guide(image, orientation, position)` (0..height for horizontal, 0..width for
   vertical), `gimp_add_sample_point(image, x, y)` (inside the canvas),
   `gimp_remove_guide(image, id, kind=guide|sample_point)` (`NOT_FOUND` for an unknown id).
-* `gimp_get_metadata(image)`: `exif`, `xmp`, `iptc` (tag → interpreted value) and `comment`.
+* `gimp_get_metadata(image)`: `exif`, `xmp`, `iptc` (tag → value as GIMP interprets it, translated in
+  GIMP's language: EXIF orientation 6 reads `right, top` in English, `droit, haut` in French), `raw`
+  (every tag → its untranslated value, the same in every language: `"Exif.Image.Orientation": "6"`;
+  decide on these) and `comment`.
   `gimp_set_metadata(image, set={tag: value}, remove=[tags], comment?)`: tags are full Exiv2 keys
   (`Exif.Image.Artist`, `Xmp.dc.title`, `Iptc.Application2.Keywords`); `comment=""` removes it.
 * **Exports write no metadata unless asked**: `png_options.metadata` / `jpeg_options.metadata`

@@ -31,6 +31,10 @@ what is covered by the compatibility promise.
   deviation is fixed by a named issue or accepted with its reason, and the v0.6.0 findings are decided.
 - `gimp_resize_image` and `gimp_scale_layer` take one dimension and keep the aspect ratio (#150):
   `width=200` alone scales to 200 pixels wide, so one batch recipe resizes files of different sizes.
+- `gimp_get_metadata` and `gimp_set_metadata` return `raw`: every Exif, XMP and IPTC tag with its
+  untranslated value (EXIF orientation `6` where the interpreted value reads `right, top`, or
+  `droit, haut` in French), so a client can decide without knowing GIMP's language (#161). Needs the
+  plug-in of this version (`metadata.get` revision 2).
 
 ### Changed
 
