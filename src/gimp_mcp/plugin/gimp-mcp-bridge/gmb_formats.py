@@ -93,3 +93,40 @@ def extensions_for(procedure):
             stem = procedure[len("file-") : -len(suffix)]
             return EXTENSION_ALIASES.get(stem, [stem])
     return []
+
+
+def jpeg_exif(data):
+    """The Exif block of a JPEG file (TIFF header onward, without "Exif\\0\\0"), or None. Read without
+    Exiv2, which loses it on Windows in some GIMP sessions (#173)."""
+    if data[:2] != b"\xff\xd8":
+        return None
+    offset = 2
+    while offset + 4 <= len(data) and data[offset] == 0xFF:
+        marker = data[offset + 1]
+        if marker == 0xDA:  # start of scan: no metadata segment after it
+            return None
+        length = int.from_bytes(data[offset + 2 : offset + 4], "big")
+        payload = data[offset + 4 : offset + 2 + length]
+        if marker == 0xE1 and payload[:6] == b"Exif\x00\x00":
+            return bytes(payload[6:])
+        offset += 2 + length
+    return None
+
+
+def exif_orientation(blob):
+    """Exif.Image.Orientation (1-8) from an Exif block, or None."""
+    if not blob or len(blob) < 8 or blob[:2] not in (b"II", b"MM"):
+        return None
+    order = "little" if blob[:2] == b"II" else "big"
+    ifd = int.from_bytes(blob[4:8], order)
+    if ifd + 2 > len(blob):
+        return None
+    count = int.from_bytes(blob[ifd : ifd + 2], order)
+    for index in range(count):
+        entry = ifd + 2 + 12 * index
+        if entry + 12 > len(blob):
+            return None
+        if int.from_bytes(blob[entry : entry + 2], order) == 0x0112:
+            value = int.from_bytes(blob[entry + 8 : entry + 10], order)
+            return value if 1 <= value <= 8 else None
+    return None

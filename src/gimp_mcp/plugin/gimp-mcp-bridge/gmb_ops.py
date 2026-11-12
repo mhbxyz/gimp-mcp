@@ -23,7 +23,7 @@ import gmb_text  # noqa: E402
 import gmb_undo  # noqa: E402
 import gmb_warp  # noqa: E402
 from gi.repository import Babl, Gegl, Gimp, Gio, GObject  # noqa: E402
-from gmb_server import BridgeError  # noqa: E402
+from gmb_server import BridgeError, log  # noqa: E402
 
 # GEGL's types must exist in this process before libgimp deserializes filter param specs that use them:
 # on macOS (GIMP 3.2.6) a GeglBuffer property of an operation otherwise arrives as an unregistered type and
@@ -351,6 +351,46 @@ def image_create(params):
     return image_ref(image, show(image))
 
 
+def _restore_file_metadata(image, path):
+    """GIMP 3.2.6 on Windows sometimes loads JPEGs without their Exif (orientation 6 among them) for a
+    whole session, and Exiv2 then reads the file the same way (#173, docs/gimp-notes.md). The Exif block
+    is read from the file without Exiv2 and the missing tags are added; failing that, the orientation.
+    The image stays clean and nothing enters its undo history. Returns the tags restored."""
+    try:
+        with open(path, "rb") as handle:
+            blob = gmb_formats.jpeg_exif(handle.read(1 << 20))
+    except OSError:
+        return []
+    if not blob:
+        return []
+    loaded = image.get_metadata() or Gimp.Metadata.new()
+    have = set(loaded.get_exif_tags() or [])
+    restored = []
+    try:
+        parsed = Gimp.Metadata.new()
+        parsed.set_from_exif(blob)
+        for tag in parsed.get_exif_tags() or []:
+            if tag not in have:
+                value = parsed.get_tag_string(tag)
+                if value is not None and loaded.try_set_tag_string(tag, value):
+                    restored.append(tag)
+    except Exception:
+        pass  # Exiv2 refused the block too: the orientation below is read without it
+    orientation = gmb_formats.exif_orientation(blob)
+    missing = "Exif.Image.Orientation" not in have and "Exif.Image.Orientation" not in restored
+    if missing and orientation and loaded.try_set_tag_string("Exif.Image.Orientation", str(orientation)):
+        restored.append("Exif.Image.Orientation")
+    if restored:
+        image.undo_disable()
+        try:
+            image.set_metadata(loaded)
+        finally:
+            image.undo_enable()
+        image.clean_all()
+        log("restored %d Exif tags of %s that GIMP did not load" % (len(restored), os.path.basename(path)))
+    return restored
+
+
 @mutation
 def image_open(params):
     path = params["path"]
@@ -361,6 +401,7 @@ def image_open(params):
             "GIMP could not load %s (unsupported format or corrupt file)" % os.path.basename(path),
             {"path": path},
         )
+    _restore_file_metadata(image, path)
     return image_ref(image, show(image))
 
 
@@ -3013,12 +3054,21 @@ def _metadata_tags(metadata):
     for kind, getter in (("exif", "get_exif_tags"), ("xmp", "get_xmp_tags"), ("iptc", "get_iptc_tags")):
         values = {}
         for tag in getattr(metadata, getter)() or []:
-            try:
-                values[tag] = metadata.get_tag_interpreted_string(tag)
-            except Exception:
-                values[tag] = None
+            values[tag] = _interpreted(metadata, tag)
         tags[kind] = values
     return tags
+
+
+def _interpreted(metadata, tag):
+    """Exiv2's interpreted value; its untranslated value when the interpretation fails (seen on Windows)."""
+    for getter in ("get_tag_interpreted_string", "get_tag_string"):
+        try:
+            value = getattr(metadata, getter)(tag)
+        except Exception:
+            continue
+        if value is not None:
+            return value
+    return None
 
 
 def _comment(image):
