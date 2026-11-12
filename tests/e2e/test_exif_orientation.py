@@ -50,4 +50,17 @@ async def test_twenty_oriented_jpegs_keep_their_orientation_in_every_session(tmp
                     await call(client, "gimp_close_image", image=image["id"], discard_changes=True)
         finally:
             gimp.stop()
+            if wrong:  # what the plug-in saw (its log lines about Exif), for the failure report
+                log = gimp.log_path.read_text(encoding="utf-8", errors="replace") if gimp.log_path.exists() else ""
+                wrong += [line for line in log.splitlines() if "Exif" in line or "orientation" in line][:12]
     assert wrong == []
+
+
+async def test_a_removed_orientation_stays_removed(gimp: HeadlessGimp, tmp_path: Path):
+    [(path, _value)] = oriented(tmp_path, 1)
+    async with mcp_client(gimp) as client:
+        image = (await call(client, "gimp_open_image", path=str(path)))["id"]
+        removed = await call(client, "gimp_set_metadata", image=image, remove=[ORIENTATION])
+        again = await call(client, "gimp_get_metadata", image=image)
+        await call(client, "gimp_close_image", image=image, discard_changes=True)
+    assert ORIENTATION not in removed["exif"] and ORIENTATION not in again["exif"]

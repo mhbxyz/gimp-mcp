@@ -54,6 +54,8 @@ what is covered by the compatibility promise.
 
 ### Fixed
 
+- `gimp_get_metadata` always reports the EXIF orientation of an opened file on Windows (#173): when GIMP
+  for Windows loses the tag for a whole session, it is read from the file itself.
 - `gimp_open_image` keeps every Exif tag on Windows (#173): GIMP 3.2.6 for Windows sometimes loaded
   JPEGs with almost no Exif (no orientation) for a whole session; the missing tags are now read from
   the file. The web photo demo no longer falls back to reading the orientation itself.
