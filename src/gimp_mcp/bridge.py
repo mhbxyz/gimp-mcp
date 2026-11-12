@@ -26,12 +26,12 @@ from typing import Any
 from . import __version__, platforms
 from .errors import INSTALL_HINT, GimpMcpError
 from .plugin_modules import load as load_plugin_module
-from .versions import SUPPORTED_PROTOCOLS, Compatibility, PluginCheck, check_plugin
+from .versions import MIN_GIMP, SUPPORTED_PROTOCOLS, Compatibility, PluginCheck, check_plugin, gimp_support
 
 log = logging.getLogger(__name__)
 
 PROTOCOL_VERSION = 1
-MIN_GIMP_VERSION = (3, 2)
+MIN_GIMP_VERSION = MIN_GIMP
 MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 SOCKET_ENV = "GIMP_MCP_SOCKET"
 FLATPAK_APP = platforms.FLATPAK_APP
@@ -106,16 +106,6 @@ class SessionInfo:
             bridge_version=data.get("bridge_version"),
             capabilities={str(k): int(v) for k, v in capabilities.items()} if isinstance(capabilities, dict) else None,
         )
-
-
-def parse_version(text: str) -> tuple[int, ...]:
-    parts: list[int] = []
-    for piece in text.split("."):
-        digits = "".join(ch for ch in piece if ch.isdigit())
-        if not digits:
-            break
-        parts.append(int(digits))
-    return tuple(parts)
 
 
 class BridgeClient:
@@ -286,7 +276,8 @@ class BridgeClient:
                     "server_version": __version__,
                 },
             )
-        if parse_version(session.gimp_version)[:2] < MIN_GIMP_VERSION:
+        support = gimp_support(session.gimp_version)
+        if support == "unsupported":
             await self.close()
             minimum = ".".join(map(str, MIN_GIMP_VERSION))
             raise GimpMcpError(
@@ -294,6 +285,11 @@ class BridgeClient:
                 f"GIMP {session.gimp_version} is not supported (minimum {minimum})",
                 hint=f"Install GIMP {minimum} or newer.",
                 details={"gimp_version": session.gimp_version, "minimum": minimum},
+            )
+        if support == "best_effort":
+            log.warning(
+                "GIMP %s is newer than the guaranteed 3.2 series: best effort, not verified by gimp-mcp's CI",
+                session.gimp_version,
             )
         if check.verdict is not Compatibility.MATCH:
             log.warning(

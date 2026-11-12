@@ -7,7 +7,7 @@
 | Operating system | **Linux** (x86_64) | CI (Ubuntu 24.04 runner + Arch Linux container), developer machine (CachyOS) |
 | Operating system | **Windows** (x86_64; verified on Windows Server 2025, the closest GitHub runner to Windows 10/11) | CI job `e2e-windows`: the e2e suite on GitHub's `windows-2025` runner ([ADR 0008](adr/0008-windows-and-macos.md)) |
 | Operating system | **macOS 15** (Apple Silicon, arm64) | CI job `e2e-macos`: the full e2e suite on GitHub's `macos-15` runner ([ADR 0008](adr/0008-windows-and-macos.md)) |
-| GIMP | **3.2.x** (3.2.6 tested) | CI pins GIMP 3.2.6-2 (`ci/Dockerfile`); older versions are refused with `VERSION_INCOMPATIBLE` |
+| GIMP | **3.2.x** (3.2.6 tested); newer versions best effort ([policy](#gimp-versions)) | CI pins GIMP 3.2.6-2 (`ci/Dockerfile`); older versions are refused with `VERSION_INCOMPATIBLE` |
 | GIMP packaging | distribution packages (`/usr/bin/gimp`, system Python with PyGObject) | CI, developer machine |
 | GIMP packaging | **gimp.org's macOS app** (`GIMP.app` from `gimp-3.2.6-arm64.dmg`, SHA-256 verified; its bundled Python runs the plug-in) | CI job `e2e-macos` (`ci/install-gimp-macos.sh`) |
 | GIMP packaging | **gimp.org's Windows installer** (`gimp-3.2.6-setup.exe`, SHA-256 verified, machine-wide in `C:\Program Files\GIMP 3`; its bundled Python runs the plug-in) | CI job `e2e-windows` (`ci/install-gimp-windows.ps1`) |
@@ -15,6 +15,25 @@
 | GIMP's Python (runs the plug-in) | Python 3 with PyGObject ≥ 3.50 and the `Gimp-3.0` typelib | CI (Python 3.14, PyGObject 3.58) |
 | Python for the MCP server | ≥ 3.11 | CI fast job (3.12), e2e (3.14) |
 | MCP | `mcp` Python SDK 2.x, stdio transport | e2e tests use the official client |
+
+## GIMP versions
+
+Decided by the maintainer (#121):
+
+| GIMP | Status | What happens |
+|---|---|---|
+| **3.2.x** | **guaranteed** | verified by every CI job; bugs are fixed |
+| newer (a development release such as 3.3.x, or a later stable series) | **best effort, not verified** | accepted; `gimp_status` reports `gimp_support: "best_effort"`, `gimp-mcp doctor` warns, the server logs a warning |
+| older than 3.2 (2.10, 3.0) | refused | `VERSION_INCOMPATIBLE` at connection; `doctor` fails |
+
+The workflow `.github/workflows/gimp-next.yml` (weekly and on demand, never a required check) installs
+the newest GIMP gimp.org publishes, stable or development (`ci/newest_gimp.py` reads
+https://www.gimp.org/gimp_versions.json and verifies the download's SHA-256), runs the whole e2e suite
+on it on macOS and writes the verdict and the failed tests in the job summary. A new GIMP series becomes
+**supported** only once that job is green on it and the coverage matrix (`docs/coverage.md`) is
+regenerated with it; then `SUPPORTED_GIMP_SERIES` (`src/gimp_mcp/versions.py`) and this page change.
+A newer GIMP may keep its profile in another folder (`~/.config/GIMP/3.4`…) and its console under another
+name: point `gimp-mcp install-plugin --gimp-dir` and `GIMP_MCP_GIMP_CONSOLE` at them if they are not found.
 
 ## Linux distributions
 

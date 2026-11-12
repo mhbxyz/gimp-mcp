@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 from .. import __version__
 from ..toolkit import READ_ONLY, Toolkit
-from ..versions import Compatibility, PluginCheck
+from ..versions import Compatibility, PluginCheck, gimp_support
 
 
 class ImageSummary(BaseModel):
@@ -23,6 +23,10 @@ class ImageSummary(BaseModel):
 class StatusOutput(BaseModel):
     connected: bool
     gimp_version: str
+    gimp_support: Literal["supported", "best_effort"] = Field(
+        description="supported: GIMP 3.2.x, verified by gimp-mcp's CI. best_effort: a newer GIMP, accepted but "
+        "not verified: tools should work, results are not guaranteed."
+    )
     session_id: str = Field(description="Changes whenever GIMP restarts; ids from older sessions are rejected.")
     bridge_protocol: int
     server_version: str = Field(description="Version of this MCP server.")
@@ -62,6 +66,7 @@ def register(kit: Toolkit) -> None:
         return StatusOutput(
             connected=True,
             gimp_version=session.gimp_version,
+            gimp_support="supported" if gimp_support(session.gimp_version) == "supported" else "best_effort",
             session_id=session.session_id,
             bridge_protocol=session.protocol,
             server_version=__version__,

@@ -22939,6 +22939,13 @@
           "connected": {
             "type": "boolean"
           },
+          "gimp_support": {
+            "enum": [
+              "supported",
+              "best_effort"
+            ],
+            "type": "string"
+          },
           "gimp_version": {
             "type": "string"
           },
@@ -22972,6 +22979,7 @@
         "required": [
           "connected",
           "gimp_version",
+          "gimp_support",
           "session_id",
           "bridge_protocol",
           "server_version",

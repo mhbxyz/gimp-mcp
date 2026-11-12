@@ -8,11 +8,21 @@ case "$ARCH" in
   x86_64) SHA256=ebe633642445d4d6fc6b68e7be7ca581c0b28c18dc9de7747849528c982e5677 ;;
   *) echo "unsupported architecture $ARCH" >&2; exit 1 ;;
 esac
+URL="https://download.gimp.org/gimp/v3.2/macos/gimp-$VERSION-$ARCH.dmg"
+# The gimp-next job installs the newest release instead (ci/newest_gimp.py): URL and SHA-256 from gimp.org.
+if [ -n "${GIMP_DMG_URL:-}" ]; then URL=$GIMP_DMG_URL; SHA256=${GIMP_DMG_SHA256:?GIMP_DMG_SHA256 is required}; fi
 dmg="$(mktemp -d)/gimp.dmg"
-curl -fsSL -o "$dmg" "https://download.gimp.org/gimp/v3.2/macos/gimp-$VERSION-$ARCH.dmg"
+curl -fsSL -o "$dmg" "$URL"
 echo "$SHA256  $dmg" | shasum -a 256 -c
 mount=$(mktemp -d)
 hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$mount" >/dev/null
 cp -R "$mount/GIMP.app" /Applications/
 hdiutil detach "$mount" >/dev/null
-/Applications/GIMP.app/Contents/MacOS/gimp-console-3.2 --version
+console=""
+for candidate in /Applications/GIMP.app/Contents/MacOS/gimp-console-3.*; do  # 3.2, or a newer series
+  # executables only: the bundle also holds gimp-console-3.2.dSYM, a debug-symbols folder
+  if [ -f "$candidate" ] && [ -x "$candidate" ]; then console=$candidate; fi
+done
+echo "gimp-console: $console"
+"$console" --version
+if [ -n "${GITHUB_ENV:-}" ]; then echo "GIMP_MCP_GIMP_CONSOLE=$console" >> "$GITHUB_ENV"; fi
