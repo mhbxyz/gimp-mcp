@@ -74,7 +74,8 @@ def register(kit: Toolkit) -> None:
         description=(
             "Add an editable text layer. Position (x, y) is the top-left corner in image pixels. size is in "
             "size_unit ('px' or 'pt'). Without box_width/box_height the layer grows with the text; with both, "
-            "the text wraps in a fixed box. The text stays editable (never rasterized). One undo step."
+            "the text wraps in a fixed box. The text stays editable (never rasterized). One undo step. Rich "
+            "text, outlines, vertical text: gimp_set_text_style (toolset typography)."
         ),
         annotations=MUTATING,
     )

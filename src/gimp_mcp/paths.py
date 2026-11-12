@@ -85,7 +85,12 @@ def check_output_file(path: str, *, overwrite: bool) -> Path:
 def export_format(path: Path, requested: str | None) -> ExportFormat:
     inferred = EXPORT_FORMATS.get(path.suffix.lower())
     if inferred is None:
-        hint = "Use gimp_save_image for .xcf projects." if path.suffix.lower() in XCF_SUFFIXES else None
+        hint = (
+            "Use gimp_save_image for .xcf projects."
+            if path.suffix.lower() in XCF_SUFFIXES
+            else "Other formats (WebP, AVIF, TIFF, PDF, GIF…) are written by gimp_export_as: call "
+            "gimp_enable_toolsets with toolsets=['formats'] first."
+        )
         raise GimpMcpError(
             "UNSUPPORTED_FORMAT",
             f"cannot export to {path.suffix or 'a file without extension'}: supported extensions are .png, .jpg, .jpeg",
