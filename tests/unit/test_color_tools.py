@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from .tool_harness import SESSION, tid, tool_client
+from .tool_harness import SESSION, iid, tid, tool_client
 
 RESULT = {"adjustment": "levels", "operation": "gimp:levels", "destructive": False, "filter": 4,
           "restricted_to_selection": False}  # fmt: skip
@@ -59,3 +59,14 @@ async def test_curves_are_destructive():
         tools = {tool.name: tool for tool in (await client.list_tools()).tools}
     annotations = tools["gimp_curves"].annotations
     assert annotations is not None and annotations.destructive_hint
+
+
+async def test_assigning_the_built_in_srgb_says_it_changes_nothing():
+    profile = {"label": "sRGB", "description": "GIMP built-in sRGB", "model": "rgb", "linear": False, "icc_bytes": 1}
+    state = {"assigned": None, "effective": profile}
+    async with tool_client({"profile.set": lambda p: state}) as (client, _bridge):
+        result = await client.call_tool(
+            "gimp_set_color_profile", {"image": iid(1), "action": "assign", "profile": "srgb"}
+        )
+    note = result.structured_content["note"]
+    assert "built-in sRGB" in note and "color_profile=true" in note

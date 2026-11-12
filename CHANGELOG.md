@@ -35,6 +35,10 @@ what is covered by the compatibility promise.
   untranslated value (EXIF orientation `6` where the interpreted value reads `right, top`, or
   `droit, haut` in French), so a client can decide without knowing GIMP's language (#161). Needs the
   plug-in of this version (`metadata.get` revision 2).
+- `gimp_export_as(..., color_profile=true)` embeds the profile GIMP uses, GIMP's built-in sRGB included,
+  like `png_options.color_profile`; an impossible choice (no profile in BMP, always one in AVIF/HEIF) is
+  `UNSUPPORTED` (#158). Assigning `srgb` with `gimp_set_color_profile` now says in `note` that it
+  changes nothing (GIMP treats its built-in sRGB as no profile).
 - `gimp_export_as(..., layers="flatten")` writes the visible composite as one page or layer (TIFF, PDF,
   PSD…), as the image looks, without changing the image (#165); before, a layered image gave a TIFF
   page per layer. Needs the plug-in of this version (`image.export_as` revision 2).

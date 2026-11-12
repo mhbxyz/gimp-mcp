@@ -41,6 +41,10 @@ def procedure_for(path, extensions_by_procedure):
     return best
 
 
+# Export procedures with no include-color-profile argument that embed the profile anyway (GIMP 3.2.6).
+ALWAYS_EMBED_PROFILE = ("file-heif-export", "file-heif-av1-export")
+
+
 def behaviour(procedure, options):
     """``options``: the effective values (GIMP's defaults merged with the given ones)."""
     lossless, layers = BEHAVIOUR.get(procedure, (None, None))

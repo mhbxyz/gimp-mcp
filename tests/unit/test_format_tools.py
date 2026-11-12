@@ -54,3 +54,12 @@ async def test_flatten_is_sent_to_the_plugin(tmp_path):
         )
     assert not result.is_error, result.content
     assert bridge.calls[0][1]["layers"] == "flatten"
+
+
+async def test_an_explicit_color_profile_choice_is_sent(tmp_path):
+    async with tool_client({"image.export_as": lambda p: EXPORTED}) as (client, bridge):
+        await client.call_tool(
+            "gimp_export_as", {"image": iid(1), "path": str(tmp_path / "a.webp"), "color_profile": True}
+        )
+        await client.call_tool("gimp_export_as", {"image": iid(1), "path": str(tmp_path / "b.webp")})
+    assert [params["color_profile"] for _name, params in bridge.calls] == [True, None]

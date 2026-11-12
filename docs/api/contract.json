@@ -8373,6 +8373,17 @@
       },
       "inputSchema": {
         "properties": {
+          "color_profile": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
           "image": {
             "type": "string"
           },
@@ -10241,6 +10252,17 @@
           },
           "image": {
             "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         },
         "required": [
@@ -19701,6 +19723,17 @@
           },
           "image": {
             "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         },
         "required": [

@@ -3301,19 +3301,31 @@ def _validated_options(name, specs, options):
     return checked
 
 
-def _export_with(image, path, name, procedure, options, metadata):
+def _export_with(image, path, name, procedure, options, metadata, color_profile=None):
+    """``color_profile``: True/False to embed the effective profile or not; None: only an assigned one."""
     specs = _option_specs(procedure, gmb_formats.FIXED_ARGUMENTS)
     values = _validated_options(name, specs, options)
     config = procedure.create_config()
+    if color_profile is not None and config.find_property("include-color-profile") is None:
+        # GIMP's HEIF/AVIF export always embeds the profile; other formats without the flag cannot carry one
+        always = name in gmb_formats.ALWAYS_EMBED_PROFILE
+        if bool(color_profile) != always:
+            raise BridgeError(
+                "UNSUPPORTED",
+                "%s %s the color profile" % (name, "always embeds" if always else "cannot embed"),
+                {"procedure": name},
+            )
     config.set_property("run-mode", Gimp.RunMode.NONINTERACTIVE)
     config.set_property("image", image)
     config.set_property("file", Gio.File.new_for_path(path))
     for flag in gmb_formats.METADATA_ARGUMENTS:
         if config.find_property(flag) is not None:
             kind = flag[len("include-") :]
-            config.set_property(
-                flag, kind in metadata or (kind == "color-profile" and image.get_color_profile() is not None)
-            )
+            if kind == "color-profile":
+                embed = image.get_color_profile() is not None if color_profile is None else bool(color_profile)
+                config.set_property(flag, embed)
+            else:
+                config.set_property(flag, kind in metadata)
     _apply_options(config, specs, values)
     effective = {spec["name"]: _config_value(config.get_property(spec["name"])) for spec in specs
                  if spec["kind"] not in ("unsupported", "integer-list")}  # fmt: skip
@@ -3333,9 +3345,9 @@ def _export_with(image, path, name, procedure, options, metadata):
 def image_export_as(params):
     image = get_image(params)
     name, procedure = _file_procedure("export", params)
-    metadata = params.get("metadata") or []
+    metadata, profile = params.get("metadata") or [], params.get("color_profile")
     if params.get("layers") != "flatten":
-        return _export_with(image, params["path"], name, procedure, params.get("options"), metadata)
+        return _export_with(image, params["path"], name, procedure, params.get("options"), metadata, profile)
     # The visible composite as one layer, in a copy: resolution, profile, metadata and palette are kept.
     copy = image.duplicate()
     try:
@@ -3345,7 +3357,7 @@ def image_export_as(params):
         if not copy.get_layers():
             raise BridgeError("INVALID_ARGUMENT", "the image has no visible layer to export")
         copy.merge_visible_layers(Gimp.MergeType.CLIP_TO_IMAGE)
-        result = _export_with(copy, params["path"], name, procedure, params.get("options"), metadata)
+        result = _export_with(copy, params["path"], name, procedure, params.get("options"), metadata, profile)
         return {**result, "layers": "flattened"}
     finally:
         copy.delete()
@@ -4890,7 +4902,7 @@ def image_preview_region(params):
 REVISIONS = {
     "metadata.get": 2,  # 0.7.0: untranslated values in "raw" (#161)
     "metadata.set": 2,
-    "image.export_as": 2,  # 0.7.0: layers="flatten" (#165)
+    "image.export_as": 2,  # 0.7.0: layers="flatten" (#165), color_profile (#158)
 }
 
 

@@ -42,6 +42,14 @@ class ProfileResult(BaseModel):
     image: str
     assigned: Profile | None = Field(description="Profile stored in the image; null = GIMP's built-in default.")
     effective: Profile = Field(description="Profile GIMP uses to interpret the pixels.")
+    note: str | None = Field(default=None, description="What the call did not do, when it may surprise.")
+
+
+BUILT_IN_SRGB = (
+    "GIMP's built-in sRGB is its default: assigning it leaves no profile assigned (assigned: null), the pixels "
+    "and their meaning are unchanged. Exports embed sRGB only when asked: png_options/jpeg_options "
+    "color_profile=true, or gimp_export_as color_profile=true."
+)
 
 
 def register(kit: Toolkit) -> None:
@@ -147,4 +155,5 @@ def register(kit: Toolkit) -> None:
             codec=codec,
             mutating=True,
         )  # fmt: skip
-        return ProfileResult(**{**data, "image": image})
+        note = BUILT_IN_SRGB if action == "assign" and profile == "srgb" and data.get("assigned") is None else None
+        return ProfileResult(**{**data, "image": image, "note": note})
