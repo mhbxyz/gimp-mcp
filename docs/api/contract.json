@@ -17365,9 +17365,17 @@
       "inputSchema": {
         "properties": {
           "height": {
-            "maximum": 65536,
-            "minimum": 1,
-            "type": "integer"
+            "anyOf": [
+              {
+                "maximum": 65536,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "image": {
             "type": "string"
@@ -17384,15 +17392,21 @@
             "type": "string"
           },
           "width": {
-            "maximum": 65536,
-            "minimum": 1,
-            "type": "integer"
+            "anyOf": [
+              {
+                "maximum": 65536,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         },
         "required": [
-          "image",
-          "width",
-          "height"
+          "image"
         ],
         "type": "object"
       },
@@ -18253,9 +18267,17 @@
             "type": "string"
           },
           "height": {
-            "maximum": 65536,
-            "minimum": 1,
-            "type": "integer"
+            "anyOf": [
+              {
+                "maximum": 65536,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "interpolation": {
             "default": "cubic",
@@ -18272,15 +18294,21 @@
             "type": "string"
           },
           "width": {
-            "maximum": 65536,
-            "minimum": 1,
-            "type": "integer"
+            "anyOf": [
+              {
+                "maximum": 65536,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         },
         "required": [
-          "item",
-          "width",
-          "height"
+          "item"
         ],
         "type": "object"
       },

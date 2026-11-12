@@ -264,12 +264,12 @@ only touches the targeted image.
 
 | Tool | Effect | Lossy / destructive |
 |---|---|---|
-| `gimp_resize_image(image, width, height, interpolation)` | Scales the image and all layers (sizes and offsets scale proportionally, GIMP rounds offsets) | resampled |
+| `gimp_resize_image(image, width?, height?, interpolation)` | Scales the image and all layers (sizes and offsets scale proportionally, GIMP rounds offsets); only `width` or only `height` keeps the aspect ratio | resampled |
 | `gimp_resize_canvas(image, width, height, offset_x=0, offset_y=0)` | Changes the canvas only; layers keep their pixels and move by the offset | no |
 | `gimp_crop_image(image, x, y, width, height)` | Crops to a rectangle that must lie inside the canvas (`INVALID_ARGUMENT` otherwise) | **pixels outside are discarded** |
 | `gimp_rotate_image(image, 90\|180\|270)` | Rotates the whole image clockwise: canvas, layers, selection, paths | no |
 | `gimp_set_layer_offsets(item, x, y)` | Moves a layer/group's top-left corner | no |
-| `gimp_scale_layer(item, width, height, anchor="center"\|"top-left", interpolation)` | Resamples a layer/group | resampled |
+| `gimp_scale_layer(item, width?, height?, anchor="center"\|"top-left", interpolation)` | Resamples a layer/group; one dimension alone keeps its aspect ratio | resampled |
 | `gimp_rotate_layer(item, angle, clip="adjust"\|"clip", interpolation)` | Rotates **clockwise** (degrees) around the center; `adjust` grows the bounds, `clip` keeps them; 0/360 is a no-op | resampled unless a multiple of 90 with `none` |
 | `gimp_flip_layer(item, direction)` | Mirrors around the center | no |
 
@@ -508,12 +508,12 @@ call of a listed tool, with that tool's own checks.
   (`ok`, `failed`, `skipped`, `planned`), `image`, `output`, `outputs` (files written), `closed`,
   `error`.
 
-Example: every PNG of a folder to a 50 % lossless WebP, mirrored:
+Example: every PNG of a folder to a lossless WebP 400 pixels wide (height in proportion), mirrored:
 
 ```json
 {"directory": "~/photos", "pattern": "*.png", "output": "~/photos/web/{stem}.webp",
  "recipe": [
-   {"tool": "gimp_resize_image", "arguments": {"image": "{image}", "width": 400, "height": 300}},
+   {"tool": "gimp_resize_image", "arguments": {"image": "{image}", "width": 400}},
    {"tool": "gimp_flip_image", "arguments": {"image": "{image}", "orientation": "horizontal"}},
    {"tool": "gimp_export_as", "arguments": {"image": "{image}", "path": "{output}",
                                            "options": {"lossless": true}}}]}

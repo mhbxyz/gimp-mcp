@@ -29,6 +29,8 @@ what is covered by the compatibility promise.
   colors, units, enums, booleans, files and `overwrite`, results, errors and descriptions;
   `scripts/api_review.py` checks every tool against them and writes `docs/api/review.md`, where each
   deviation is fixed by a named issue or accepted with its reason, and the v0.6.0 findings are decided.
+- `gimp_resize_image` and `gimp_scale_layer` take one dimension and keep the aspect ratio (#150):
+  `width=200` alone scales to 200 pixels wide, so one batch recipe resizes files of different sizes.
 
 ### Changed
 
