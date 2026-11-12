@@ -62,8 +62,10 @@ def register(kit: Toolkit) -> None:
         title="Paint a stroke",
         description=(
             "Paint along points with a GIMP paint tool: paintbrush, pencil (hard edges), airbrush (pressure), "
-            "ink, eraser, smudge (pressure), dodge or burn (exposure), clone or heal (from source layer, offset "
-            "source_x/source_y). Brush by name (default: a generated round brush), size (px), hardness (0-1), "
+            "ink, eraser, smudge (pressure), dodge or burn (exposure), clone or heal (copy from source, default "
+            "the painted layer: source_offset [dx, dy] from the first point, or the absolute point "
+            "source_x/source_y matching it). Brush by name (default: a generated round brush), size (px), "
+            "hardness (0-1), "
             "spacing (% of size), dynamics (default 'Dynamics Off'), opacity, mode, color. One undo step."
         ),
         annotations=MUTATING,
@@ -82,12 +84,33 @@ def register(kit: Toolkit) -> None:
         mode: str = "normal",
         pressure: Annotated[float, Field(ge=0, le=100, description="Airbrush and smudge.")] = 50.0,
         exposure: Annotated[float, Field(ge=0, le=100, description="Dodge and burn.")] = 50.0,
-        source: ItemId | None = None,
+        source: Annotated[
+            str | None, Field(description="Clone and heal: layer to copy from (item id); default: item itself.")
+        ] = None,
         source_x: float = 0.0,
         source_y: float = 0.0,
+        source_offset: Annotated[
+            list[float] | None,
+            Field(
+                min_length=2,
+                max_length=2,
+                description="Clone and heal: [dx, dy] from the first point to the point copied from "
+                "(e.g. [16, 0]: 16 px to the right); replaces source_x/source_y.",
+            ),
+        ] = None,
     ) -> Painted:
+        if source_offset is not None:
+            if tool not in ("clone", "heal"):
+                raise GimpMcpError("INVALID_ARGUMENT", f"source_offset is for clone and heal, not {tool}")
+            if source_x or source_y:
+                raise GimpMcpError(
+                    "INVALID_ARGUMENT",
+                    "give source_offset or source_x/source_y, not both",
+                    hint="source_offset is relative to the first point; source_x/source_y are absolute.",
+                )
+            source_x, source_y = points[0][0] + source_offset[0], points[0][1] + source_offset[1]
         if tool in ("clone", "heal") and source is None:
-            raise GimpMcpError("INVALID_ARGUMENT", f"{tool} needs a source layer")
+            source = item
         return await paint(
             "paint.stroke",
             item,

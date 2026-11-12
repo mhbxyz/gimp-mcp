@@ -40,6 +40,9 @@ what is covered by the compatibility promise.
   and the hint to run `gimp-mcp install-plugin`, then restart GIMP. `gimp_status` gains
   `plugin_compatibility` (`match`, `compatible`, `partial`), and `gimp-mcp doctor` shows the versions,
   the protocol and the verdict (a different installed version is now a warning, not a failure).
+- `gimp_paint_stroke` with `clone` or `heal` copies from the painted layer unless `source` names
+  another one, and takes `source_offset: [dx, dy]` (relative to the first point) as an alternative to
+  the absolute `source_x`/`source_y` (#156).
 
 - Tool schemas no longer carry pydantic's generated `title` keywords, which only repeated the property
   names: the default tool definitions shrink from 138 KB to 115 KB (#118, default budget).

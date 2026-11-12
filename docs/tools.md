@@ -612,10 +612,13 @@ restored after (checked through `gimp-context-get-*` in `tests/e2e/test_painting
 are refused (`LOCKED`), the selection limits the paint. One undo step each.
 
 * `gimp_paint_stroke(item, tool, points, color, brush?, size, hardness, spacing, dynamics?, opacity,
-  mode, pressure, exposure, source?, source_x, source_y)`: `tool` is `paintbrush`, `pencil` (no
-  antialiasing), `airbrush` (`pressure`), `ink`, `eraser` (to transparency, or to the background
-  color without alpha), `smudge` (`pressure`), `dodge`/`burn` (`exposure`, midtones), `clone` (copies
-  `source` from `source_x`/`source_y`), `heal` (same, matching the colors around). `brush` defaults
+  mode, pressure, exposure, source?, source_x, source_y, source_offset?)`: `tool` is `paintbrush`,
+  `pencil` (no antialiasing), `airbrush` (`pressure`), `ink`, `eraser` (to transparency, or to the
+  background color without alpha), `smudge` (`pressure`), `dodge`/`burn` (`exposure`, midtones),
+  `clone` (copies `source`, by default the painted layer itself), `heal` (same, matching the colors
+  around). Where it copies from: `source_offset: [dx, dy]` from the first point (`[16, 0]`: 16 px to
+  the right), or the absolute point `source_x`/`source_y` matching the first point; giving both, or an
+  offset to another tool, is `INVALID_ARGUMENT`. `brush` defaults
   to a generated round brush, `dynamics` to GIMP's "Dynamics Off" (names are in GIMP's language).
 * `gimp_gradient_fill(item, start, end, gradient | segments, shape, repeat, offset, reverse,
   opacity, mode)`: `shape` `linear`, `bilinear`, `radial`, `square`, `conical-*`, `shapeburst-*`,

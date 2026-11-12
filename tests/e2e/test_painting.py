@@ -102,16 +102,17 @@ async def test_eraser_smudge_clone_and_heal(gimp: HeadlessGimp, tmp_path: Path):
         await stroke(client, item=layer3, tool="clone", points=[[40, 20], [42, 20]], size=4,
             source=layer3, source_x=6, source_y=6,
         )  # fmt: skip
+        # the same with the default source (the painted layer) and an offset: (50, 20) from (6, 6)
+        await stroke(client, item=layer3, tool="clone", points=[[50, 20], [52, 20]], size=4, source_offset=[-44, -14])
         img = await png(client, image3, tmp_path / "cloned.png")
         assert px(img, 41, 20)[0] > 240 and px(img, 41, 20)[1] < 30 and px(img, 41, 4)[:3] == (128, 128, 128)
+        assert px(img, 51, 20)[0] > 240 and px(img, 51, 20)[1] < 30 and px(img, 51, 4)[:3] == (128, 128, 128)
         # heal: a white speck on the gray area disappears, healed from clean gray (heal keeps the
         # surrounding colors, so the result matches the gray around the speck)
         await call(client, "gimp_select_rectangle", image=image3, x=30, y=24, width=2, height=2)
         await call(client, "gimp_fill", item=layer3, color="#ffffff")
         await call(client, "gimp_modify_selection", image=image3, action="none")
-        await stroke(client, item=layer3, tool="heal", points=[[30, 24], [32, 25]], size=8,
-            source=layer3, source_x=50, source_y=24,
-        )  # fmt: skip
+        await stroke(client, item=layer3, tool="heal", points=[[30, 24], [32, 25]], size=8, source_offset=[20, 0])
         healed = await png(client, image3, tmp_path / "healed.png")
         assert abs(px(healed, 31, 25)[0] - 128) < 40  # the speck is close to the gray around it
         missing = await stroke(client, expect_error=True, item=layer3, tool="paintbrush", points=LINE, brush="No brush")
@@ -198,7 +199,7 @@ async def test_bucket_fill_by_color_selection_pattern_and_gradient(gimp: Headles
 
 async def test_text_and_locks_are_respected(gimp: HeadlessGimp, tmp_path: Path):
     async with mcp_client(gimp) as client:
-        image, layer = await canvas(client)
+        image, _layer = await canvas(client)
         text = await call(client, "gimp_create_text_layer", image=image, text="Hi", size=12)
         assert (await stroke(client, expect_error=True, item=text["id"], tool="paintbrush", points=LINE))[
             "code"
@@ -212,6 +213,8 @@ async def test_text_and_locks_are_respected(gimp: HeadlessGimp, tmp_path: Path):
         ]:
             assert (await error(client, name, item=text["id"], **arguments))["code"] == "WRONG_KIND", name
         assert (await call(client, "gimp_inspect_item", item=text["id"]))["kind"] == "text"
-        clone = await client.call_tool("gimp_paint_stroke", {"item": layer, "tool": "clone", "points": LINE})
-        assert clone.is_error
+        clone = await client.call_tool(
+            "gimp_paint_stroke", {"item": text["id"], "tool": "clone", "points": LINE, "source_offset": [4, 0]}
+        )
+        assert clone.is_error  # a text layer cannot be painted, even with its own source
         await call(client, "gimp_close_image", image=image, discard_changes=True)

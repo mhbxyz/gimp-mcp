@@ -15810,6 +15810,22 @@
             ],
             "default": null
           },
+          "source_offset": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "maxItems": 2,
+                "minItems": 2,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
           "source_x": {
             "default": 0.0,
             "type": "number"
