@@ -375,5 +375,7 @@ Each entry was observed on GIMP 3.2.6 / PyGObject 3.58 / Python 3.14 (Arch).
   whose orientation is 6, not those with 8, and `Gimp.Metadata.load_from_file` (Exiv2 again) read them
   the same way. So `image.open` reads the JPEG's Exif block itself (`gmb_formats.jpeg_exif`), hands it
   to `Gimp.Metadata.set_from_exif` and adds the missing tags, or at least the orientation
-  (`gmb_formats.exif_orientation`); the image stays clean and nothing enters its undo history.
+  (`gmb_formats.exif_orientation`); the image stays clean and nothing enters its undo history. In
+  some sessions even that does not stick on Windows, so `metadata.get` falls back to the orientation
+  read from the file the image was opened from (Exiv2's English text, e.g. `right, top`).
   `tests/e2e/test_exif_orientation.py` opens twenty oriented JPEGs in three sessions.

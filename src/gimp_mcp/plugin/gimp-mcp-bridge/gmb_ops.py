@@ -351,6 +351,29 @@ def image_create(params):
     return image_ref(image, show(image))
 
 
+# Image id -> the file it was opened from, for the orientation fallback of metadata.get (#173); dropped
+# once a call sets or removes the orientation, so a deliberate removal stays removed.
+_OPENED_FROM = {}
+
+# Exiv2's English text for Exif.Image.Orientation, used when GIMP lost the tag (#173).
+ORIENTATION_TEXT = {
+    1: "top, left", 2: "top, right", 3: "bottom, right", 4: "bottom, left",
+    5: "left, top", 6: "right, top", 7: "right, bottom", 8: "left, bottom",
+}  # fmt: skip
+
+
+def _file_orientation(image):
+    """The EXIF orientation of the file the image was opened from, read without Exiv2, or None."""
+    path = _OPENED_FROM.get(image.get_id())
+    if not path:
+        return None
+    try:
+        with open(path, "rb") as handle:
+            return gmb_formats.exif_orientation(gmb_formats.jpeg_exif(handle.read(1 << 20)))
+    except OSError:
+        return None
+
+
 def _restore_file_metadata(image, path):
     """GIMP 3.2.6 on Windows sometimes loads JPEGs without their Exif (orientation 6 among them) for a
     whole session, and Exiv2 then reads the file the same way (#173, docs/gimp-notes.md). The Exif block
@@ -380,6 +403,10 @@ def _restore_file_metadata(image, path):
     missing = "Exif.Image.Orientation" not in have and "Exif.Image.Orientation" not in restored
     if missing and orientation and loaded.try_set_tag_string("Exif.Image.Orientation", str(orientation)):
         restored.append("Exif.Image.Orientation")
+    log(
+        "%s: GIMP loaded %d Exif tags (orientation %s); file orientation %s; restored %s"
+        % (os.path.basename(path), len(have), "Exif.Image.Orientation" in have, orientation, restored)
+    )
     if restored:
         image.undo_disable()
         try:
@@ -387,7 +414,6 @@ def _restore_file_metadata(image, path):
         finally:
             image.undo_enable()
         image.clean_all()
-        log("restored %d Exif tags of %s that GIMP did not load" % (len(restored), os.path.basename(path)))
     return restored
 
 
@@ -401,6 +427,7 @@ def image_open(params):
             "GIMP could not load %s (unsupported format or corrupt file)" % os.path.basename(path),
             {"path": path},
         )
+    _OPENED_FROM[image.get_id()] = path
     _restore_file_metadata(image, path)
     return image_ref(image, show(image))
 
@@ -502,6 +529,7 @@ def image_close(params):
         )
     number = image.get_id()
     drop_checkpoints_of(number)
+    _OPENED_FROM.pop(number, None)
     for display in _DISPLAYS.pop(number, []):
         if display.is_valid():
             display.delete()
@@ -3082,6 +3110,12 @@ def metadata_get(params):
     image = get_image(params)
     metadata = image.get_metadata()
     tags = _metadata_tags(metadata) if metadata is not None else {kind: {} for kind in METADATA_KINDS}
+    if "Exif.Image.Orientation" not in tags["exif"]:
+        # GIMP for Windows can lose it for a whole session, even once restored (#173): the file says it
+        orientation = _file_orientation(image)
+        if orientation:
+            tags["exif"]["Exif.Image.Orientation"] = ORIENTATION_TEXT[orientation]
+            log("orientation %d of image %d read from its file" % (orientation, image.get_id()))
     return {"image": image.get_id(), **tags, "comment": _comment(image)}
 
 
@@ -3093,6 +3127,8 @@ def metadata_set(params):
     for tag in list(updates) + list(removals):
         if not tag.startswith(("Exif.", "Xmp.", "Iptc.")):
             raise BridgeError("INVALID_ARGUMENT", "tag %r must start with Exif., Xmp. or Iptc." % tag)
+    if "Exif.Image.Orientation" in list(updates) + list(removals):
+        _OPENED_FROM.pop(image.get_id(), None)  # the caller decides the orientation from now on
     metadata = image.get_metadata() or Gimp.Metadata.new()
     for tag, value in updates.items():
         try:
