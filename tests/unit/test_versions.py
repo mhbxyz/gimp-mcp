@@ -25,11 +25,14 @@ def test_the_package_version_comes_from_the_project_metadata():
 
 
 def test_no_version_number_is_hard_coded_outside_pyproject():
+    """The version in use is never written in the code; the version that *deprecated* something
+    (``Deprecation("0.7.0", …)``) is a date in the API's history, not the current version."""
     version = re.escape(gimp_mcp.__version__)
     offenders = [
-        str(path.relative_to(ROOT))
+        f"{path.relative_to(ROOT)}: {line.strip()}"
         for path in (ROOT / "src").rglob("*.py")
-        if re.search(rf"['\"]{version}['\"]", path.read_text())
+        for line in path.read_text().splitlines()
+        if re.search(rf"['\"]{version}['\"]", line) and "Deprecation(" not in line
     ]
     assert offenders == []
 

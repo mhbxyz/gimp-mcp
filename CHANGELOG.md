@@ -6,6 +6,16 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-12
+
+The public API is now snapshotted and checked in CI, ahead of its freeze in 1.0 (`docs/upgrading.md`).
+
+### Upgrade note
+
+Run `gimp-mcp setup` (or `gimp-mcp install-plugin`), then restart GIMP: an older plug-in keeps working,
+but raw metadata, `layers="flatten"` and `color_profile` on `gimp_export_as` need this one (they answer
+`PLUGIN_VERSION_MISMATCH` with that hint otherwise).
+
 ### Breaking
 
 - Toolsets (#151): `gimp_rotate_image` moves from `geometry` to the default `transform` toolset, so
@@ -13,6 +23,7 @@ what is covered by the compatibility promise.
   `gimp_end_undo_group` move from `history` to the new optional toolset `undo`, which keeps the default
   selection at 49 tools. Clients listing toolsets explicitly add `transform` for image rotation and
   `undo` for undo groups.
+
 ### Deprecated
 
 - Renamed in the API review (#119; old names keep working until 1.0.0 with a deprecation notice,
@@ -23,8 +34,6 @@ what is covered by the compatibility promise.
 
 ### Added
 
-- `docs/upgrading.md`: migration notes, starting with 0.6 → 0.7 (#119). Every tool that changes something
-  states its undo behaviour in its description (API review, #118).
 - Public API contract (#116): `docs/api/contract.json` snapshots every tool (toolset, input and output
   schemas, annotations), error code, prompt, resource and CLI option (`uv run scripts/api_contract.py
   write`); the unit tests fail when it is out of date, and CI classifies every difference with the base
@@ -57,6 +66,8 @@ what is covered by the compatibility promise.
 - Every tool that creates or changes an image or item returns it as a top-level `id` (#164): the new
   layer of `gimp_merge_layers`, the new image of `gimp_optimize_animation`, the changed image of
   `gimp_resize_image`, the changed layer of a filter or adjustment. Existing fields are unchanged.
+- `docs/upgrading.md`: migration notes, starting with 0.6 → 0.7 (#119). Every tool that changes something
+  states its undo behaviour in its description (API review, #118).
 
 ### Changed
 
@@ -65,7 +76,6 @@ what is covered by the compatibility promise.
   (`supported` or `best_effort`), `gimp-mcp doctor` warns and the server logs a warning; GIMP older
   than 3.2 is still refused. A weekly, non-blocking workflow (`gimp-next.yml`) runs the e2e suite on
   the newest GIMP gimp.org publishes and reports the result (`docs/compatibility.md#gimp-versions`).
-
 - The GIMP plug-in no longer has to share the server's MAJOR.MINOR version (#120, ADR 0010): any plug-in
   speaking bridge protocol 1 is accepted. Its handshake lists the operations it serves, with a revision;
   a tool that needs one the plug-in lacks fails before anything is sent with `PLUGIN_VERSION_MISMATCH`
@@ -75,12 +85,11 @@ what is covered by the compatibility promise.
 - `gimp_paint_stroke` with `clone` or `heal` copies from the painted layer unless `source` names
   another one, and takes `source_offset: [dx, dy]` (relative to the first point) as an alternative to
   the absolute `source_x`/`source_y` (#156).
-
 - Tool schemas no longer carry pydantic's generated `title` keywords, which only repeated the property
   names: the default tool definitions shrink from 138 KB to 115 KB (#118, default budget).
 - The README demo is re-recorded with 0.6.0, through `demo/video/record.sh 0.6.0 thumbnail`.
 - The README shows Linux, macOS and Windows support: platform badges and a table of what is verified
-  on each OS; it also gives the current tool count (159, 50 by default) and the named pipe used on Windows.
+  on each OS; it also gives the current tool count and the named pipe used on Windows.
 - The eval baseline names the commit it ran on by its SHA after the history rewrite of 2026-11-09
   (`fb2b474`, was `f9d1da5`); the evaluated content is unchanged.
 
@@ -444,6 +453,7 @@ First usable release. Linux only, GIMP 3.2+.
 - Demo (`demo/thumbnail.py`) building a 1280×720 thumbnail through MCP only.
 - CI with a real GIMP 3.2.6 pinned through an Arch Linux Archive snapshot.
 
+[0.7.0]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v0.7.0
 [0.6.0]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v0.6.0
 [0.5.0]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v0.5.0
 [0.4.0]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v0.4.0
