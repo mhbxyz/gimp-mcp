@@ -251,3 +251,67 @@ async def test_images_created_by_steps_are_closed_but_not_preexisting_ones(tmp_p
     assert not result.is_error, result.content
     assert sorted(result.structured_content["files"][0]["closed"]) == [iid(1), iid(2)]
     assert list(gimp.open) == [50]
+
+
+class Layered(Gimp):
+    """Also imports a layer (id 500 + image) and records layer property changes."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.changed: list[tuple[int, float]] = []
+
+    def ops(self):
+        return {**super().ops(), "layer.import": self.import_layer, "layer.set": self.set_layer}
+
+    def import_layer(self, params):
+        return {**layer(500 + params["image"], "Mark"), "image": params["image"]}
+
+    def set_layer(self, params):
+        self.changed.append((params["item"], params["opacity"]))
+        return {**layer(params["item"], "Mark"), "image": 1}
+
+
+async def test_a_step_uses_the_object_an_earlier_step_created(tmp_path):
+    """#162: import a watermark, then change *that* layer, not the photo's top layer."""
+    a, b = inputs(tmp_path / "in", "a.png", "b.png")
+    mark = inputs(tmp_path / "assets", "mark.png")[0]
+    gimp = Layered()
+    recipe = [
+        {"tool": "gimp_import_layer", "arguments": {"image": "{image}", "path": str(mark)}},
+        {"tool": "gimp_set_layer_properties", "arguments": {"item": "{steps[0].id}", "opacity": 60}},
+    ]
+    async with tool_client(gimp.ops()) as (client, _bridge):
+        result = await client.call_tool("gimp_run_batch", {"files": [str(a), str(b)], "recipe": recipe})
+    assert not result.is_error, result.content
+    assert result.structured_content["succeeded"] == 2, result.structured_content
+    assert gimp.changed == [(501, 60.0), (502, 60.0)]
+
+
+async def test_a_whole_reference_keeps_the_value_type(tmp_path):
+    [a] = inputs(tmp_path / "in", "a.png")
+    gimp = Layered()
+    recipe = [
+        {"tool": "gimp_import_layer", "arguments": {"image": "{image}", "path": str(a)}},
+        {"tool": "gimp_resize_canvas", "arguments": {"image": "{image}", "width": "{steps[0].width}", "height": 4}},
+    ]
+    resized = []
+    ops = {**gimp.ops(), "image.resize": lambda p: resized.append(p["width"]) or {"width": 4, "height": 4,
+                                                                                    "dirty": True}}  # fmt: skip
+    async with tool_client(ops) as (client, _bridge):
+        result = await client.call_tool("gimp_run_batch", {"files": [str(a)], "recipe": recipe})
+    assert not result.is_error and result.structured_content["succeeded"] == 1, result.content
+    assert resized == [layer(501, "Mark")["width"]]
+
+
+async def test_step_references_are_checked_before_anything_runs(tmp_path):
+    [a] = inputs(tmp_path / "in", "a.png")
+    later = [{"tool": "gimp_set_layer_properties", "arguments": {"item": "{steps[1].id}", "opacity": 60}}, FLIP]
+    itself = [{"tool": "gimp_set_layer_properties", "arguments": {"item": "{steps[0].id}", "opacity": 60}}]
+    unknown_field = [FLIP, {"tool": "gimp_set_layer_properties", "arguments": {"item": "{steps[0].nope}"}}]
+    for recipe in (later, itself, unknown_field):
+        async with tool_client(Layered().ops()) as (client, bridge):
+            result = await client.call_tool("gimp_run_batch", {"files": [str(a)], "recipe": recipe})
+            assert error_code(result) == "INVALID_ARGUMENT", recipe
+            assert bridge.calls == [], recipe
+    message = result.structured_content["error"]["message"]
+    assert "nope" in message and "gimp_flip_image" in message

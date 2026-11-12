@@ -491,7 +491,11 @@ call of a listed tool, with that tool's own checks.
   arguments may use placeholders: `{image}` (the opened image), `{layer}` (its top layer),
   `{output}` (the output path, only as a whole value, only in tools with an `overwrite` argument),
   `{file}`, `{name}`, `{stem}`, `{ext}`, `{dir}`, `{index}` (1-based; `"{index}"` alone is a
-  number, `{index:03d}` is formatted). `{{` and `}}` are literal braces. Steps cannot call
+  number, `{index:03d}` is formatted), and `{steps[N].field}`: a top-level field of the result of
+  the earlier step `N` (0-based), e.g. `{steps[0].id}`, the layer a `gimp_import_layer` step created
+  (every result names the object it created or changed in `id`); alone as a value it keeps its type
+  (`"{steps[1].width}"` is a number). A reference to the same or a later step, or to a field the tool
+  does not return, is refused before anything runs. `{{` and `}}` are literal braces. Steps cannot call
   `gimp_run_batch`, `gimp_enable_toolsets` or `gimp_close_image`, nor tools of disabled toolsets.
 * Inputs: explicit absolute `files`, or the regular files matching `pattern` (`*.jpg`,
   `**/*.png`) inside the absolute `directory`, sorted. The pattern cannot be absolute (no drive or

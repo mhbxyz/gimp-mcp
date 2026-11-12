@@ -107,3 +107,31 @@ async def test_failures_can_stop_the_batch_and_outputs_are_not_overwritten(gimp:
         assert done["succeeded"] == 2
     with Image.open(out / "b.png") as img:
         assert img.convert("RGB").getpixel((0, 0)) == (255, 255, 255)  # replaced, and flipped
+
+
+async def test_a_step_changes_the_layer_an_earlier_step_imported(gimp: HeadlessGimp, tmp_path: Path):
+    """#162: watermark every photo at 50 % opacity: the opacity applies to the imported mark."""
+    source = tmp_path / "photos"
+    source.mkdir()
+    for name in ("a.png", "b.png"):
+        Image.new("RGB", (20, 10), (255, 255, 255)).save(source / name)
+    mark = tmp_path / "mark.png"
+    Image.new("RGB", (4, 4), (255, 0, 0)).save(mark)
+    out = tmp_path / "out"
+    out.mkdir()
+    recipe = [
+        {"tool": "gimp_import_layer", "arguments": {"image": "{image}", "path": str(mark), "x": 2, "y": 3}},
+        {"tool": "gimp_set_layer_properties", "arguments": {"item": "{steps[0].id}", "opacity": 50}},
+        {"tool": "gimp_export_image", "arguments": {"image": "{image}", "path": "{output}"}},
+    ]
+    async with mcp_client(gimp) as client:
+        report = await call(client, "gimp_run_batch", directory=str(source), pattern="*.png", recipe=recipe,
+                            output=str(out / "{stem}.png"))  # fmt: skip
+    assert report["succeeded"] == 2, report
+    for name in ("a.png", "b.png"):
+        with Image.open(out / name) as img:
+            rgb = img.convert("RGB")
+            mark_pixel, photo_pixel = rgb.getpixel((3, 4)), rgb.getpixel((15, 5))
+        # half red: GIMP blends in linear light, so 50 % of red over white is 188 in sRGB, not 128
+        assert isinstance(mark_pixel, tuple) and mark_pixel[0] == 255 and 180 < mark_pixel[1] < 196
+        assert photo_pixel == (255, 255, 255)  # the photo itself is unchanged
