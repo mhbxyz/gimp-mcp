@@ -132,5 +132,6 @@ async def test_a_step_changes_the_layer_an_earlier_step_imported(gimp: HeadlessG
         with Image.open(out / name) as img:
             rgb = img.convert("RGB")
             mark_pixel, photo_pixel = rgb.getpixel((3, 4)), rgb.getpixel((15, 5))
-        assert isinstance(mark_pixel, tuple) and mark_pixel[0] == 255 and 110 < mark_pixel[1] < 145  # half red
+        # half red: GIMP blends in linear light, so 50 % of red over white is 188 in sRGB, not 128
+        assert isinstance(mark_pixel, tuple) and mark_pixel[0] == 255 and 180 < mark_pixel[1] < 196
         assert photo_pixel == (255, 255, 255)  # the photo itself is unchanged
