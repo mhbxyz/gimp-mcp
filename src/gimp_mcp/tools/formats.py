@@ -121,7 +121,8 @@ def register(kit: Toolkit) -> None:
         description=(
             "Export an image with the format chosen from the extension (WebP, AVIF/HEIF, TIFF, BMP, GIF, ICO, PDF, "
             "PSD, JPEG XL… see gimp_list_file_formats) and validated options. Reports whether the result is "
-            "lossless and what happened to layers (flattened, kept, frames, pages, sizes). The image is unchanged."
+            "lossless and what happened to layers (flattened, kept, frames, pages, sizes). layers='flatten' "
+            "writes the visible composite as one page or frame (TIFF, PDF, PSD…), as seen. The image is unchanged."
         ),
         annotations=MUTATING,
     )
@@ -132,15 +133,23 @@ def register(kit: Toolkit) -> None:
         metadata: Metadata = [],  # noqa: B006
         procedure: Procedure = None,
         overwrite: bool = False,
+        layers: Annotated[
+            Literal["keep", "flatten"],
+            Field(
+                description="keep: what the format does with layers (TIFF: one page per layer). flatten: export "
+                "the visible composite as a single layer, without changing the image."
+            ),
+        ] = "keep",
     ) -> Exported:
         target = str(check_output_file(path, overwrite=overwrite))
         codec = await kit.codec()
         data = await kit.call(
             "image.export_as",
             {"image": codec.parse_image(image), "path": target, "options": options, "metadata": metadata,
-             "procedure": procedure},
+             "procedure": procedure, "layers": layers},
             codec=codec,
             mutating=True,
+            revision=2 if layers == "flatten" else 1,  # older plug-ins would ignore `layers`
         )  # fmt: skip
         return Exported(**data)
 

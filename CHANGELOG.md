@@ -35,6 +35,9 @@ what is covered by the compatibility promise.
   untranslated value (EXIF orientation `6` where the interpreted value reads `right, top`, or
   `droit, haut` in French), so a client can decide without knowing GIMP's language (#161). Needs the
   plug-in of this version (`metadata.get` revision 2).
+- `gimp_export_as(..., layers="flatten")` writes the visible composite as one page or layer (TIFF, PDF,
+  PSD…), as the image looks, without changing the image (#165); before, a layered image gave a TIFF
+  page per layer. Needs the plug-in of this version (`image.export_as` revision 2).
 
 ### Changed
 
