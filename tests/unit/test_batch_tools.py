@@ -315,3 +315,16 @@ async def test_step_references_are_checked_before_anything_runs(tmp_path):
             assert bridge.calls == [], recipe
     message = result.structured_content["error"]["message"]
     assert "nope" in message and "gimp_flip_image" in message
+
+
+async def test_a_step_with_an_unknown_key_is_refused_before_anything_runs(tmp_path):
+    """#215: `args` instead of `arguments` was silently dropped; the step then had no arguments."""
+    [a] = inputs(tmp_path / "in", "a.png")
+    recipe = [{"tool": "gimp_resize_image", "args": {"image": "{image}", "width": 20}}]
+    async with tool_client(Gimp().ops()) as (client, bridge):
+        result = await client.call_tool("gimp_run_batch", {"files": [str(a)], "recipe": recipe})
+    error = result.structured_content["error"]
+    assert error["code"] == "INVALID_ARGUMENT" and bridge.calls == []
+    [problem] = error["details"]["errors"]
+    assert problem["field"] == "recipe.0.args"
+    assert "unknown key" in problem["problem"] and "arguments" in problem["problem"] and "tool" in problem["problem"]

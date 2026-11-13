@@ -14,7 +14,7 @@ from typing import Annotated, Any, Literal
 import anyio
 from mcp.server.mcpserver import Context
 from mcp.server.mcpserver.tools.base import Tool
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from ..batch import (
     STEP_REFERENCE,
@@ -36,6 +36,8 @@ MAX_STEPS = 50
 
 
 class RecipeStep(BaseModel):
+    model_config = ConfigDict(extra="forbid")  # `args` instead of `arguments` is refused, not dropped (#215)
+
     tool: Annotated[str, Field(max_length=100, description="Name of a listed tool, e.g. gimp_scale_image.")]
     arguments: Annotated[
         dict[str, Any],

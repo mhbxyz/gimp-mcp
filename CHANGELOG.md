@@ -6,6 +6,12 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+### Breaking
+
+- A `gimp_run_batch` recipe step with a key other than `tool` and `arguments` (e.g. `args`) is refused
+  with `INVALID_ARGUMENT` naming the key and the expected ones (#215). It used to be dropped silently,
+  so the step ran without its arguments and the error pointed elsewhere.
+
 ### Documentation
 
 - Research note on agent orchestration with gimp-mcp (`docs/research/agent-orchestration.md`): single
