@@ -171,3 +171,11 @@ def test_the_per_os_workflow_installs_pinned_gimp_and_never_publishes():
     # packages from TestPyPI are installed only after their SHA-256 matched the built artifacts
     assert "verify_published.py testpypi" in text and "--download" in text
     assert "index serves" in text  # PyPI's CDN lag (see the Linux job)
+
+
+def test_a_pre_release_is_published_as_a_pre_release_and_not_in_the_mcp_registry():
+    """#124: 1.0.0rc1 becomes a GitHub pre-release (not 'latest'); the MCP registry keeps the last release."""
+    jobs = workflow()["jobs"]
+    assert "--prerelease" in str(jobs["github-draft"]["steps"])
+    assert "--prerelease" in str(jobs["finalize"]["steps"]) and "--latest=false" in str(jobs["finalize"]["steps"])
+    assert "pre_release" in str(jobs["publish-mcp-registry"].get("if", ""))

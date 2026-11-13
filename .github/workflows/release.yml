@@ -42,6 +42,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.version.outputs.version }}
+      pre_release: ${{ steps.version.outputs.pre_release }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,6 +56,9 @@ jobs:
           version=$(uv run --quiet python -c "import gimp_mcp; print(gimp_mcp.__version__)")
           if [ "$DRY_RUN" != "true" ]; then test "v$version" = "$RELEASE_REF"; fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          # PEP 440 pre-release (1.0.0rc1, aN, bN): a GitHub pre-release, not in the MCP registry (#124)
+          if echo "$version" | grep -Eq '(a|b|rc)[0-9]+$'; then pre=true; else pre=false; fi
+          echo "pre_release=$pre" >> "$GITHUB_OUTPUT"
       - run: scripts/build-release.sh
       - uses: actions/upload-artifact@v4
         with:
@@ -135,13 +139,16 @@ jobs:
       - name: Create or update the draft release (never touches a published one)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PRE_RELEASE: ${{ needs.build.outputs.pre_release }}
         run: |
+          kind=""
+          if [ "$PRE_RELEASE" = "true" ]; then kind="--prerelease"; fi
           if draft=$(gh release view "$RELEASE_REF" --json isDraft -q .isDraft 2>/dev/null); then
             if [ "$draft" != "true" ]; then echo "release $RELEASE_REF is already public"; exit 1; fi
             gh release edit "$RELEASE_REF" --notes-file dist/RELEASE_NOTES.md
             gh release upload "$RELEASE_REF" --clobber dist/*.whl dist/*.tar.gz dist/SHA256SUMS
           else
-            gh release create "$RELEASE_REF" --draft --verify-tag --title "gimp-mcp ${RELEASE_REF#v}" \
+            gh release create "$RELEASE_REF" --draft $kind --verify-tag --title "gimp-mcp ${RELEASE_REF#v}" \
               --notes-file dist/RELEASE_NOTES.md dist/*.whl dist/*.tar.gz dist/SHA256SUMS
           fi
 
@@ -312,12 +319,19 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-        run: gh release edit "$RELEASE_REF" --draft=false --latest
+          PRE_RELEASE: ${{ needs.build.outputs.pre_release }}
+        run: |
+          if [ "$PRE_RELEASE" = "true" ]; then
+            gh release edit "$RELEASE_REF" --draft=false --prerelease --latest=false
+          else
+            gh release edit "$RELEASE_REF" --draft=false --latest
+          fi
 
   publish-mcp-registry:
     name: Publish to the MCP registry
     needs: [build, verify-pypi, verify-pypi-os]
-    if: ${{ !inputs.dry_run }}
+    # the registry lists the last release; release candidates stay on PyPI and GitHub (#124)
+    if: ${{ !inputs.dry_run && needs.build.outputs.pre_release != 'true' }}
     runs-on: ubuntu-24.04
     environment:
       name: pypi

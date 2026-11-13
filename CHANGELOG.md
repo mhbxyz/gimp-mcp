@@ -18,6 +18,12 @@ what is covered by the compatibility promise.
   `gimp_export_palette`, `gimp_create_link_layer` and `gimp_set_link_layer`. The deprecation mechanism
   stays for 1.x (ADR 0011).
 
+### Added
+
+- Pre-releases (#124): `scripts/prepare_release.py 1.0.0rc1` (PEP 440 `rcN`, `bN`, `aN`, ordered before the
+  release) and `release.yml` publish a release candidate to PyPI and as a GitHub pre-release that is
+  never marked latest; the MCP registry keeps the last final release.
+
 ### Fixed
 
 - The `screenshot-annotation` evaluation accepts an arrow that reaches the E-mail field from the right:

@@ -34,6 +34,10 @@ Design and verified facts: [ADR 0002](adr/0002-release-pipeline.md).
    * makes the GitHub release public;
    * publishes `server.json` to the official MCP registry (approval of the
      `pypi` environment, GitHub OIDC; see [ADR 0004](adr/0004-discovery-channels.md)).
+   A **pre-release** (`scripts/prepare_release.py 1.0.0rc1`, PEP 440 versions `X.Y.ZrcN`, `bN`, `aN`, ordered
+   before `X.Y.Z`) goes through the same steps and is published on PyPI (installed only when asked:
+   `uvx gimp-mcp==1.0.0rc1`) and as a GitHub **pre-release**, never marked latest; the MCP registry
+   keeps listing the last final release.
 4. If a job fails, fix the cause and use *Re-run failed jobs*: every step is
    safe to repeat (draft updated, TestPyPI `skip-existing`, PyPI upload skipped
    when identical, a published GitHub release is never modified). Nothing
