@@ -1,0 +1,67 @@
+name: Release-candidate report
+description: Feedback on a gimp-mcp release candidate (1.0.0rcN) before the 1.0 API freeze.
+title: "[rc] "
+labels: ["release-candidate"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for trying a release candidate. After 1.0.0, tool names, parameters, results, error codes and
+        the CLI are frozen until 2.0 ([what 1.x guarantees](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/compatibility.md#the-1x-compatibility-promise)),
+        so now is the time to say what should change. Every report is triaged: fixed before 1.0.0, or deferred to
+        1.x with a written reason.
+  - type: input
+    id: version
+    attributes:
+      label: Release candidate
+      description: Output of `uvx gimp-mcp@1.0.0rcN --version` (or `gimp-mcp --version`).
+      placeholder: gimp-mcp 1.0.0rc1
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is it about?
+      options:
+        - API name or shape (a tool, parameter, result or error that should be different)
+        - A tool that is missing or a tool that is not needed
+        - Something does not work (bug)
+        - Installation or platform
+        - Documentation
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: What happened, and what you expected
+      description: |
+        For an API remark, name the tool and show the call (arguments) and the result or error you got.
+        For a bug, the smallest steps that reproduce it.
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: Operating system, GIMP version and how it is installed (distribution package, Flatpak, gimp.org installer).
+      placeholder: Ubuntu 26.04, GIMP 3.2.6 (apt)
+    validations:
+      required: true
+  - type: input
+    id: client
+    attributes:
+      label: MCP client and model
+      placeholder: Claude Code 2.x with Claude Sonnet 5.5
+  - type: textarea
+    id: doctor
+    attributes:
+      label: "`gimp-mcp doctor` output"
+      description: Optional for API remarks; useful for bugs and installation problems.
+      render: text
+  - type: checkboxes
+    id: blocking
+    attributes:
+      label: Does it block 1.0.0?
+      options:
+        - label: I think 1.0.0 should not ship without a fix (a maintainer decides and adds the `rc-blocker` label).

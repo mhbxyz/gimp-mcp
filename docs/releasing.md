@@ -37,7 +37,9 @@ Design and verified facts: [ADR 0002](adr/0002-release-pipeline.md).
    A **pre-release** (`scripts/prepare_release.py 1.0.0rc1`, PEP 440 versions `X.Y.ZrcN`, `bN`, `aN`, ordered
    before `X.Y.Z`) goes through the same steps and is published on PyPI (installed only when asked:
    `uvx gimp-mcp==1.0.0rc1`) and as a GitHub **pre-release**, never marked latest; the MCP registry
-   keeps listing the last final release.
+   keeps listing the last final release. Before each release candidate, update the README's "Try 1.0.0rcN"
+   note to its version (remove the note in the final release); feedback arrives through the
+   release-candidate issue template, and blocking reports get the `rc-blocker` label.
 4. If a job fails, fix the cause and use *Re-run failed jobs*: every step is
    safe to repeat (draft updated, TestPyPI `skip-existing`, PyPI upload skipped
    when identical, a published GitHub release is never modified). Nothing
