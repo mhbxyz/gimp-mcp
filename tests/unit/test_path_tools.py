@@ -72,3 +72,15 @@ async def test_path_to_selection_and_delete_encode_ids():
         assert selected.structured_content["image"] == f"image:1@{SESSION}"
         deleted = await client.call_tool("gimp_delete_path", {"path": tid(9)})
         assert deleted.structured_content["deleted"] == tid(9)
+
+
+async def test_paths_are_exported_only_to_svg_files(tmp_path):
+    async with tool_client({"paths.export_svg": lambda p: {"svg": None, "file": p["file"], "bytes": 1}}) as (
+        client,
+        bridge,
+    ):
+        for name in (".bashrc", "x.sh", "x.svg.bat"):
+            refused = await client.call_tool("gimp_export_path_svg", {"image": iid(1), "file": str(tmp_path / name)})
+            assert error_code(refused) == "INVALID_ARGUMENT" and bridge.calls == [], name
+        ok = await client.call_tool("gimp_export_path_svg", {"image": iid(1), "file": str(tmp_path / "a.SVG")})
+        assert not ok.is_error

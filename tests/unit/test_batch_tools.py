@@ -146,6 +146,9 @@ async def test_invalid_recipes_are_refused_before_any_file_is_opened(tmp_path):
         ([{**EXPORT, "arguments": {**EXPORT["arguments"], "overwrite": True}}], out),  # overwrite is the batch's
         ([{"tool": "gimp_flip_image", "arguments": {"image": "{output}", "orientation": "vertical"}}], out),
         ([], None),
+        ([{"tool": "gimp_enable_toolsets", "arguments": {"toolsets": ["procedures"]}}], None),  # no escalation
+        ([EXPORT], str(tmp_path / "{stem:>999999999}.png")),  # a 1 GB file name (#122)
+        ([EXPORT], str(tmp_path / "{stem:>{index}}.png")),  # a width taken from another placeholder
     ]
     gimp = Gimp()
     async with tool_client(gimp.ops()) as (client, bridge):

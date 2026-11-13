@@ -19,6 +19,12 @@ async def test_existing_targets_and_bad_directories_never_reach_gimp(tmp_path):
         )
         assert error_code(relative) == "INVALID_ARGUMENT" and error_code(missing) == "WRITE_FAILED"
         assert error_code(template) == "INVALID_ARGUMENT"
+        for bad in ("../{index}", "/tmp/{index}", "sub/{index}", "a\\{index}", "C:{index}", "{index:0999999999d}",
+                    "{name!r}", "{index:{index}}"):  # fmt: skip
+            escaping = await client.call_tool(
+                "gimp_export_layers", {"image": iid(1), "directory": str(tmp_path), "template": bad}
+            )
+            assert error_code(escaping) == "INVALID_ARGUMENT", bad  # a layer file stays in its directory (#122)
         nothing = await client.call_tool("gimp_open_with_options", {"path": str(tmp_path / "none.pdf")})
         assert error_code(nothing) == "FILE_NOT_FOUND"
         assert bridge.calls == []
@@ -63,3 +69,15 @@ async def test_an_explicit_color_profile_choice_is_sent(tmp_path):
         )
         await client.call_tool("gimp_export_as", {"image": iid(1), "path": str(tmp_path / "b.webp")})
     assert [params["color_profile"] for _name, params in bridge.calls] == [True, None]
+
+
+async def test_layer_exports_follow_the_path_rules_of_the_os(tmp_path, monkeypatch):
+    # A network directory made os.path.isdir contact the server before anything was checked (#122).
+    from gimp_mcp import platforms
+
+    async with tool_client({}) as (client, bridge):
+        monkeypatch.setattr(platforms, "CURRENT", "windows")
+        for directory in (r"\\attacker\share\out", r"\\?\C:\out"):
+            result = await client.call_tool("gimp_export_layers", {"image": iid(1), "directory": directory})
+            assert error_code(result) == "INVALID_ARGUMENT", directory
+        assert bridge.calls == []

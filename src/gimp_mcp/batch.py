@@ -45,13 +45,32 @@ def invalid(message: str, hint: str | None = None, **details: Any) -> GimpMcpErr
     return GimpMcpError("INVALID_ARGUMENT", message, hint=hint, details=details)
 
 
+# A format spec such as {index:03d} or {stem:>20}: no nested field and at most three digits of width, so a
+# placeholder cannot ask for a gigabyte of padding (#122).
+SAFE_FORMAT_SPEC = re.compile(r"[<>=^]?0?\d{0,3}[ds]?")
+
+
+def template_fields(text: str) -> list[str]:
+    """The field names of a str.format template, refused when malformed, converted (!r) or padded too wide."""
+    try:
+        parsed = [
+            (field, spec, conversion) for _, field, spec, conversion in _FORMATTER.parse(text) if field is not None
+        ]
+    except ValueError as error:
+        raise invalid(f"malformed placeholder in {text!r}: {error}") from error
+    for field, spec, conversion in parsed:
+        if conversion is not None or not SAFE_FORMAT_SPEC.fullmatch(spec or ""):
+            raise invalid(
+                f"placeholder {{{field}{'!' + conversion if conversion else ''}{':' + spec if spec else ''}}} in "
+                f"{text!r}: only a width of up to three digits is allowed, like {{{field}:03d}}"
+            )
+    return [field for field, _, _ in parsed]
+
+
 def placeholders(text: str, allowed: Sequence[str] = PLACEHOLDERS, step: int | None = None) -> set[str]:
     """The placeholders used in ``text`` ({{ and }} are literal braces). In the arguments of step ``step``,
     {steps[N].field} may name the result of an earlier step."""
-    try:
-        fields = [field for _, field, _, _ in _FORMATTER.parse(text) if field is not None]
-    except ValueError as error:
-        raise invalid(f"malformed placeholder in {text!r}: {error}") from error
+    fields = template_fields(text)
     for field in fields:
         reference = STEP_REFERENCE.fullmatch(field)
         if reference is not None and step is not None:

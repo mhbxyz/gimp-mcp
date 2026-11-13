@@ -102,3 +102,21 @@ def test_a_meaningful_share_of_the_pdb_is_callable():
     callable_ = [name for name, meta in PROCS.items() if gmb_policy.evaluate(meta)[0]]
     assert len(callable_) > 300
     assert not any("eval" in name or "script-fu" in name for name in callable_)
+
+
+def _third_party(name: str) -> dict:
+    # G'MIC-Qt's procedure in GIMP 3: its `command` string can run shell commands (`exec`).
+    return {"name": name, "type": "plugin", "arguments": [
+        {"name": "run-mode", "type": "GimpRunMode"}, {"name": "image", "type": "GimpImage"},
+        {"name": "command", "type": "gchararray"}], "return_values": []}  # fmt: skip
+
+
+@pytest.mark.parametrize("name", ["plug-in-gmic-qt", "plug-in-my-filter", "plug-in-despeckle-pro"])
+def test_only_the_plug_ins_shipped_with_gimp_are_callable(name):
+    # Any installed plug-in named plug-in-* used to pass: a third-party one can do anything its author let it (#122).
+    ok, reason = gmb_policy.evaluate(_third_party(name))
+    assert not ok and reason is not None and ("not shipped with GIMP" in reason or "denied" in reason)
+
+
+def test_the_list_of_gimp_plug_ins_is_the_inventory_of_gimp():
+    assert {name for name in PROCS if name.startswith("plug-in-")} == gmb_policy.GIMP_PLUG_INS

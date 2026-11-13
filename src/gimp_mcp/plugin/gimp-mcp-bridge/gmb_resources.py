@@ -1,7 +1,13 @@
 """Resources (#52): previews and palette files. Standard library only, no GIMP."""
 
+import re
 import struct
 import zlib
+
+CONTROL = re.compile("[\x00-\x1f\x7f-\x9f]")
+# Characters that end a string or a comment in the css, python, php and java palette exports, which paste
+# entry names into source code as they are (#122).
+CODE_UNSAFE = re.compile("[\"'\\\\`<>{}\x00-\x1f\x7f-\x9f]")
 
 
 def encode_png(pixels, width, height, channels):
@@ -48,7 +54,19 @@ def palette_swatches(colors, columns, cell=16):
 
 def write_gpl(name, columns, entries):
     """GIMP palette file (.gpl) text: entries are (name, (r, g, b)) with 0-255 values."""
-    lines = ["GIMP Palette", "Name: %s" % name, "Columns: %d" % columns, "#"]
+    lines = ["GIMP Palette", "Name: %s" % _one_line(name), "Columns: %d" % columns, "#"]
     for entry_name, (r, g, b) in entries:
-        lines.append("%3d %3d %3d\t%s" % (r, g, b, entry_name or "Untitled"))
+        lines.append("%3d %3d %3d\t%s" % (r, g, b, _one_line(entry_name) or "Untitled"))
     return "\n".join(lines) + "\n"
+
+
+def _one_line(text):
+    """Control characters (line breaks, tabs) become spaces: a name never starts a line of its own (#122)."""
+    return CONTROL.sub(" ", text or "")
+
+
+def unsafe_palette_name(names, fmt):
+    """The first name that GIMP's code exports (css, python, php, java) would paste into code unescaped, or None."""
+    if fmt not in ("css", "python", "php", "java"):
+        return None
+    return next((name for name in names if CODE_UNSAFE.search(name or "")), None)

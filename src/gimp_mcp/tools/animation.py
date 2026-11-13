@@ -15,7 +15,7 @@ from ..colors import parse_color
 from ..errors import GimpMcpError
 from ..models import ChangedObject
 from ..paths import check_output_file
-from ..toolkit import MUTATING, READ_ONLY, Toolkit, ToolResult
+from ..toolkit import DESTRUCTIVE, MUTATING, READ_ONLY, Toolkit, ToolResult
 from .formats import Exported
 from .inspect import ImageId, ItemId
 
@@ -174,7 +174,7 @@ def register(kit: Toolkit) -> None:
             "duration and disposal for frames without one, or force them on every frame. GIMP 3.2 has no APNG "
             "exporter. The image is unchanged. The undo history is unchanged."
         ),
-        annotations=MUTATING,
+        annotations=DESTRUCTIVE,
     )
     async def gimp_export_animation(
         image: ImageId,

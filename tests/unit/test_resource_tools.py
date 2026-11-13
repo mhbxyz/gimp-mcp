@@ -58,3 +58,19 @@ async def test_export_refuses_existing_files_and_previews_are_images(tmp_path):
         result = await client.call_tool("gimp_inspect_resource", {"kind": "palette", "name": "Web", "preview": True})
         assert [block.type for block in result.content].count("image") == 1
         assert "preview" not in result.structured_content
+
+
+async def test_a_palette_is_exported_only_to_a_file_named_for_its_format(tmp_path):
+    # Without this rule, a palette exported as gpl to ~/.zshenv or a startup .bat runs its text (#122).
+    ops = {"palette.export": lambda p: {"file": p["file"], "format": p["format"], "bytes": 1}}
+    async with tool_client(ops) as (client, bridge):
+        for path, fmt in ((".zshenv", "gpl"), ("x.fish", "gpl"), ("x.bat", "text"), ("x.gpl", "python")):
+            refused = await client.call_tool(
+                "gimp_export_palette", {"name": "Web", "path": str(tmp_path / path), "format": fmt}
+            )
+            assert error_code(refused) == "INVALID_ARGUMENT" and bridge.calls == [], (path, fmt)
+        for path, fmt in (("a.gpl", "gpl"), ("a.GPL", "gpl"), ("a.txt", "text"), ("a.py", "python"),
+                          ("a.css", "css"), ("a.php", "php"), ("a.java", "java"), ("a.kpl", "kpl")):  # fmt: skip
+            args = {"name": "Web", "path": str(tmp_path / path), "format": fmt}
+            ok = await client.call_tool("gimp_export_palette", args)
+            assert not ok.is_error, (path, fmt)

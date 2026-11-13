@@ -74,3 +74,22 @@ def test_hidden_arguments_are_not_options():
 )
 def test_extensions_are_derived_from_procedure_names(procedure, extensions):
     assert gmb_formats.extensions_for(procedure) == extensions
+
+
+def test_procedures_that_read_any_file_are_refused():
+    # file-raw-load turns any file (an SSH key) into pixels the agent can read back; the colorxhtml export
+    # copies the text of a file named in its options into the page (#122).
+    refusal = gmb_formats.refusal
+    assert refusal("file-raw-load", "/home/u/.ssh/id_ed25519", {}) is not None
+    assert refusal("file-raw-load", "/home/u/scan.data", {}) is None
+    assert refusal("file-raw-load", "/home/u/scan.RAW", {}) is None
+    assert refusal("file-colorxhtml-export", "/x/a.html", {"source-file": True}) is not None
+    assert refusal("file-colorxhtml-export", "/x/a.html", {"source-file": False, "characters": "abc"}) is None
+    assert refusal("file-png-export", "/x/a.png", {"source-file": True}) is None
+
+
+def test_a_layer_file_name_never_leaves_its_directory():
+    assert gmb_formats.layer_filename("{index:02d}-{name}", 3, "../../etc/x", "png") == "03-_.._etc_x.png"
+    for template in ("../{index}", "/tmp/{index}", "a\\{index}"):
+        with pytest.raises(ValueError):
+            gmb_formats.layer_filename(template, 0, "x", "png")

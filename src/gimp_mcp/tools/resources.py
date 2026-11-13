@@ -20,6 +20,8 @@ from ..toolkit import DESTRUCTIVE, MUTATING, READ_ONLY, Toolkit, ToolResult
 Kind = Literal["brush", "gradient", "pattern", "palette"]
 Editable = Literal["brush", "gradient", "palette"]
 Name = Annotated[str, Field(min_length=1, max_length=255, description="Resource name, as listed.")]
+PALETTE_SUFFIXES = {"gpl": ".gpl", "css": ".css", "text": ".txt", "python": ".py", "php": ".php", "java": ".java",
+                    "kpl": ".kpl"}  # fmt: skip
 Color = Annotated[str, Field(description="'#rrggbb' or '#rrggbbaa' (sRGB).")]
 
 
@@ -259,9 +261,10 @@ def register(kit: Toolkit) -> None:
         title="Export a palette",
         description=(
             "Write a palette to a file: gpl (GIMP palette), css, text, python, php, java (GIMP's palette exports) "
-            "or kpl (Krita). Writing the file is not in GIMP's undo history."
+            "or kpl (Krita), to a file with that format's extension (.gpl, .css, .txt, .py, .php, .java, .kpl). "
+            "Writing the file is not in GIMP's undo history."
         ),
-        annotations=MUTATING,
+        annotations=DESTRUCTIVE,
     )
     async def gimp_export_palette(
         name: Name,
@@ -269,5 +272,9 @@ def register(kit: Toolkit) -> None:
         format: Literal["gpl", "css", "text", "python", "php", "java", "kpl"] = "gpl",
         overwrite: bool = False,
     ) -> ExportResult:
+        suffix = PALETTE_SUFFIXES[format]
+        if not path.lower().endswith(suffix):
+            # A palette's text written to ~/.zshenv or a startup script would run (#122).
+            raise GimpMcpError("INVALID_ARGUMENT", f"a {format} palette is written to a {suffix} file", {"path": path})
         target = str(check_output_file(path, overwrite=overwrite))
         return ExportResult(**await call("palette.export", {"name": name, "file": target, "format": format}))
