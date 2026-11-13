@@ -6,6 +6,8 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+## [1.0.0rc1] - 2026-11-13
+
 ### Breaking
 
 - A `gimp_run_batch` recipe step with a key other than `tool` and `arguments` (e.g. `args`) is refused
@@ -518,6 +520,7 @@ First usable release. Linux only, GIMP 3.2+.
 - Demo (`demo/thumbnail.py`) building a 1280×720 thumbnail through MCP only.
 - CI with a real GIMP 3.2.6 pinned through an Arch Linux Archive snapshot.
 
+[1.0.0rc1]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v1.0.0rc1
 [0.7.0]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v0.7.0
 [0.6.0]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v0.6.0
 [0.5.0]: https://github.com/mhbxyz/gimp-mcp/releases/tag/v0.5.0
