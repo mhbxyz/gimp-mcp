@@ -50,3 +50,10 @@ def test_code_palette_exports_refuse_names_that_would_change_the_code():
     for name in ('x"}; import os', "a'b", "a\\b", "a\nb", "a<b", "a`b", "a\x00b"):
         assert gmb_resources.unsafe_palette_name(["Red", name], "python") == name
     assert gmb_resources.unsafe_palette_name(['x"y'], "gpl") is None  # the .gpl writer escapes by itself
+
+
+def test_an_imported_palette_file_gets_unix_line_endings():
+    # GIMP for Windows keeps the CR of a CRLF .gpl in every entry name ("Navy\r"), which then reads as a
+    # control character in the code exports (#122).
+    data = b"GIMP Palette\r\nName: Team\r\n#\r\n 10  20  30\tNavy\r\n 1 2 3\tOld\rMac\n"
+    assert gmb_resources.unix_newlines(data) == b"GIMP Palette\nName: Team\n#\n 10  20  30\tNavy\n 1 2 3\tOld\nMac\n"

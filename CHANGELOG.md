@@ -39,6 +39,8 @@ what is covered by the compatibility promise.
 
 - The `screenshot-annotation` evaluation accepts an arrow that reaches the E-mail field from the right:
   the prompt names no side, and a correct agent run was counted as a regression (#232).
+- A palette imported from a `.gpl` file with Windows line endings no longer keeps a carriage return
+  at the end of every entry name (GIMP for Windows did) (#122).
 
 ### Security
 

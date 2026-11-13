@@ -2726,8 +2726,6 @@ def palette_edit(params):
 
 @mutation
 def palette_import(params):
-    import shutil
-
     source = params["file"]
     entries = params.get("entries")  # colors read by the server from another format (#81)
     folder = os.path.join(Gimp.directory(), "palettes")
@@ -2738,7 +2736,10 @@ def palette_import(params):
         raise BridgeError("FILE_EXISTS", "%s is already in your palettes folder" % basename)
     before = {p.get_name() for p in Gimp.palettes_get_list("")}
     if entries is None:
-        shutil.copyfile(source, target)
+        with open(source, "rb") as handle:
+            data = gmb_resources.unix_newlines(handle.read())
+        with open(target, "wb") as handle:
+            handle.write(data)
     else:
         rows = [(e["name"], tuple(e["rgb"])) for e in entries]
         with open(target, "w", encoding="utf-8", newline="\n") as handle:  # GIMP keeps a CR in names

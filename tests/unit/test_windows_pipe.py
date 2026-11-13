@@ -133,6 +133,6 @@ def test_the_token_file_is_readable_only_by_the_user_and_administrators(tmp_path
     gmb_pipe.write_token(str(token), "t" * 64)
     listing = subprocess.run(["icacls", str(token)], capture_output=True, text=True, check=True).stdout
     principals = {line.replace(str(token), "").strip().split(":(")[0] for line in listing.splitlines() if ":(" in line}
-    allowed = {"NT AUTHORITY\\SYSTEM", "BUILTIN\\Administrators"}
+    allowed = {"NT AUTHORITY\\SYSTEM", "BUILTIN\\Administrators", "OWNER RIGHTS"}  # OWNER RIGHTS: the owner, the user
     others = {p for p in principals if p not in allowed and not p.lower().endswith("\\" + getpass.getuser().lower())}
     assert principals and others == set(), listing

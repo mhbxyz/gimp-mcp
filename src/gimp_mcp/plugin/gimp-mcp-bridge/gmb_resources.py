@@ -60,6 +60,11 @@ def write_gpl(name, columns, entries):
     return "\n".join(lines) + "\n"
 
 
+def unix_newlines(data):
+    """A palette file's bytes with LF line endings: GIMP keeps a CR in the names of a CRLF file."""
+    return data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+
+
 def _one_line(text):
     """Control characters (line breaks, tabs) become spaces: a name never starts a line of its own (#122)."""
     return CONTROL.sub(" ", text or "")
