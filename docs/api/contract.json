@@ -18312,6 +18312,7 @@
       "inputSchema": {
         "$defs": {
           "RecipeStep": {
+            "additionalProperties": false,
             "properties": {
               "arguments": {
                 "additionalProperties": true,

@@ -492,7 +492,8 @@ continue_on_error=true, dry_run=false, max_files=200)` applies one recipe to man
 (resize a folder, watermark, convert formats). It runs in the MCP server: each step is an ordinary
 call of a listed tool, with that tool's own checks.
 
-* `recipe`: up to 50 steps `{"tool": "gimp_resize_image", "arguments": {...}}`. Strings in
+* `recipe`: up to 50 steps `{"tool": "gimp_resize_image", "arguments": {...}}`; any other key in a step
+  (`args`…) is `INVALID_ARGUMENT` naming the expected `tool` and `arguments`. Strings in
   arguments may use placeholders: `{image}` (the opened image), `{layer}` (its top layer),
   `{output}` (the output path, only as a whole value, only in tools with an `overwrite` argument),
   `{file}`, `{name}`, `{stem}`, `{ext}`, `{dir}`, `{index}` (1-based; `"{index}"` alone is a

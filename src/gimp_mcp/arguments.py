@@ -36,9 +36,31 @@ def _describe(schema: dict[str, Any], defs: dict[str, Any]) -> str:
     return kind
 
 
-def _problem(error: Any) -> str:
+def _expected_keys(schema: dict[str, Any], loc: tuple[Any, ...]) -> list[str]:
+    """The property names allowed where an unknown key was found (``loc`` without the key itself)."""
+    defs: dict[str, Any] = schema.get("$defs", {})
+    node: dict[str, Any] = schema
+
+    def resolve(item: dict[str, Any]) -> dict[str, Any]:
+        ref = item.get("$ref")
+        if isinstance(ref, str):
+            return defs.get(ref.rsplit("/", 1)[-1], {})
+        variants = [v for v in item.get("anyOf", []) if v.get("type") != "null"]
+        return resolve(variants[0]) if len(variants) == 1 else item
+
+    for part in loc:
+        node = resolve(node)
+        # a list index goes into the items, a name into the properties
+        node = node.get("items", {}) if isinstance(part, int) else node.get("properties", {}).get(str(part), {})
+    return list(resolve(node).get("properties", {}))
+
+
+def _problem(error: Any, schema: dict[str, Any] | None = None) -> str:
     if error["type"] == "missing":
         return "missing"
+    if error["type"] == "extra_forbidden" and schema is not None:
+        expected = _expected_keys(schema, tuple(error["loc"][:-1]))
+        return "unknown key" + (f"; expected: {', '.join(expected)}" if expected else "")
     message = _INSTANCE_OF.sub("", str(error["msg"]))
     message = re.sub(r"^Input should", "should", message)
     message = re.sub(r"^Value error, ", "", message)
@@ -55,7 +77,7 @@ def invalid_arguments(
     defs: dict[str, Any] = schema.get("$defs", {})
     required: list[str] = list(schema.get("required", []))
     problems = [
-        {"field": ".".join(str(part) for part in e["loc"]) or "(arguments)", "problem": _problem(e)}
+        {"field": ".".join(str(part) for part in e["loc"]) or "(arguments)", "problem": _problem(e, schema)}
         for e in error.errors(include_url=False)
     ]
     unknown = sorted(name for name in arguments if name not in properties)
