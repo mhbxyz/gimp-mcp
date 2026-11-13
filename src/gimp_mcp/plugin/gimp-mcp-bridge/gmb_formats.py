@@ -66,7 +66,25 @@ def option_names(arguments):
 def layer_filename(template, index, name, extension):
     """File name for a layer export: ``{index}`` and ``{name}`` (made safe for file systems)."""
     safe = "".join(c if c.isalnum() or c in " ._-" else "_" for c in name).strip(" .") or "layer"
-    return template.format(index=index, name=safe) + "." + extension
+    filename = template.format(index=index, name=safe) + "." + extension
+    if any(c in filename for c in "/\\:"):
+        raise ValueError("a layer file name stays in its directory: %r" % filename)  # #122
+    return filename
+
+
+# Loaders that read any file, whatever it holds, only for their own extensions.
+CONTENT_BLIND_LOADERS = {"file-raw-load": (".data", ".raw")}
+
+
+def refusal(procedure, path, options):
+    """Why a load or export with these options is refused, or None. Some procedures read files other than the
+    one opened or written; the agent must not reach a private file through them (#122)."""
+    extensions = CONTENT_BLIND_LOADERS.get(procedure)
+    if extensions and not path.lower().endswith(extensions):
+        return "%s reads any file as pixels: only %s files" % (procedure, " and ".join(extensions))
+    if procedure == "file-colorxhtml-export" and (options or {}).get("source-file"):
+        return "source-file reads the characters from another file: give them in characters instead"
+    return None
 
 
 # GIMP 3.2 does not tell plug-ins which extensions another plug-in's file procedure handles:

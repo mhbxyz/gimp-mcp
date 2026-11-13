@@ -7,13 +7,15 @@ Exports write no metadata unless asked (``metadata``).
 from __future__ import annotations
 
 import os
+import string
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
 
+from ..batch import template_fields
 from ..errors import GimpMcpError
-from ..paths import check_input_file, check_output_file
-from ..toolkit import MUTATING, READ_ONLY, Toolkit
+from ..paths import check_input_file, check_output_file, local_absolute
+from ..toolkit import DESTRUCTIVE, MUTATING, READ_ONLY, Toolkit
 from .inspect import ImageId
 
 Value = bool | int | float | str | list[int]
@@ -125,7 +127,7 @@ def register(kit: Toolkit) -> None:
             "writes the visible composite as one page or frame (TIFF, PDF, PSD…), as seen. The image and its "
             "undo history are unchanged."
         ),
-        annotations=MUTATING,
+        annotations=DESTRUCTIVE,
     )
     async def gimp_export_as(
         image: ImageId,
@@ -193,7 +195,7 @@ def register(kit: Toolkit) -> None:
             "template ({index}, {name}); crop=true trims each file to the layer's bounds. The image is unchanged. "
             "The undo history is unchanged."
         ),
-        annotations=MUTATING,
+        annotations=DESTRUCTIVE,
     )
     async def gimp_export_layers(
         image: ImageId,
@@ -205,15 +207,16 @@ def register(kit: Toolkit) -> None:
         options: Options = {},  # noqa: B006
         overwrite: bool = False,
     ) -> LayerFiles:
-        folder = os.path.abspath(os.path.expanduser(directory))
-        if not os.path.isabs(os.path.expanduser(directory)):
-            raise GimpMcpError("INVALID_ARGUMENT", "directory must be an absolute path")
+        folder = os.path.abspath(local_absolute(directory))  # before any file system access (#122)
         if not os.path.isdir(folder) or not os.access(folder, os.W_OK):
             raise GimpMcpError("WRITE_FAILED", f"{folder} is not a writable directory", details={"path": folder})
-        try:
-            template.format(index=0, name="x")
-        except (KeyError, IndexError, ValueError) as error:
-            raise GimpMcpError("INVALID_ARGUMENT", f"template: {error}") from None
+        unknown = [field for field in template_fields(template) if field not in ("index", "name")]
+        if unknown:
+            raise GimpMcpError("INVALID_ARGUMENT", f"template: unknown placeholder {{{unknown[0]}}}; use {{index}} "
+                               "and {name}")  # fmt: skip
+        literal = "".join(text for text, *_ in string.Formatter().parse(template))
+        if any(c in literal for c in "/\\:"):
+            raise GimpMcpError("INVALID_ARGUMENT", "template: a file name, without / \\ or : (files stay in directory)")
         codec = await kit.codec()
         data = await kit.call(
             "image.export_layers",
@@ -233,7 +236,7 @@ def register(kit: Toolkit) -> None:
             "Export a rectangle of the image (inside the canvas) to a file in any format. Image unchanged. The "
             "undo history is unchanged."
         ),
-        annotations=MUTATING,
+        annotations=DESTRUCTIVE,
     )
     async def gimp_export_region(
         image: ImageId,

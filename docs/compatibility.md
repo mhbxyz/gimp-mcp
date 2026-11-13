@@ -31,7 +31,9 @@ the newest GIMP gimp.org publishes, stable or development (`ci/newest_gimp.py` r
 https://www.gimp.org/gimp_versions.json and verifies the download's SHA-256), runs the whole e2e suite
 on it on macOS and writes the verdict and the failed tests in the job summary. A new GIMP series becomes
 **supported** only once that job is green on it and the coverage matrix (`docs/coverage.md`) is
-regenerated with it; then `SUPPORTED_GIMP_SERIES` (`src/gimp_mcp/versions.py`) and this page change.
+regenerated with it; then `SUPPORTED_GIMP_SERIES` (`src/gimp_mcp/versions.py`) and this page change,
+and so does `GIMP_PLUG_INS` (`gmb_policy.py`, the plug-ins `gimp_call_procedure` may run: a test keeps it
+equal to the inventory, so a plug-in new in that GIMP stays refused until then).
 A newer GIMP may keep its profile in another folder (`~/.config/GIMP/3.4`…) and its console under another
 name: point `gimp-mcp install-plugin --gimp-dir` and `GIMP_MCP_GIMP_CONSOLE` at them if they are not found.
 

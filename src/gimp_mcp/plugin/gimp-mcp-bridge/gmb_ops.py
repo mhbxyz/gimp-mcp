@@ -2726,8 +2726,6 @@ def palette_edit(params):
 
 @mutation
 def palette_import(params):
-    import shutil
-
     source = params["file"]
     entries = params.get("entries")  # colors read by the server from another format (#81)
     folder = os.path.join(Gimp.directory(), "palettes")
@@ -2738,7 +2736,10 @@ def palette_import(params):
         raise BridgeError("FILE_EXISTS", "%s is already in your palettes folder" % basename)
     before = {p.get_name() for p in Gimp.palettes_get_list("")}
     if entries is None:
-        shutil.copyfile(source, target)
+        with open(source, "rb") as handle:
+            data = gmb_resources.unix_newlines(handle.read())
+        with open(target, "wb") as handle:
+            handle.write(data)
     else:
         rows = [(e["name"], tuple(e["rgb"])) for e in entries]
         with open(target, "w", encoding="utf-8", newline="\n") as handle:  # GIMP keeps a CR in names
@@ -2752,17 +2753,30 @@ def palette_import(params):
     return {**resource_summary("palette", created[0]), **_palette_details(created[0]), "file": target}
 
 
+def _entry_name(palette, index):
+    name = palette.get_entry_name(index)
+    return name[1] if isinstance(name, tuple) else name
+
+
 def palette_export(params):
     palette = get_resource("palette", params["name"])
     path, fmt = params["file"], params["format"]
     if fmt == "gpl":
         entries = []
         for i in range(palette.get_color_count()):
-            name = palette.get_entry_name(i)
-            entries.append((name[1] if isinstance(name, tuple) else name, tuple(_rgba(palette.get_entry_color(i))[:3])))
+            entries.append((_entry_name(palette, i), tuple(_rgba(palette.get_entry_color(i))[:3])))
         with open(path, "w", encoding="utf-8", newline="\n") as handle:
             handle.write(gmb_resources.write_gpl(palette.get_name(), palette.get_columns(), entries))
     else:
+        names = [palette.get_name()] + [_entry_name(palette, i) for i in range(palette.get_color_count())]
+        unsafe = gmb_resources.unsafe_palette_name(names, fmt)
+        if unsafe is not None:
+            raise BridgeError(
+                "INVALID_ARGUMENT",
+                "the %s export would paste the name %r into code as it is; rename it without quotes, backslashes, "
+                "angle brackets, braces or control characters, or export as gpl" % (fmt, unsafe),
+                {"name": unsafe},
+            )
         pdb = Gimp.get_pdb()
         name = "python-fu-palette-export-as-kpl" if fmt == "kpl" else PALETTE_EXPORTS[fmt]
         procedure = pdb.lookup_procedure(name)
@@ -3219,6 +3233,9 @@ def _file_procedure(kind, params):
             "no GIMP %s procedure for %s" % (kind, params.get("procedure") or os.path.basename(params["path"])),
             {"path": params["path"]},
         )
+    refused = gmb_formats.refusal(name, params["path"], params.get("options"))
+    if refused is not None:
+        raise BridgeError("INVALID_ARGUMENT", refused, {"path": params["path"], "procedure": name})
     return name, Gimp.get_pdb().lookup_procedure(name)
 
 
@@ -3436,12 +3453,17 @@ def image_export_layers(params):
     if any(layer.get_image().get_id() != image.get_id() for layer in layers):
         raise BridgeError("IMAGE_MISMATCH", "every layer must belong to the image")
     directory, extension = params["directory"], params["extension"]
-    name, procedure = _file_procedure("export", {"path": "x." + extension, "procedure": params.get("procedure")})
+    name, procedure = _file_procedure(
+        "export", {"path": "x." + extension, "procedure": params.get("procedure"), "options": params.get("options")}
+    )
     files = []
     for index, layer in enumerate(layers):
-        filename = gmb_formats.layer_filename(
-            params.get("template", "{index:02d}-{name}"), index, layer.get_name(), extension
-        )
+        try:
+            filename = gmb_formats.layer_filename(
+                params.get("template", "{index:02d}-{name}"), index, layer.get_name(), extension
+            )
+        except ValueError as error:
+            raise BridgeError("INVALID_ARGUMENT", str(error)) from None
         path = os.path.join(directory, filename)
         if os.path.exists(path) and not params.get("overwrite"):
             raise BridgeError("FILE_EXISTS", "%s exists (overwrite=false)" % path, {"path": path})

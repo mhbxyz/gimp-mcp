@@ -45,13 +45,32 @@ def invalid(message: str, hint: str | None = None, **details: Any) -> GimpMcpErr
     return GimpMcpError("INVALID_ARGUMENT", message, hint=hint, details=details)
 
 
+# A format spec such as {index:03d} or {stem:>20}: no nested field and at most three digits of width, so a
+# placeholder cannot ask for a gigabyte of padding (#122).
+SAFE_FORMAT_SPEC = re.compile(r"[<>=^]?0?\d{0,3}[ds]?")
+
+
+def template_fields(text: str) -> list[str]:
+    """The field names of a str.format template, refused when malformed, converted (!r) or padded too wide."""
+    try:
+        parsed = [
+            (field, spec, conversion) for _, field, spec, conversion in _FORMATTER.parse(text) if field is not None
+        ]
+    except ValueError as error:
+        raise invalid(f"malformed placeholder in {text!r}: {error}") from error
+    for field, spec, conversion in parsed:
+        if conversion is not None or not SAFE_FORMAT_SPEC.fullmatch(spec or ""):
+            raise invalid(
+                f"placeholder {{{field}{'!' + conversion if conversion else ''}{':' + spec if spec else ''}}} in "
+                f"{text!r}: only a width of up to three digits is allowed, like {{{field}:03d}}"
+            )
+    return [field for field, _, _ in parsed]
+
+
 def placeholders(text: str, allowed: Sequence[str] = PLACEHOLDERS, step: int | None = None) -> set[str]:
     """The placeholders used in ``text`` ({{ and }} are literal braces). In the arguments of step ``step``,
     {steps[N].field} may name the result of an earlier step."""
-    try:
-        fields = [field for _, field, _, _ in _FORMATTER.parse(text) if field is not None]
-    except ValueError as error:
-        raise invalid(f"malformed placeholder in {text!r}: {error}") from error
+    fields = template_fields(text)
     for field in fields:
         reference = STEP_REFERENCE.fullmatch(field)
         if reference is not None and step is not None:
@@ -119,12 +138,12 @@ def list_inputs(files: Sequence[str] | None, directory: str | None, pattern: str
         if len({_identity(path) for path in found}) != len(found):
             raise invalid("the same file is listed twice")
     else:
-        found = _glob(directory or "", pattern)
+        found = _glob(directory or "", pattern, limit=max_files + 1)
     if not found:
         raise invalid("no input file", directory=directory, pattern=pattern)
     if len(found) > max_files:
         raise invalid(
-            f"{len(found)} files match, more than max_files={max_files}",
+            f"more than max_files={max_files} files match",
             hint="Narrow the pattern or raise max_files.",
         )
     return found
@@ -148,7 +167,8 @@ def _inside(path: Path, root: os.stat_result) -> bool:
     return False
 
 
-def _glob(directory: str, pattern: str) -> list[Path]:
+def _glob(directory: str, pattern: str, limit: int) -> list[Path]:
+    """At most ``limit`` matches: the walk stops there instead of covering a whole disk (#122)."""
     try:
         root = local_absolute(directory)
     except GimpMcpError as error:
@@ -164,6 +184,8 @@ def _glob(directory: str, pattern: str) -> list[Path]:
         # links are followed only when they stay inside the directory
         if path.is_file() and _inside(path, root_stat):
             matches.append(path)
+            if len(matches) >= limit:
+                break
     return sorted(matches)
 
 

@@ -45,7 +45,7 @@ def test_release_publishes_to_the_registry_after_pypi_with_oidc():
     job = workflow["jobs"]["publish-mcp-registry"]
     assert "verify-pypi" in job["needs"]
     assert job["permissions"] == {"id-token": "write"}
-    assert job["environment"]["name"] == "pypi"
+    assert job["environment"]["name"] == "mcp-registry"  # approved, v* tags only, a token PyPI refuses (#122)
     text = str(job["steps"])
     assert "mcp-publisher login github-oidc" in text and "mcp-publisher publish" in text
     assert "v1.8.3" in text  # pinned publisher version

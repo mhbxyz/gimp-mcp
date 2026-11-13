@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import sys
 import time
 
 import pytest
@@ -138,3 +140,25 @@ async def test_stale_socket_after_gimp_exit_reports_not_running():
     for p in directory.iterdir():
         p.unlink()
     directory.rmdir()
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Unix sockets; Windows checks the pipe owner")
+async def test_a_bridge_served_by_another_user_is_refused_before_the_token_is_sent(monkeypatch):
+    # Under the /tmp fallback another user can listen at the address first; the client must not talk to it (#122).
+    from gimp_mcp.plugin_modules import load
+
+    sent: list[str] = []
+    original = BridgeClient._request
+
+    async def spy(self, method, *args, **kwargs):
+        sent.append(method)
+        return await original(self, method, *args, **kwargs)
+
+    monkeypatch.setattr(BridgeClient, "_request", spy)
+    monkeypatch.setattr(load("gmb_platform"), "peer_uid", lambda sock: os.getuid() + 1)
+    with running_fake_bridge({"x": lambda p: {}}) as bridge:
+        client = BridgeClient(endpoint_for(bridge))
+        with pytest.raises(GimpMcpError) as excinfo:
+            await client.call("x")
+        assert excinfo.value.code == "BRIDGE_UNAVAILABLE" and "another user" in excinfo.value.message
+        assert sent == [] and bridge.calls == []

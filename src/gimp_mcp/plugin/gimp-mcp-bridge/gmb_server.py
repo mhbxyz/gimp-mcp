@@ -22,6 +22,7 @@ every operation with its revision, so the server knows what this plug-in can do
 from __future__ import annotations
 
 import errno
+import hmac
 import json
 import os
 import socket
@@ -308,7 +309,8 @@ class BridgeServer:
             if method != "hello":
                 self._send(conn, self._error(request_id, BridgeError("UNAUTHORIZED", "hello required first")))
                 return False
-            if not isinstance(params, dict) or params.get("token") != self.token:
+            token = params.get("token") if isinstance(params, dict) else None
+            if not isinstance(token, str) or not hmac.compare_digest(token.encode(), self.token.encode()):
                 log("rejected connection: bad token")
                 self._send(conn, self._error(request_id, BridgeError("UNAUTHORIZED", "invalid bridge token")))
                 return False

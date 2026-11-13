@@ -20,6 +20,7 @@ import os
 import re
 import shlex
 import shutil
+import stat
 import subprocess
 import sys
 import time
@@ -206,8 +207,13 @@ def write_json_with_backup(path: Path, data: dict[str, Any]) -> None:
         stamp = time.strftime("%Y%m%d-%H%M%S")
         shutil.copy2(path, path.with_name(f"{path.name}.bak-{stamp}"))
     path.parent.mkdir(parents=True, exist_ok=True)
+    # The file may hold other servers' API keys: keep its mode, and create a new one private (#122).
+    mode = stat.S_IMODE(path.stat().st_mode) if path.exists() else 0o600
     temporary = path.with_name(path.name + ".tmp")
-    temporary.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write(json.dumps(data, indent=2) + "\n")
+    os.chmod(temporary, mode)
     os.replace(temporary, path)
 
 

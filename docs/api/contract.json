@@ -8359,7 +8359,7 @@
     },
     "gimp_export_animation": {
       "annotations": {
-        "destructiveHint": false,
+        "destructiveHint": true,
         "openWorldHint": false,
         "readOnlyHint": false
       },
@@ -8465,7 +8465,7 @@
     },
     "gimp_export_as": {
       "annotations": {
-        "destructiveHint": false,
+        "destructiveHint": true,
         "openWorldHint": false,
         "readOnlyHint": false
       },
@@ -8818,7 +8818,7 @@
     },
     "gimp_export_layers": {
       "annotations": {
-        "destructiveHint": false,
+        "destructiveHint": true,
         "openWorldHint": false,
         "readOnlyHint": false
       },
@@ -8973,7 +8973,7 @@
     },
     "gimp_export_palette": {
       "annotations": {
-        "destructiveHint": false,
+        "destructiveHint": true,
         "openWorldHint": false,
         "readOnlyHint": false
       },
@@ -9034,8 +9034,9 @@
     },
     "gimp_export_path_svg": {
       "annotations": {
+        "destructiveHint": true,
         "openWorldHint": false,
-        "readOnlyHint": true
+        "readOnlyHint": false
       },
       "inputSchema": {
         "properties": {
@@ -9111,7 +9112,7 @@
     },
     "gimp_export_region": {
       "annotations": {
-        "destructiveHint": false,
+        "destructiveHint": true,
         "openWorldHint": false,
         "readOnlyHint": false
       },

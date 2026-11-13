@@ -11,6 +11,17 @@ what is covered by the compatibility promise.
 - A `gimp_run_batch` recipe step with a key other than `tool` and `arguments` (e.g. `args`) is refused
   with `INVALID_ARGUMENT` naming the key and the expected ones (#215). It used to be dropped silently,
   so the step ran without its arguments and the error pointed elsewhere.
+- Security review for 1.0 (#122): calls that could write a script, read a private file or leave
+  the chosen folder are refused with `INVALID_ARGUMENT` before anything runs. `gimp_export_palette`
+  writes only to a file with its format's extension, and its css, python, php and java exports refuse
+  names GIMP would paste into code unescaped; `gimp_export_path_svg` writes only `.svg` files;
+  `gimp_export_layers` templates are file names (no `/`, `\` or `:`) and its directory follows the
+  path rules of the other file tools; placeholder widths in batch outputs and layer templates have at
+  most three digits; `gimp_call_procedure` reaches only the `plug-in-*` procedures shipped with GIMP;
+  `file-raw-load` opens only `.data` and `.raw` files and the colorxhtml export refuses `source-file`.
+  The tools that can replace a file (`gimp_export_as`, `gimp_export_layers`, `gimp_export_region`,
+  `gimp_export_animation`, `gimp_export_palette`, `gimp_export_path_svg`) are now annotated
+  destructive. Before/after calls: `docs/upgrading.md`.
 - The parameter names deprecated in 0.7.0 are removed, as their deprecation notices announced (#225):
   `channel_id` (use `channel`, now required) in `gimp_set_channel`, `gimp_combine_channels` and
   `gimp_delete_channel`; `id` (use `guide`, now required) and `kind="sample_point"` (use
@@ -28,6 +39,21 @@ what is covered by the compatibility promise.
 
 - The `screenshot-annotation` evaluation accepts an arrow that reaches the E-mail field from the right:
   the prompt names no side, and a correct agent run was counted as a regression (#232).
+- A palette imported from a `.gpl` file with Windows line endings no longer keeps a carriage return
+  at the end of every entry name (GIMP for Windows did) (#122).
+
+### Security
+
+- The security model (`docs/security.md`) covers Linux, macOS and Windows area by area (transport,
+  token, files, PDB access, batch, resources and prompts, supply chain), links every mitigation to a
+  test, and lists the accepted risks; a test keeps the links valid (#122).
+- The MCP server checks that the bridge's Unix socket is served by the same user before sending the
+  token; the token is compared in constant time; `gimp-mcp setup` keeps a client configuration's
+  permissions and creates new ones private; a batch glob stops at `max_files` matches and runs off
+  the event loop (#122).
+- Release pipeline: every GitHub Action is pinned to a commit, every workflow declares its token
+  permissions, and `mcp-publisher` is checked against its published SHA-256 and runs in its own
+  `mcp-registry` environment, whose OIDC token PyPI refuses (#122).
 
 ### Documentation
 

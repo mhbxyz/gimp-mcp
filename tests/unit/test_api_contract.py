@@ -220,3 +220,14 @@ def test_every_registered_error_code_is_documented() -> None:
     tools_md = (ROOT / "docs" / "tools.md").read_text(encoding="utf-8")
     missing = [code for code, text in ERROR_CODES.items() if f"| `{code}` | {text} |" not in tools_md]
     assert not missing, missing
+
+
+def test_every_tool_that_can_replace_a_file_says_it_is_destructive() -> None:
+    # Clients approve read-only and non-destructive tools with less friction; an export that overwrites is
+    # neither (#122).
+    tools = collect_contract()["tools"]
+    writers = [name for name, t in tools.items() if "overwrite" in t["inputSchema"].get("properties", {})]
+    assert "gimp_export_path_svg" in writers and len(writers) >= 8
+    wrong = [n for n in writers if tools[n]["annotations"] != {"readOnlyHint": False, "destructiveHint": True,
+                                                               "openWorldHint": False}]  # fmt: skip
+    assert wrong == []

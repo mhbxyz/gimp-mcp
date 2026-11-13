@@ -5,10 +5,12 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import pytest
 from gmb_server import BridgeError  # type: ignore[import-not-found]
 from mcp import Client
 
 from gimp_mcp.bridge import BridgeClient
+from gimp_mcp.errors import GimpMcpError
 from gimp_mcp.server import build_server
 
 from .fake_bridge import running_fake_bridge
@@ -146,6 +148,9 @@ async def test_invalid_recipes_are_refused_before_any_file_is_opened(tmp_path):
         ([{**EXPORT, "arguments": {**EXPORT["arguments"], "overwrite": True}}], out),  # overwrite is the batch's
         ([{"tool": "gimp_flip_image", "arguments": {"image": "{output}", "orientation": "vertical"}}], out),
         ([], None),
+        ([{"tool": "gimp_enable_toolsets", "arguments": {"toolsets": ["procedures"]}}], None),  # no escalation
+        ([EXPORT], str(tmp_path / "{stem:>999999999}.png")),  # a 1 GB file name (#122)
+        ([EXPORT], str(tmp_path / "{stem:>{index}}.png")),  # a width taken from another placeholder
     ]
     gimp = Gimp()
     async with tool_client(gimp.ops()) as (client, bridge):
@@ -328,3 +333,26 @@ async def test_a_step_with_an_unknown_key_is_refused_before_anything_runs(tmp_pa
     [problem] = error["details"]["errors"]
     assert problem["field"] == "recipe.0.args"
     assert "unknown key" in problem["problem"] and "arguments" in problem["problem"] and "tool" in problem["problem"]
+
+
+def test_a_glob_stops_as_soon_as_it_finds_more_than_max_files(tmp_path, monkeypatch):
+    # directory="/" with pattern="**/*" used to walk the whole disk before counting (#122).
+    import pathlib
+
+    from gimp_mcp.batch import list_inputs
+
+    inputs(tmp_path, *[f"{i:03d}.png" for i in range(50)])
+    seen = 0
+    original = pathlib.Path.glob
+
+    def counting(self, pattern, *args, **kwargs):
+        nonlocal seen
+        for path in original(self, pattern, *args, **kwargs):
+            seen += 1
+            yield path
+
+    monkeypatch.setattr(pathlib.Path, "glob", counting)
+    with pytest.raises(GimpMcpError) as refused:
+        list_inputs(None, str(tmp_path), "*.png", 2)
+    assert refused.value.code == "INVALID_ARGUMENT" and "max_files=2" in refused.value.message
+    assert seen == 3

@@ -10,7 +10,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = ROOT / ".github" / "workflows" / "release.yml"
-PUBLISH_ACTION = "pypa/gh-action-pypi-publish@release/v1"
+PUBLISH_ACTION = "pypa/gh-action-pypi-publish@"
 
 
 def workflow() -> dict[Any, Any]:
@@ -59,10 +59,10 @@ def test_no_long_lived_secret_is_used():
 
 def test_artifacts_get_build_provenance_attestations():
     jobs = workflow()["jobs"]
-    attest = next(name for name, job in jobs.items() if steps_using(job, "actions/attest@v4"))
+    attest = next(name for name, job in jobs.items() if steps_using(job, "actions/attest@"))
     job = jobs[attest]
     assert job["permissions"] == {"id-token": "write", "attestations": "write", "artifact-metadata": "write"}
-    step = steps_using(job, "actions/attest@v4")[0]
+    step = steps_using(job, "actions/attest@")[0]
     assert "dist/*.whl" in step["with"]["subject-path"] and "dist/*.tar.gz" in step["with"]["subject-path"]
 
 
@@ -179,3 +179,38 @@ def test_a_pre_release_is_published_as_a_pre_release_and_not_in_the_mcp_registry
     assert "--prerelease" in str(jobs["github-draft"]["steps"])
     assert "--prerelease" in str(jobs["finalize"]["steps"]) and "--latest=false" in str(jobs["finalize"]["steps"])
     assert "pre_release" in str(jobs["publish-mcp-registry"].get("if", ""))
+
+
+WORKFLOWS = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
+
+
+def test_every_action_is_pinned_to_a_commit():
+    # A tag or branch can be moved to other code; the publish jobs run actions with an OIDC token (#122).
+    for path in WORKFLOWS:
+        for line in path.read_text().splitlines():
+            match = re.search(r"uses:\s*([^\s#]+)", line)
+            if match and not match.group(1).startswith("./"):
+                assert re.fullmatch(r"[\w.-]+/[\w./-]+@[0-9a-f]{40}", match.group(1)), f"{path.name}: {line.strip()}"
+                assert re.search(r"#\s*v\d", line), f"{path.name}: say which version the commit is: {line.strip()}"
+
+
+def test_every_workflow_declares_its_token_permissions():
+    for path in WORKFLOWS:
+        assert "permissions" in yaml.safe_load(path.read_text()), path.name
+
+
+def test_the_registry_publisher_is_verified_and_cannot_publish_to_pypi():
+    # The binary runs with an OIDC token: in the pypi environment it could have published to PyPI (#122).
+    job = workflow()["jobs"]["publish-mcp-registry"]
+    assert job["environment"]["name"] not in ("pypi", "testpypi")
+    install = next(step["run"] for step in job["steps"] if "mcp-publisher" in step.get("name", ""))
+    assert re.search(r"sha256sum (-c|--check)", install) and re.search(r"[0-9a-f]{64}", install)
+    assert "| tar" not in install  # nothing is extracted before the check
+
+
+def test_jobs_that_run_downloaded_builds_keep_no_token_in_the_checkout():
+    nightly = yaml.safe_load((ROOT / ".github" / "workflows" / "gimp-next.yml").read_text())
+    for job in nightly["jobs"].values():
+        for step in job["steps"]:
+            if str(step.get("uses", "")).startswith("actions/checkout@"):
+                assert step.get("with", {}).get("persist-credentials") is False

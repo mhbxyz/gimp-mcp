@@ -326,3 +326,18 @@ def test_setup_output_degrades_to_what_the_console_can_print():
     assert printable(line, "cp1252") == "+ GIMP 3.2.6 — x Cursor -> see • notes…"
     assert printable(line, "utf-8") == line
     assert printable(line, "ascii") == "+ GIMP 3.2.6 ? x Cursor -> see ? notes?"
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Unix permissions")
+async def test_a_private_client_configuration_stays_private(tmp_path):
+    # Other servers' entries may hold API keys; rewriting the file must not make it readable by others (#122).
+    world = make_world(tmp_path, clients=("claude-desktop", "cursor"))
+    config = config_home(world) / "Claude" / "claude_desktop_config.json"
+    config.write_text(json.dumps({"mcpServers": {"other": {"command": "x", "env": {"API_KEY": "secret"}}}}))
+    config.chmod(0o600)
+    world.answers = ["y", "y"]
+    await run_setup(options(world))
+    assert "gimp" in json.loads(config.read_text())["mcpServers"]
+    assert stat.S_IMODE(config.stat().st_mode) == 0o600
+    cursor = world.home / ".cursor" / "mcp.json"
+    assert stat.S_IMODE(cursor.stat().st_mode) & 0o077 == 0  # a new file is private too

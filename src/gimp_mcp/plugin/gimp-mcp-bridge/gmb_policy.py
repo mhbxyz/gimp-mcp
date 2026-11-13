@@ -9,8 +9,9 @@ inventory). A procedure is callable only if
    management, the bridge itself, and plug-ins acting outside the image:
    screenshots, e-mail, printing, web browser, UI-only browsers/editors);
 2. it belongs to an allowed family (image/item/layer/drawable/selection/
-   channel/path/text getters and setters, ``gimp-get-*`` and ``plug-in-*``
-   filters) — files, exports and resources are therefore excluded;
+   channel/path/text getters and setters, ``gimp-get-*`` and the ``plug-in-*``
+   filters shipped with GIMP, never a third-party plug-in) — files, exports
+   and resources are therefore excluded;
 3. it is an internal or plug-in procedure (not temporary/persistent);
 4. every argument and return value has a type that can be converted to and
    from JSON safely (scalars, enums by nick, colors, images and items by id,
@@ -62,6 +63,7 @@ DENIED_SUBSTRINGS = (
     "plug-in-details",
     "metadata-",
     "imagemap",
+    "gmic",
 )
 
 ALLOWED_PREFIXES = (
@@ -77,6 +79,81 @@ ALLOWED_PREFIXES = (
     "gimp-context-get-",
     "gimp-get-",
     "plug-in-",
+)
+
+# The plug-in-* procedures shipped with GIMP 3.2.6 (docs/coverage/pdb-inventory.json; a test keeps them equal).
+# A third-party plug-in (G'MIC-Qt runs shell commands) is never callable, whatever its name (#122).
+GIMP_PLUG_INS = frozenset(
+    {
+        "plug-in-align-layers",
+        "plug-in-animationoptimize",
+        "plug-in-animationoptimize-diff",
+        "plug-in-animationplay",
+        "plug-in-animationunoptimize",
+        "plug-in-blinds",
+        "plug-in-borderaverage",
+        "plug-in-busy-dialog",
+        "plug-in-checkerboard",
+        "plug-in-cml-explorer",
+        "plug-in-colormap-remap",
+        "plug-in-colormap-swap",
+        "plug-in-compose",
+        "plug-in-curve-bend",
+        "plug-in-dbbrowser",
+        "plug-in-decompose",
+        "plug-in-depth-merge",
+        "plug-in-despeckle",
+        "plug-in-destripe",
+        "plug-in-drawable-compose",
+        "plug-in-film",
+        "plug-in-flame",
+        "plug-in-fractalexplorer",
+        "plug-in-gegl-filter-browser",
+        "plug-in-gfig",
+        "plug-in-gflare",
+        "plug-in-gimpressionist",
+        "plug-in-goat-exercise-c",
+        "plug-in-goat-exercise-python",
+        "plug-in-goat-exercise-vala",
+        "plug-in-gradmap",
+        "plug-in-grid",
+        "plug-in-guillotine",
+        "plug-in-hot",
+        "plug-in-ifscompose",
+        "plug-in-imagemap",
+        "plug-in-jigsaw",
+        "plug-in-lic",
+        "plug-in-lighting",
+        "plug-in-mail-image",
+        "plug-in-map-object",
+        "plug-in-metadata-editor",
+        "plug-in-metadata-viewer",
+        "plug-in-nl-filter",
+        "plug-in-pagecurl",
+        "plug-in-palettemap",
+        "plug-in-plug-in-details",
+        "plug-in-qbist",
+        "plug-in-recompose",
+        "plug-in-retinex",
+        "plug-in-sample-colorize",
+        "plug-in-screenshot",
+        "plug-in-script-fu-console",
+        "plug-in-script-fu-eval",
+        "plug-in-script-fu-server",
+        "plug-in-script-fu-text-console",
+        "plug-in-sel2path",
+        "plug-in-small-tiles",
+        "plug-in-smooth-palette",
+        "plug-in-sparkle",
+        "plug-in-spheredesigner",
+        "plug-in-spyrogimp",
+        "plug-in-tile",
+        "plug-in-unit-editor",
+        "plug-in-warp",
+        "plug-in-wavelet-decompose",
+        "plug-in-web-browser",
+        "plug-in-zealouscrop",
+    }
 )
 
 ALLOWED_PROC_TYPES = ("internal", "plugin")
@@ -151,6 +228,8 @@ def evaluate(meta):
             return False, "denied by policy (%r)" % needle
     if not name.startswith(ALLOWED_PREFIXES):
         return False, "outside the allowed procedure families"
+    if name.startswith("plug-in-") and name not in GIMP_PLUG_INS:
+        return False, "a plug-in not shipped with GIMP"
     if meta.get("error"):
         return False, "incomplete metadata: %s" % meta["error"]
     if meta.get("type") not in ALLOWED_PROC_TYPES:

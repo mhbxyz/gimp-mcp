@@ -33,7 +33,9 @@ Design and verified facts: [ADR 0002](adr/0002-release-pipeline.md).
      GIMP with `uv pip install gimp-mcp==X.Y.Z` and `uvx`, on the three OSes;
    * makes the GitHub release public;
    * publishes `server.json` to the official MCP registry (approval of the
-     `pypi` environment, GitHub OIDC; see [ADR 0004](adr/0004-discovery-channels.md)).
+     `mcp-registry` environment, GitHub OIDC; see [ADR 0004](adr/0004-discovery-channels.md)). The job
+     has its own environment so that PyPI refuses its OIDC token, and checks `mcp-publisher` against
+     the SHA-256 published with it before running it.
    A **pre-release** (`scripts/prepare_release.py 1.0.0rc1`, PEP 440 versions `X.Y.ZrcN`, `bN`, `aN`, ordered
    before `X.Y.Z`) goes through the same steps and is published on PyPI (installed only when asked:
    `uvx gimp-mcp==1.0.0rc1`) and as a GitHub **pre-release**, never marked latest; the MCP registry
@@ -84,8 +86,10 @@ once, before the first release:
 
 2. **PyPI**: same at <https://pypi.org/manage/account/publishing/> with
    environment name `pypi`.
-3. The GitHub environments `testpypi` and `pypi` already exist (*Settings →
-   Environments*): they require your approval and only accept `v*` tags.
+3. The GitHub environments `testpypi`, `pypi` and `mcp-registry` already exist
+   (*Settings → Environments*): they require your approval and only accept `v*` tags.
+   Every action in the workflows is pinned to a commit (the version in a comment);
+   update a pin by replacing both.
 
 A pending publisher does not reserve the name: until the first upload,
 someone else could register `gimp-mcp`. If the first upload fails with
