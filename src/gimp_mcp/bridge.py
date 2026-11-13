@@ -85,6 +85,21 @@ async def open_pipe_connection(name: str, limit: int) -> tuple[asyncio.StreamRea
     return reader, writer
 
 
+async def open_unix_connection(path: str, limit: int) -> tuple[asyncio.StreamReader, asyncio.StreamWriter]:
+    """Connect to the bridge's Unix socket and check that its process belongs to the current user, before
+    anything (the token) is sent: under the /tmp fallback, another user could listen there first (#122)."""
+    reader, writer = await asyncio.open_unix_connection(path, limit=limit)
+    try:
+        uid = load_plugin_module("gmb_platform").peer_uid(writer.get_extra_info("socket"))
+    except OSError as exc:
+        writer.close()
+        raise GimpMcpError("BRIDGE_UNAVAILABLE", f"cannot identify the process serving {path}: {exc}") from exc
+    if uid is not None and uid != os.getuid():
+        writer.close()
+        raise GimpMcpError("BRIDGE_UNAVAILABLE", f"{path} is served by another user's process; refusing it")
+    return reader, writer
+
+
 @dataclass(frozen=True)
 class SessionInfo:
     gimp_version: str
@@ -230,7 +245,7 @@ class BridgeClient:
             opening = (
                 open_pipe_connection(str(socket_path), MAX_RESPONSE_BYTES)
                 if self.endpoint.is_pipe
-                else asyncio.open_unix_connection(str(socket_path), limit=MAX_RESPONSE_BYTES)
+                else open_unix_connection(str(socket_path), MAX_RESPONSE_BYTES)
             )
             reader, writer = await asyncio.wait_for(opening, timeout=self.connect_timeout)
         except TimeoutError as exc:
