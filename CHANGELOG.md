@@ -6,6 +6,13 @@ what is covered by the compatibility promise.
 
 ## [Unreleased]
 
+### Documentation
+
+- Research note on agent orchestration with gimp-mcp (`docs/research/agent-orchestration.md`): single
+  agent, plan-then-act with checkpoints, subagents and critics, visual and numeric verification, encoded
+  workflows, toolset strategy and concurrency, compared against primary sources and the evaluation
+  transcripts; its hypotheses are tracked as #216–#222.
+
 ## [0.7.0] - 2026-11-12
 
 The public API is now snapshotted and checked in CI, ahead of its freeze in 1.0 (`docs/upgrading.md`).
