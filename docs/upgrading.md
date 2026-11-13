@@ -46,6 +46,11 @@ Calls that could write a script, read a private file or leave the chosen folder 
 | `gimp_open_with_options({"path": "/home/me/notes.txt", "procedure": "file-raw-load"})` | `file-raw-load` opens `.data` and `.raw` files only |
 | `gimp_export_as({..., "path": "/out/a.html", "options": {"source-file": true}})` | give the characters in `characters`; `source-file` is refused |
 
+Update the GIMP plug-in too (`gimp-mcp install-plugin`, then restart GIMP): the refusals made inside GIMP
+need it, so with a 0.7 plug-in `gimp_export_as`, `gimp_open_with_options`, `gimp_export_layers`,
+`gimp_export_region`, `gimp_export_animation`, `gimp_call_procedure`, `gimp_export_palette` and
+`gimp_import_palette` fail with `PLUGIN_VERSION_MISMATCH` until it is updated.
+
 Annotations: `gimp_export_as`, `gimp_export_layers`, `gimp_export_region`, `gimp_export_animation`,
 `gimp_export_palette` and `gimp_export_path_svg` can replace a file, so they now carry
 `destructiveHint: true` (and `gimp_export_path_svg` is no longer `readOnlyHint`). A client that

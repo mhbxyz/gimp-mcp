@@ -51,6 +51,10 @@ what is covered by the compatibility promise.
   token; the token is compared in constant time; `gimp-mcp setup` keeps a client configuration's
   permissions and creates new ones private; a batch glob stops at `max_files` matches and runs off
   the event loop (#122).
+- The refusals made inside GIMP (third-party plug-ins, `file-raw-load`, the colorxhtml source file,
+  layer file names, palette names) need the plug-in of this version: with an older one, the tools
+  that rely on them fail with `PLUGIN_VERSION_MISMATCH` and the `gimp-mcp install-plugin` hint
+  instead of running without them (#122).
 - Release pipeline: every GitHub Action is pinned to a commit, every workflow declares its token
   permissions, and `mcp-publisher` is checked against its published SHA-256 and runs in its own
   `mcp-registry` environment, whose OIDC token PyPI refuses (#122).
