@@ -86,7 +86,8 @@ checks every tool against the rules that can be checked mechanically and writes
 ## Descriptions
 
 * Lead with the effect in one sentence, then: lossless or lossy (destructive tools carry the
-  `destructiveHint`), the undo behaviour (`One undo step`, or not in GIMP's undo history for files,
+  `destructiveHint`, and so does every tool that can replace a file: an `overwrite` parameter means
+  `destructiveHint: true`, checked by `test_api_contract.py`), the undo behaviour (`One undo step`, or not in GIMP's undo history for files,
   resources and toolsets), the errors an agent should expect, and the optional toolset that covers
   related needs (`more formats: gimp_export_as, toolset formats`).
 * Facts measured on GIMP (what a value does to pixels) are stated with the measurement; they come from

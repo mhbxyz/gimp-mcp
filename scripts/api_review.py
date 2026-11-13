@@ -171,6 +171,7 @@ RESULT_DECISIONS: dict[str, str] = {
     "gimp_edit_palette": "accepted: resources are named, not identified (`name`)",
     "gimp_import_palette": "accepted: resources are named, not identified (`name`)",
     "gimp_export_palette": "accepted: writes a file, named in `file`",
+    "gimp_export_path_svg": "accepted: returns the SVG document, or writes it to a file named in `file`",
     "gimp_copy": "accepted: fills a clipboard buffer, named in `buffer`",
     "gimp_create_checkpoint": "accepted: creates a checkpoint, identified by `checkpoint`",
     "gimp_delete_checkpoint": "accepted: deletes a checkpoint, identified by `checkpoint`",

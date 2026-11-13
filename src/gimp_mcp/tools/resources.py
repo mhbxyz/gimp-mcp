@@ -275,6 +275,8 @@ def register(kit: Toolkit) -> None:
         suffix = PALETTE_SUFFIXES[format]
         if not path.lower().endswith(suffix):
             # A palette's text written to ~/.zshenv or a startup script would run (#122).
-            raise GimpMcpError("INVALID_ARGUMENT", f"a {format} palette is written to a {suffix} file", {"path": path})
+            raise GimpMcpError(
+                "INVALID_ARGUMENT", f"a {format} palette is written to a {suffix} file", details={"path": path}
+            )
         target = str(check_output_file(path, overwrite=overwrite))
         return ExportResult(**await call("palette.export", {"name": name, "file": target, "format": format}))

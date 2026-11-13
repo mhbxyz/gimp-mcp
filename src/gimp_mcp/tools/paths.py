@@ -395,7 +395,8 @@ def register(kit: Toolkit) -> None:
         name="gimp_export_path_svg",
         title="Export path to SVG",
         description=(
-            "Export one path (or all paths of the image) as an SVG document, returned or written to file (a .svg path)."
+            "Export one path (or all paths of the image) as an SVG document, returned or written to file (a .svg "
+            "path). Writing the file is not in GIMP's undo history."
         ),
         annotations=DESTRUCTIVE,
     )
@@ -403,7 +404,7 @@ def register(kit: Toolkit) -> None:
         image: ImageId, path: PathId | None = None, file: str | None = None, overwrite: bool = False
     ) -> SvgResult:
         if file and not file.lower().endswith(".svg"):
-            raise GimpMcpError("INVALID_ARGUMENT", "paths are written to a .svg file", {"path": file})  # #122
+            raise GimpMcpError("INVALID_ARGUMENT", "paths are written to a .svg file", details={"path": file})  # #122
         target = str(check_output_file(file, overwrite=overwrite)) if file else None
         data, _codec = await path_call(
             "paths.export_svg",

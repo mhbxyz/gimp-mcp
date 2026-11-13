@@ -57,3 +57,13 @@ async def test_procedures_that_read_other_files_are_refused(gimp: HeadlessGimp, 
         )  # fmt: skip
         assert copied["code"] == "INVALID_ARGUMENT" and not page.exists()
         await call(client, "gimp_close_image", image=image, discard_changes=True)
+
+
+async def test_each_gimp_session_has_a_new_token(gimp: HeadlessGimp):
+    # A token read once (a log, a backup) is useless after GIMP restarts (docs/security.md).
+    before = gimp.token_path.read_text(encoding="ascii").strip()
+    gimp.restart()
+    after = gimp.token_path.read_text(encoding="ascii").strip()
+    assert len(after) == 64 and after != before
+    async with mcp_client(gimp) as client:
+        assert (await call(client, "gimp_status"))["connected"]

@@ -30,6 +30,27 @@ Calls that still used them (and got a deprecation notice) must use the new names
 `INVALID_ARGUMENT` (`recipe.0.args: unknown key; expected: tool, arguments`). Write
 `{"tool": "gimp_resize_image", "arguments": {...}}`.
 
+### Security review (#122)
+
+Calls that could write a script, read a private file or leave the chosen folder are now refused with
+`INVALID_ARGUMENT` before anything runs ([security model](security.md)).
+
+| Before (0.7) | After (1.0) |
+|---|---|
+| `gimp_export_palette({"name": "Team", "path": "/home/me/team.text", "format": "text"})` | the path ends with the format's extension: `"/home/me/team.txt"` (`.gpl`, `.css`, `.txt`, `.py`, `.php`, `.java`, `.kpl`) |
+| `gimp_export_palette({..., "format": "python"})` of a palette whose names hold quotes, backslashes, `<>`, `{}` or control characters | refused for the css, python, php and java exports: rename the entries, or export as `gpl` |
+| `gimp_export_path_svg({"image": …, "file": "/home/me/paths.txt"})` | `"file": "/home/me/paths.svg"` |
+| `gimp_export_layers({..., "template": "sub/{index}"})` or `"{index:0999999999d}"` | a file name without `/`, `\` or `:`, widths of at most three digits: `"sub-{index:03d}"` |
+| `gimp_run_batch({..., "output": "/out/{stem:>500}.png"})` | widths of at most three digits, no `!r` conversion |
+| `gimp_call_procedure({"name": "plug-in-gmic-qt", …})` (any third-party plug-in) | only the `plug-in-*` procedures shipped with GIMP are callable |
+| `gimp_open_with_options({"path": "/home/me/notes.txt", "procedure": "file-raw-load"})` | `file-raw-load` opens `.data` and `.raw` files only |
+| `gimp_export_as({..., "path": "/out/a.html", "options": {"source-file": true}})` | give the characters in `characters`; `source-file` is refused |
+
+Annotations: `gimp_export_as`, `gimp_export_layers`, `gimp_export_region`, `gimp_export_animation`,
+`gimp_export_palette` and `gimp_export_path_svg` can replace a file, so they now carry
+`destructiveHint: true` (and `gimp_export_path_svg` is no longer `readOnlyHint`). A client that
+auto-approves read-only or non-destructive tools now asks before them.
+
 ## 0.6 → 0.7
 
 ### Renamed parameters (old names deprecated in 0.7, removed in 1.0.0: see above)

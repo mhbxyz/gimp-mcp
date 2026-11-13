@@ -17,6 +17,7 @@ EXEMPT = {
     "gimp_import_svg_paths", "gimp_run_batch", "gimp_begin_undo_group", "gimp_end_undo_group",
     # file writes and deletions: the result names the file or the deleted object
     "gimp_save_image", "gimp_export_image", "gimp_export_as", "gimp_export_region", "gimp_export_animation",
+    "gimp_export_path_svg",
     "gimp_close_image", "gimp_delete_layer", "gimp_delete_path", "gimp_delete_channel",
     # objects that are not images or items
     "gimp_add_guide", "gimp_add_sample_point", "gimp_remove_guide", "gimp_copy", "gimp_create_checkpoint",

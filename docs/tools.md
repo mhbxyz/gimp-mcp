@@ -444,8 +444,10 @@ enforced inside GIMP, before anything runs):
 2. Allowed families only: `gimp-image-*`, `gimp-item-*`, `gimp-layer-*`,
    `gimp-group-layer-*`, `gimp-text-layer-*`, `gimp-drawable-*`,
    `gimp-selection-*`, `gimp-channel-*`, `gimp-path-*`, `gimp-context-get-*`,
-   `gimp-get-*`, `plug-in-*`. Files, exports and resources are therefore
-   unreachable (file tools enforce their own path rules).
+   `gimp-get-*`, and the `plug-in-*` procedures shipped with GIMP (the list in
+   `gmb_policy.py`, kept equal to the GIMP inventory by a test): a third-party
+   plug-in is never callable, whatever its name. Files, exports and resources are
+   therefore unreachable (file tools enforce their own path rules).
 3. Internal or plug-in procedures only.
 4. Every argument and return value must be JSON-representable: `GFile`,
    `GBytes`, parasites, units, resources (brushes, fonts...), displays, export
@@ -497,7 +499,8 @@ call of a listed tool, with that tool's own checks.
   arguments may use placeholders: `{image}` (the opened image), `{layer}` (its top layer),
   `{output}` (the output path, only as a whole value, only in tools with an `overwrite` argument),
   `{file}`, `{name}`, `{stem}`, `{ext}`, `{dir}`, `{index}` (1-based; `"{index}"` alone is a
-  number, `{index:03d}` is formatted), and `{steps[N].field}`: a top-level field of the result of
+  number, `{index:03d}` is formatted; a width has at most three digits and no `!r` conversion), and
+  `{steps[N].field}`: a top-level field of the result of
   the earlier step `N` (0-based), e.g. `{steps[0].id}`, the layer a `gimp_import_layer` step created
   (every result names the object it created or changed in `id`); alone as a value it keeps its type
   (`"{steps[1].width}"` is a number). A reference to the same or a later step, or to a field the tool
@@ -508,7 +511,7 @@ call of a listed tool, with that tool's own checks.
   root) or contain `..`, and links (symlinks, Windows junctions) leading outside the directory are not
   followed: "inside" is decided by file identity, so case and Unicode spellings cannot fool it. A file
   listed twice under two spellings (`a.png`, `A.png` on macOS or Windows) is refused. More than
-  `max_files` matches is refused.
+  `max_files` matches is refused: the search stops there.
 * Outputs: `output` is a naming pattern (`~/out/{stem}-small.webp`) written by the step whose path
   is `{output}`. Every output is checked before the first file is opened: its directory exists,
   no two inputs give the same output (compared as the OS does: ignoring case on macOS and Windows,
@@ -686,13 +689,18 @@ are the same (absolute paths, `overwrite`); metadata is written only when listed
   procedure matches by name goes through GIMP's own format detection. RAW files: GIMP 3.2 hands them
   to darktable or RawTherapee, which open their own editing window; the image reaches GIMP when the
   user closes it, so RAW needs GIMP with its interface and a person at the screen. Without a RAW
-  developer GIMP's placeholder loader fails (`UNSUPPORTED_FORMAT`). The darktable loaders are one per
+  developer GIMP's placeholder loader fails (`UNSUPPORTED_FORMAT`). `file-raw-load`, which reads
+  any file as pixels, opens only `.data` and `.raw` files (`INVALID_ARGUMENT` otherwise); the
+  colorxhtml export refuses `source-file=true`, which would copy another file's text into the page
+  ([security](security.md#files)). The darktable loaders are one per
   RAW family (`procedure: "file-darktable-dng-load"` for DNG); allow the call time (the server's
   `--timeout`) while the photo is developed. Verified on Linux with darktable 5.6.2: a synthetic DNG
   reaches GIMP at its size with its colors in order once darktable is quit (`tests/gui/test_raw.py`).
 * `gimp_export_layers(image, directory, extension="png", items?, template="{index:02d}-{name}",
   crop=true, options, overwrite)`: one file per top-level layer (or per given layer/group), cropped
-  to the layer unless `crop=false`; names are made file-system safe. Refused as a whole
+  to the layer unless `crop=false`; names are made file-system safe. `template` is a file name:
+  placeholders `{index}` and `{name}` only, widths of at most three digits, no `/`, `\` or `:`.
+  `directory` follows the path rules of the other file tools (local, absolute). Refused as a whole
   (`FILE_EXISTS`) if any target exists without `overwrite`.
 * `gimp_export_region(image, path, x, y, width, height, options, overwrite)`: a slice of the
   composite.
@@ -778,7 +786,11 @@ language: list them rather than hard-coding them.
   (`UNSUPPORTED_FORMAT`, `details.color_models`) rather than converted without a profile. Damaged
   files and other extensions are `UNSUPPORTED_FORMAT`; nothing is written to the profile then.
 * `gimp_export_palette(name, path, format="gpl", overwrite)`: `gpl`, or GIMP's own palette exports
-  `css`, `text`, `python`, `php`, `java`, and `kpl` (Krita).
+  `css`, `text`, `python`, `php`, `java`, and `kpl` (Krita). The path ends with the format's extension
+  (`.gpl`, `.css`, `.txt`, `.py`, `.php`, `.java`, `.kpl`): a palette is never written to a file a
+  shell or the system runs. Line breaks and tabs in names become spaces in `.gpl` files; the code
+  exports (css, python, php, java) refuse names with quotes, backslashes, angle brackets, braces or
+  control characters, which GIMP would paste into the code as they are (`INVALID_ARGUMENT`).
 
 **Where resources live.** User resources are files in the GIMP profile (`~/.config/GIMP/3.2/brushes`,
 `gradients`, `palettes`, or `$GIMP3_DIRECTORY/…`). GIMP writes a new resource's file as soon as it
@@ -829,7 +841,8 @@ pixels; paths may extend beyond the canvas. Every change is one undo step.
 * **SVG**: `gimp_import_svg_paths(image, file | svg, merge=false, scale=false)` imports every
   `<path>` (one GIMP path each, or one with `merge`; `scale` fits the SVG to the image)
   (`UNSUPPORTED_FORMAT` when there is none). `gimp_export_path_svg(image, path?, file?, overwrite)`
-  returns the SVG document of one path or all paths, or writes it (output path rules apply).
+  returns the SVG document of one path or all paths, or writes it to a `.svg` file (output path
+  rules apply).
 * Paths are saved in XCF with their strokes (`tests/e2e/test_paths.py`).
 
 ## Image mode, precision and color profiles (toolset `modes`)
