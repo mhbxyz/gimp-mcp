@@ -6,6 +6,7 @@ import re
 import subprocess
 import sys
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 
@@ -105,6 +106,16 @@ def test_the_screenshot_checks_reject_an_unredacted_copy(tmp_path):
     assert "the e-mail keeps no detail (no glyph pixel left)" in failed
     assert "the avatar keeps no detail (flatter, eyes and mouth gone)" in failed
     assert "the PNG carries no metadata (no text, Exif, time or profile chunk)" in failed  # the planted tEXt
+
+
+def test_an_arrow_may_reach_the_e_mail_field_from_the_right(tmp_path):
+    # #232: an agent's arrow drawn from the right (evaluation run 43368399766) was refused; the prompt names no side.
+    from demo.scenarios import screenshot_annotation as screenshot
+
+    screenshot.make_screenshot(tmp_path / "screenshot.png")
+    tutorial = Path(__file__).parent.parent / "fixtures" / "demos" / "screenshot-arrow-from-the-right.png"
+    failed = [c for c in screenshot.verify(tmp_path / "screenshot.png", tutorial, False) if not c.passed]
+    assert failed == []
 
 
 @pytest.mark.parametrize(

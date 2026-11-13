@@ -179,7 +179,8 @@ def verify(source: Path, target: Path, exact_zones: bool) -> list[Check]:
         return reddish.crop(box).histogram()[255]
 
     near_save = red_near((SAVE[0] - 40, SAVE[1] - 40, SAVE[2] + 40, SAVE[3] + 40))
-    near_field = red_near((260, 260, 420, 440))  # left of the E-mail field: the arrow comes from there
+    # the arrow reaches the E-mail field from the left or from the right (between the Name and Phone callouts)
+    near_field = max(red_near((260, 260, 420, 440)), red_near((895, 285, 1130, 360)))
     near_name, near_phone = red_near((280, 170, 960, 280)), red_near((280, 370, 960, 480))
     detail = f"red pixels: save {near_save}, e-mail {near_field}, name {near_name}, phone {near_phone}"
     checks.append(Check("red annotations at the Save button, the E-mail field, the Name and Phone fields",
