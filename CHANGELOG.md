@@ -8,6 +8,13 @@ what is covered by the compatibility promise.
 
 ## [1.0.0rc1] - 2026-11-13
 
+**Release candidate for 1.0.0.** 1.0.0 freezes the public API until 2.0 (tool names, parameters, results,
+error codes, CLI: [what 1.x guarantees](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/compatibility.md#the-1x-compatibility-promise)).
+Install it with `uvx gimp-mcp@1.0.0rc1 setup` and tell us, for at least three weeks: which tool, parameter,
+result or error should be named or shaped differently, which tool is missing, and how it runs on your
+platform. Report with the [release-candidate form](https://github.com/mhbxyz/gimp-mcp/issues/new?template=release-candidate.yml);
+coming from 0.x, see [upgrading](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/upgrading.md).
+
 ### Breaking
 
 - A `gimp_run_batch` recipe step with a key other than `tool` and `arguments` (e.g. `args`) is refused
