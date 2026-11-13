@@ -21,7 +21,7 @@ jobs:
     outputs:
       ids: ${{ steps.ids.outputs.ids }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - id: ids
         run: |
           echo "ids=$(python3 -c "import json; print(json.dumps([d['id'] for d in json.load(open('ci/distros/distros.json'))['distributions'] if d['status'] == 'supported']))")" >> "$GITHUB_OUTPUT"
@@ -35,15 +35,15 @@ jobs:
       matrix:
         distro: ${{ fromJSON(needs.matrix.outputs.ids) }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
       - name: Build the wheel that gets installed
         run: uv build --quiet --wheel --out-dir dist-distro
       - name: Install it in ${{ matrix.distro }} and drive the distribution's GIMP
         run: ci/run-distro.sh "${{ matrix.distro }}" dist-distro/*.whl
       - name: Keep the report (distribution, GIMP version, doctor output on failure)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: distro-${{ matrix.distro }}
           path: ci-artifacts/

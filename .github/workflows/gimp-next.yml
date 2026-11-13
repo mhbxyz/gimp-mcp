@@ -8,15 +8,19 @@ on:
     - cron: "17 5 * * 1" # Mondays
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   e2e-newest-gimp:
     name: End-to-end on macOS 15 with the newest GIMP from gimp.org
     runs-on: macos-15
     timeout-minutes: 75
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0 # the upgrade tests build the previous release from history
+          persist-credentials: false # the downloaded GIMP build runs next to the checkout
       - name: Find the newest GIMP release (stable or development)
         id: newest
         run: python3 ci/newest_gimp.py macos-arm64 | tee -a "$GITHUB_OUTPUT"
@@ -25,7 +29,7 @@ jobs:
           GIMP_DMG_URL: ${{ steps.newest.outputs.url }}
           GIMP_DMG_SHA256: ${{ steps.newest.outputs.sha256 }}
         run: ci/install-gimp-macos.sh
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
         with:
           python-version: "3.12"
       - run: uv sync --frozen
@@ -38,7 +42,7 @@ jobs:
         env:
           GIMP_VERSION: ${{ steps.newest.outputs.version }}
         run: python3 ci/junit_summary.py "GIMP $GIMP_VERSION" ci-artifacts/gimp-next.xml >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: gimp-next-report

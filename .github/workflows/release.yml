@@ -44,10 +44,10 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       pre_release: ${{ steps.version.outputs.pre_release }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ env.RELEASE_REF }}
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
       - id: version
         name: Check the tag matches the package version
         env:
@@ -60,7 +60,7 @@ jobs:
           if echo "$version" | grep -Eq '(a|b|rc)[0-9]+$'; then pre=true; else pre=false; fi
           echo "pre_release=$pre" >> "$GITHUB_OUTPUT"
       - run: scripts/build-release.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: dist
           path: dist/
@@ -71,12 +71,12 @@ jobs:
     needs: build
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ env.RELEASE_REF }}
           fetch-depth: 0 # the upgrade test builds the previous release from history
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: ci
           load: true
@@ -111,11 +111,11 @@ jobs:
       attestations: write
       artifact-metadata: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: dist
           path: dist
-      - uses: actions/attest@v4
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: |
             dist/*.whl
@@ -129,10 +129,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ env.RELEASE_REF }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: dist
           path: dist
@@ -163,13 +163,13 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: dist
           path: dist
       - name: Keep only the distributions
         run: mkdir packages && cp dist/*.whl dist/*.tar.gz packages/
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           repository-url: https://test.pypi.org/legacy/
           packages-dir: packages/
@@ -180,17 +180,17 @@ jobs:
     needs: [build, publish-testpypi]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ env.RELEASE_REF }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: dist
           path: dist
       - name: Same files on TestPyPI as built (SHA-256), downloaded for testing
         run: python3 scripts/verify_published.py testpypi "${{ needs.build.outputs.version }}" dist/SHA256SUMS --download wheels
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: ci
           load: true
@@ -228,11 +228,11 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: dist
           path: dist
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ env.RELEASE_REF }}
           path: source
@@ -246,7 +246,7 @@ jobs:
           fi
       - name: Keep only the distributions
         run: mkdir packages && cp dist/*.whl dist/*.tar.gz packages/
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         if: steps.existing.outputs.published != 'true'
         with:
           packages-dir: packages/
@@ -256,16 +256,16 @@ jobs:
     needs: [build, publish-pypi]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ env.RELEASE_REF }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: dist
           path: dist
       - name: Same files on PyPI as built (SHA-256)
         run: python3 scripts/verify_published.py pypi "${{ needs.build.outputs.version }}" dist/SHA256SUMS
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
       - name: Wait until PyPI's index serves the release (its CDN lags behind the JSON API)
         env:
           VERSION: ${{ needs.build.outputs.version }}
@@ -279,8 +279,8 @@ jobs:
             sleep 15
           done
           echo "PyPI's index still does not serve gimp-mcp==$VERSION after 10 minutes"; exit 1
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: ci
           load: true
@@ -333,19 +333,22 @@ jobs:
     # the registry lists the last release; release candidates stay on PyPI and GitHub (#124)
     if: ${{ !inputs.dry_run && needs.build.outputs.pre_release != 'true' }}
     runs-on: ubuntu-24.04
+    # Not the pypi environment: this job's OIDC token must not be accepted by PyPI (#122).
     environment:
-      name: pypi
+      name: mcp-registry
       url: https://registry.modelcontextprotocol.io/v0/servers?search=io.github.mhbxyz/gimp-mcp
     permissions:
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ env.RELEASE_REF }}
-      - name: Install mcp-publisher (pinned)
+      - name: Install mcp-publisher (pinned, checked against the SHA-256 of registry_1.8.3_checksums.txt)
         run: |
-          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/v1.8.3/mcp-publisher_linux_amd64.tar.gz" \
-            | tar -xz mcp-publisher
+          curl -fsSL -o mcp-publisher.tar.gz \
+            "https://github.com/modelcontextprotocol/registry/releases/download/v1.8.3/mcp-publisher_linux_amd64.tar.gz"
+          echo "29ed68536ad0bcf8a266d4666995f2b978740c049b8ad29a1c63fe845b2634cf  mcp-publisher.tar.gz" | sha256sum -c -
+          tar -xzf mcp-publisher.tar.gz mcp-publisher
       - name: Validate, authenticate with GitHub OIDC and publish server.json
         run: |
           test "$(python3 -c "import json; print(json.load(open('server.json'))['version'])")" = "${{ needs.build.outputs.version }}"
