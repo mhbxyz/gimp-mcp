@@ -118,11 +118,46 @@ Everything runs as the user, without privileges:
 * file tools read/write only the absolute paths they are given, with the user's
   permissions, and never overwrite without `overwrite: true`.
 
-## Versioning and compatibility promise
+## The 1.x compatibility promise
 
-[Semantic versioning](https://semver.org/). While the version is `0.y.z`,
-minor versions may break compatibility; every change is listed in
-`CHANGELOG.md`.
+From 1.0.0, gimp-mcp follows [semantic versioning](https://semver.org/) strictly; every change is listed
+in `CHANGELOG.md`, and [upgrading.md](upgrading.md) shows how to migrate from 0.x.
+
+### What is public
+
+* **MCP tools**: names, the toolset each belongs to, input schemas (parameter names, types, ranges, enum
+  values, which are required, defaults), output schemas (field names and types), and the read-only and
+  destructive annotations. A tool in the default toolsets stays there for all of 1.x.
+* **Error codes** (`docs/tools.md#error-codes`) and the meaning of `outcome`.
+* **Prompts** (names and arguments), **resources and resource templates** (URIs and MIME types).
+* **The CLI**: `gimp-mcp` commands and their options; the documented environment variables
+  (`GIMP_MCP_TOOLSETS`, `GIMP_MCP_SOCKET`, `GIMP_MCP_TOKEN_FILE`, `GIMP_MCP_GIMP_CONSOLE`).
+
+Everything above but the environment variables is snapshotted in
+[`docs/api/contract.json`](api/contract.json) and checked on every pull request (below).
+
+### What may change, and when
+
+| Release | May contain | Never contains |
+|---|---|---|
+| Patch (1.x.**y**) | bug fixes, documentation; a schema corrected to match what the tool always did (listed under *Fixed*) | any other public API change |
+| Minor (1.**x**) | additions (the *compatible* column below), deprecations, new supported GIMP series, platforms or Python versions; dropping a Python version that reached its upstream end of life | breaking changes, removals |
+| Major (**2**.0) | breaking changes (the *breaking* column), removal of what 1.x deprecated | — |
+
+Not covered: descriptions, error messages and hints (wording may improve in any release); the bridge
+protocol and the plug-in's operations (internal: see *Plug-in / server versions*); the Python modules
+(gimp-mcp is a server, not a library); results that depend on GIMP itself (rendering, fonts, which
+procedures `gimp_call_procedure` reaches); performance and the size of tool definitions.
+
+### Supported platforms, GIMP and Python
+
+* Platforms: those in the [verified platform matrix](#verified-platform-matrix). One can be added in a
+  minor release; dropping one needs a major release.
+* GIMP: the [GIMP version policy](#gimp-versions) (3.2.x guaranteed, newer best effort, older refused).
+* Python for the server: 3.11 to 3.14 (`requires-python = ">=3.11"`). A version is dropped only in a
+  minor release once it has reached its upstream end of life, announced in `CHANGELOG.md`.
+
+### The contract check
 
 * **Public API**: MCP tool names, input schemas, output schemas and error
   `code`s, the CLI commands and their options.
@@ -143,7 +178,7 @@ minor versions may break compatibility; every change is listed in
 
   A breaking change fails the check unless `CHANGELOG.md` has a `### Breaking` entry under
   `## [Unreleased]`, and, from 1.0 on, unless the major version changes.
-* **Internal**: the bridge protocol (versioned: `protocol: 1`) and the Python
+* **Internal**: the bridge protocol (versioned: `protocol: 1`, unchanged through 1.x) and the Python
   modules.
 
 ### Deprecations

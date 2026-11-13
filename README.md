@@ -161,6 +161,8 @@ Also works with a headless GIMP for scripts and CI. More in the
   [MCP clients](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/clients.md) ·
   [troubleshooting](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/troubleshooting.md) ·
   [compatibility](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/compatibility.md)
+- [What 1.x guarantees](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/compatibility.md#the-1x-compatibility-promise) ·
+  [upgrading from 0.x](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/upgrading.md)
 - [Tool reference](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/tools.md) ·
   [coverage matrix](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/coverage.md) ·
   [scripted demo walk-through](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/guide-thumbnail.md)

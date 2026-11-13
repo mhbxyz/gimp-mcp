@@ -1,8 +1,10 @@
 # Upgrading
 
-What changes for clients between versions, and how to migrate. Deprecated forms keep working until the
-next major version and return a deprecation notice on every call
-([deprecation policy](compatibility.md#deprecations), ADR 0011); `CHANGELOG.md` lists every change.
+What changes for clients between versions, and how to migrate: every breaking change since 0.3.0, with
+a call before and after. Deprecated forms keep working until the next major version and return a
+deprecation notice on every call ([deprecation policy](compatibility.md#deprecations), ADR 0011); what
+1.x guarantees is in [compatibility.md](compatibility.md#the-1x-compatibility-promise);
+`CHANGELOG.md` lists every change.
 
 ## 0.7 → 1.0
 
@@ -49,14 +51,53 @@ both names with different values is `INVALID_ARGUMENT`.
 
 * `gimp_rotate_image` is in `transform` (default), no longer in `geometry`.
 * `gimp_begin_undo_group` and `gimp_end_undo_group` are in the new optional toolset `undo`, no longer
-  in `history`: add `undo` to `--toolsets` / `GIMP_MCP_TOOLSETS`, or call
-  `gimp_enable_toolsets(["undo"])`.
+  in `history`.
 
-### New behaviour to know
+| Before (0.6) | After (0.7) |
+|---|---|
+| `gimp-mcp serve --toolsets files,geometry` to rotate images | `gimp-mcp serve --toolsets files,transform` (or the default) |
+| `GIMP_MCP_TOOLSETS=core,history` for undo groups | `GIMP_MCP_TOOLSETS=core,history,undo`, or `gimp_enable_toolsets({"toolsets": ["undo"]})` |
+
+### PNG exports without the export time
+
+| Before (0.6) | After (0.7) |
+|---|---|
+| `gimp_export_image({"image": …, "path": "/out/a.png"})` wrote a `tIME` chunk | the same call writes none; `"png_options": {"metadata": ["time"]}` writes it |
+
+### Argument errors
+
+| Before (0.6) | After (0.7) |
+|---|---|
+| text `Error executing tool gimp_convert_mode: 2 validation errors for gimp_convert_modeArguments …` | `isError` with `{"error": {"code": "INVALID_ARGUMENT", "details": {"errors": [{"field": "image", "problem": "missing"}, …], "required": ["image", "mode"]}, "hint": "gimp_convert_mode requires image (string), mode ('rgb'\|'gray'\|'indexed'); …"}}` |
+| a tool of a disabled toolset: the client's own "unknown tool" error | `TOOLSET_DISABLED` with the `gimp_enable_toolsets` call to make |
+
+### Plug-in and server versions
+
+| Before (0.6) | After (0.7) |
+|---|---|
+| a plug-in of another MAJOR.MINOR: every tool fails with `PLUGIN_VERSION_MISMATCH` | any plug-in speaking bridge protocol 1 works; only a tool needing an operation it lacks fails with `PLUGIN_VERSION_MISMATCH` (run `gimp-mcp install-plugin`, restart GIMP) |
+
+### New behaviour to know (compatible)
 
 * Every result that creates or changes an image or item names it in a top-level `id`.
-* Argument errors are `INVALID_ARGUMENT` with `details.errors` (no framework text); a tool of a
-  disabled toolset answers `TOOLSET_DISABLED`.
-* PNG exports no longer write the `tIME` chunk unless `png_options.metadata` contains `time`.
-* The plug-in no longer has to match the server's minor version; tools that need operations an older
-  plug-in lacks fail with `PLUGIN_VERSION_MISMATCH`: run `gimp-mcp install-plugin`, then restart GIMP.
+* `gimp_paint_stroke` with `clone`/`heal` copies from the painted layer unless `source` is given.
+* `gimp_get_metadata` adds `raw` (untranslated values); `gimp_export_as` adds `layers="flatten"` and
+  `color_profile`; `gimp_resize_image` and `gimp_scale_layer` accept one dimension.
+
+## 0.5 → 0.6 and 0.4 → 0.5
+
+No change to the public API: new demos, tests, platforms (Windows and macOS in 0.5) and the evaluation
+suite. On Windows and macOS, run `gimp-mcp setup`, which installs the plug-in in the right profile.
+
+## 0.3 → 0.4
+
+| Before (0.3) | After (0.4) |
+|---|---|
+| `gimp_open_with_options({"path": "/doc.pdf", "options": {"pages": [3, 1]}})` loaded every page, then removed the others | the same call loads only pages 3 and 1, in that order (page 1 on top); page numbers still start at 1 |
+
+## 0.2 → 0.3
+
+| Before (0.2) | After (0.3) |
+|---|---|
+| `gimp_call_procedure` and the other `procedures` tools were listed by default | add them with `--toolsets default,procedures` or `gimp_enable_toolsets({"toolsets": ["procedures"]})` |
+| exports wrote no metadata, implicitly | the same, explicitly: `"png_options": {"metadata": ["exif", "xmp"]}` (or `jpeg_options`) writes what is listed |

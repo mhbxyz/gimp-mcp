@@ -20,6 +20,9 @@ what is covered by the compatibility promise.
 
 ### Documentation
 
+- The 1.x compatibility promise (#123): `docs/compatibility.md` states what is public, what a patch, a minor
+  and a major release may change, and the platform, GIMP and Python policies; `docs/upgrading.md` lists
+  every breaking change since 0.3.0 with calls before and after; the README links both.
 - Research note on agent orchestration with gimp-mcp (`docs/research/agent-orchestration.md`): single
   agent, plan-then-act with checkpoints, subagents and critics, visual and numeric verification, encoded
   workflows, toolset strategy and concurrency, compared against primary sources and the evaluation
