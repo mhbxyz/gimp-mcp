@@ -147,9 +147,7 @@ async def test_channels_store_combine_and_survive_xcf(gimp: HeadlessGimp, tmp_pa
         saved = await call(client, "gimp_create_channel", image=image, name="Corner", source="selection")
         await call(client, "gimp_select_rectangle", image=image, x=30, y=30, width=10, height=10)
         other = await call(client, "gimp_create_channel", image=image, name="Other", source="selection")
-        combined = await call(
-            client, "gimp_combine_channels", channel_id=saved["id"], other=other["id"], operation="add"
-        )
+        combined = await call(client, "gimp_combine_channels", channel=saved["id"], other=other["id"], operation="add")
         assert combined["name"] == "Corner"
         await call(client, "gimp_modify_selection", image=image, action="none")
         restored = await call(client, "gimp_select_item", item=saved["id"])
@@ -158,11 +156,9 @@ async def test_channels_store_combine_and_survive_xcf(gimp: HeadlessGimp, tmp_pa
         red = await call(client, "gimp_create_channel", image=image, name="Red", source="component", component="red")
         red_selection = await call(client, "gimp_select_item", item=red["id"])
         assert red_selection["bounds"] == {"x": 0, "y": 0, "width": 40, "height": 40}  # white and red are red
-        changed = await call(
-            client, "gimp_set_channel", channel_id=red["id"], color="#00ff00", opacity=75, visible=False
-        )
+        changed = await call(client, "gimp_set_channel", channel=red["id"], color="#00ff00", opacity=75, visible=False)
         assert (changed["color"], changed["opacity"], changed["visible"]) == ("#00ff00", 75.0, False)
-        await call(client, "gimp_delete_channel", channel_id=other["id"])
+        await call(client, "gimp_delete_channel", channel=other["id"])
 
         xcf = tmp_path / "channels.xcf"
         await call(client, "gimp_save_image", image=image, path=str(xcf))
@@ -184,7 +180,7 @@ async def test_invalid_selection_requests_change_nothing(gimp: HeadlessGimp):
         assert (await error(client, "gimp_create_channel", image=image, source="selection"))[
             "code"
         ] == "EMPTY_SELECTION"
-        assert (await error(client, "gimp_set_channel", channel_id=layer, name="x"))["code"] == "WRONG_KIND"
+        assert (await error(client, "gimp_set_channel", channel=layer, name="x"))["code"] == "WRONG_KIND"
         assert (await call(client, "gimp_get_selection", image=image))["empty"] is True
         assert (await call(client, "gimp_inspect_image", image=image))["channels"] == []
         await call(client, "gimp_close_image", image=image, discard_changes=True)

@@ -15,7 +15,7 @@ from ..colors import parse_color
 from ..errors import GimpMcpError
 from ..palettes import read_palette
 from ..paths import check_input_file, check_output_file
-from ..toolkit import DESTRUCTIVE, MUTATING, READ_ONLY, Deprecation, Toolkit, ToolResult, renamed
+from ..toolkit import DESTRUCTIVE, MUTATING, READ_ONLY, Toolkit, ToolResult
 
 Kind = Literal["brush", "gradient", "pattern", "palette"]
 Editable = Literal["brush", "gradient", "palette"]
@@ -240,13 +240,11 @@ def register(kit: Toolkit) -> None:
             "colors are refused. Resources are not in GIMP's undo history."
         ),
         annotations=MUTATING,
-        deprecated_parameters={"file": Deprecation("0.7.0", "use path")},
     )
     async def gimp_import_palette(
-        path: Annotated[str | None, Field(description="Absolute path of the palette file.")] = None,
-        file: Annotated[str | None, Field(description="Deprecated since 0.7.0: use path.")] = None,
+        path: Annotated[str, Field(description="Absolute path of the palette file.")],
     ) -> ResourceDetails:
-        source = check_input_file(renamed("gimp_import_palette", "path", path, "file", file))
+        source = check_input_file(path)
         if source.suffix.lower() != ".gpl":
             palette = read_palette(source)
             entries = [{"name": e.name, "rgb": list(e.rgb)} for e in palette.entries]
@@ -264,15 +262,12 @@ def register(kit: Toolkit) -> None:
             "or kpl (Krita). Writing the file is not in GIMP's undo history."
         ),
         annotations=MUTATING,
-        deprecated_parameters={"file": Deprecation("0.7.0", "use path")},
     )
     async def gimp_export_palette(
         name: Name,
-        path: Annotated[str | None, Field(description="Absolute path of the file to write.")] = None,
+        path: Annotated[str, Field(description="Absolute path of the file to write.")],
         format: Literal["gpl", "css", "text", "python", "php", "java", "kpl"] = "gpl",
         overwrite: bool = False,
-        file: Annotated[str | None, Field(description="Deprecated since 0.7.0: use path.")] = None,
     ) -> ExportResult:
-        destination = renamed("gimp_export_palette", "path", path, "file", file)
-        target = str(check_output_file(destination, overwrite=overwrite))
+        target = str(check_output_file(path, overwrite=overwrite))
         return ExportResult(**await call("palette.export", {"name": name, "file": target, "format": format}))

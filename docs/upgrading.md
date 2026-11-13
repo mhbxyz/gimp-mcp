@@ -4,9 +4,33 @@ What changes for clients between versions, and how to migrate. Deprecated forms 
 next major version and return a deprecation notice on every call
 ([deprecation policy](compatibility.md#deprecations), ADR 0011); `CHANGELOG.md` lists every change.
 
+## 0.7 → 1.0
+
+### Removed: the parameter names deprecated in 0.7
+
+Calls that still used them (and got a deprecation notice) must use the new names; the old ones are now
+`INVALID_ARGUMENT` ("unknown argument … did you mean …").
+
+| Before (0.7, deprecated) | After (1.0) |
+|---|---|
+| `gimp_set_channel({"channel_id": "item:7@…", "opacity": 50})` | `gimp_set_channel({"channel": "item:7@…", "opacity": 50})` |
+| `gimp_combine_channels({"channel_id": "item:7@…", "other": "item:8@…"})` | `gimp_combine_channels({"channel": "item:7@…", "other": "item:8@…"})` |
+| `gimp_delete_channel({"channel_id": "item:7@…"})` | `gimp_delete_channel({"channel": "item:7@…"})` |
+| `gimp_remove_guide({"image": "image:1@…", "id": 3, "kind": "sample_point"})` | `gimp_remove_guide({"image": "image:1@…", "guide": 3, "kind": "sample-point"})` |
+| `gimp_import_palette({"file": "/home/me/team.gpl"})` | `gimp_import_palette({"path": "/home/me/team.gpl"})` |
+| `gimp_export_palette({"name": "Team", "file": "/home/me/team.css", "format": "css"})` | `gimp_export_palette({"name": "Team", "path": "/home/me/team.css", "format": "css"})` |
+| `gimp_create_link_layer({"image": "image:1@…", "file": "/home/me/logo.svg"})` | `gimp_create_link_layer({"image": "image:1@…", "path": "/home/me/logo.svg"})` |
+| `gimp_set_link_layer({"item": "item:9@…", "file": "/home/me/logo2.svg"})` | `gimp_set_link_layer({"item": "item:9@…", "path": "/home/me/logo2.svg"})` |
+
+### Batch recipe steps refuse unknown keys
+
+`{"tool": "gimp_resize_image", "args": {...}}` used to run the step without its arguments; it is now
+`INVALID_ARGUMENT` (`recipe.0.args: unknown key; expected: tool, arguments`). Write
+`{"tool": "gimp_resize_image", "arguments": {...}}`.
+
 ## 0.6 → 0.7
 
-### Renamed parameters (old names deprecated, removed in 1.0.0)
+### Renamed parameters (old names deprecated in 0.7, removed in 1.0.0: see above)
 
 | Tool | Old | New |
 |---|---|---|

@@ -54,11 +54,6 @@ _PATH_ITEM = (
 _GIMP_COMMAND = "accepted: named after GIMP's command of the same name (Colors, Edit, Filters menus)"
 DECISIONS: dict[str, str] = {
     # file parameters named `file`
-    # deprecated aliases of the names #119 fixed: kept until 1.0.0 (ADR 0011)
-    **{f"files:{t}:file": "accepted: deprecated alias of `path`, removed in 1.0.0" for t in (
-        "gimp_import_palette", "gimp_export_palette", "gimp_create_link_layer", "gimp_set_link_layer")},
-    "references:gimp_remove_guide:id": "accepted: deprecated alias of `guide`, removed in 1.0.0",
-    "enums:gimp_remove_guide:sample_point": "accepted: deprecated spelling of `sample-point`, removed in 1.0.0",
     **{f"files:{t}:file": "accepted: a tool working on GIMP paths, where `path` is the path's id"
        for t in ("gimp_import_svg_paths", "gimp_export_path_svg")},
 }  # fmt: skip

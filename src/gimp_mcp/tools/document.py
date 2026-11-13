@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 from ..errors import GimpMcpError
 from ..models import ChangedObject
-from ..toolkit import MUTATING, READ_ONLY, Deprecation, Toolkit, renamed
+from ..toolkit import MUTATING, READ_ONLY, Toolkit
 from .inspect import ImageId
 
 Tag = Annotated[str, Field(pattern=r"^(Exif|Xmp|Iptc)\.[A-Za-z0-9_.:-]+$", description="e.g. 'Exif.Image.Artist'.")]
@@ -111,18 +111,14 @@ def register(kit: Toolkit) -> None:
             "gimp_add_guide / gimp_add_sample_point returned. One undo step."
         ),
         annotations=MUTATING,
-        deprecated_parameters={"id": Deprecation("0.7.0", "use guide")},
-        deprecated_values={"kind": {"sample_point": Deprecation("0.7.0", "use 'sample-point'")}},
     )
     async def gimp_remove_guide(
         image: ImageId,
-        guide: Annotated[int | None, Field(ge=1, description="Guide or sample point number.")] = None,
-        kind: Literal["guide", "sample-point", "sample_point"] = "guide",
-        id: Annotated[int | None, Field(ge=1, description="Deprecated since 0.7.0: use guide.")] = None,
+        guide: Annotated[int, Field(ge=1, description="Guide or sample point number.")],
+        kind: Literal["guide", "sample-point"] = "guide",
     ) -> GuideList:
-        number = renamed("gimp_remove_guide", "guide", guide, "id", id)
-        wire = "sample_point" if kind in ("sample-point", "sample_point") else "guide"
-        return GuideList(**await call("guide.remove", image, kind=wire, id=number))
+        wire = "sample_point" if kind == "sample-point" else "guide"
+        return GuideList(**await call("guide.remove", image, kind=wire, id=guide))
 
     @kit.tool(
         toolset="document",

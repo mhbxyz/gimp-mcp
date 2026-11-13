@@ -16,11 +16,11 @@ async def test_import_sends_gimp_palettes_as_files_and_converts_other_formats(tm
     ops = {"palette.import": lambda p: {"kind": "palette", "name": "B", "editable": True, "columns": 0, "entries": []}}
     async with tool_client(ops) as (client, bridge):
         for refused in (tmp_path / "c.xyz", fixtures / "ADG3-CMYK.ase"):
-            result = await client.call_tool("gimp_import_palette", {"file": str(refused)})
+            result = await client.call_tool("gimp_import_palette", {"path": str(refused)})
             assert error_code(result) == "UNSUPPORTED_FORMAT" and bridge.calls == [], refused
-        ok = await client.call_tool("gimp_import_palette", {"file": str(tmp_path / "b.gpl")})
+        ok = await client.call_tool("gimp_import_palette", {"path": str(tmp_path / "b.gpl")})
         assert not ok.is_error and bridge.calls[0][1] == {"file": str(tmp_path / "b.gpl")}
-        converted = await client.call_tool("gimp_import_palette", {"file": str(fixtures / "arne-v20-16.act")})
+        converted = await client.call_tool("gimp_import_palette", {"path": str(fixtures / "arne-v20-16.act")})
         sent = bridge.calls[1][1]
         assert not converted.is_error and sent["name"] == "arne-v20-16" and len(sent["entries"]) == 16
         assert sent["entries"][1] == {"name": "", "rgb": [0x9D, 0x9D, 0x9D]}  # second color of the file
@@ -53,7 +53,7 @@ async def test_export_refuses_existing_files_and_previews_are_images(tmp_path):
     ops = {"palette.export": lambda p: {"file": p["file"], "format": p["format"], "bytes": 1},
            "resource.inspect": lambda p: inspected}  # fmt: skip
     async with tool_client(ops) as (client, bridge):
-        refused = await client.call_tool("gimp_export_palette", {"name": "Web", "file": str(tmp_path / "p.gpl")})
+        refused = await client.call_tool("gimp_export_palette", {"name": "Web", "path": str(tmp_path / "p.gpl")})
         assert error_code(refused) == "FILE_EXISTS" and bridge.calls == []
         result = await client.call_tool("gimp_inspect_resource", {"kind": "palette", "name": "Web", "preview": True})
         assert [block.type for block in result.content].count("image") == 1

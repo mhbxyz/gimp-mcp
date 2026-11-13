@@ -26,15 +26,15 @@ async def test_guides_and_sample_points(gimp: HeadlessGimp):
         point = await call(client, "gimp_add_sample_point", image=image, x=10, y=10)
         sample = (await call(client, "gimp_list_guides", image=image))["sample_points"][0]
         assert (sample["id"], sample["x"], sample["y"], sample["hex"]) == (point["sample_point"], 10, 10, "#336699")
-        await call(client, "gimp_remove_guide", image=image, id=h["guide"])
-        await call(client, "gimp_remove_guide", image=image, id=point["sample_point"], kind="sample_point")
+        await call(client, "gimp_remove_guide", image=image, guide=h["guide"])
+        await call(client, "gimp_remove_guide", image=image, guide=point["sample_point"], kind="sample-point")
         left = await call(client, "gimp_list_guides", image=image)
         assert [g["id"] for g in left["guides"]] == [v["guide"]] and left["sample_points"] == []
         assert (await error(client, "gimp_add_guide", image=image, orientation="horizontal", position=60))[
             "code"
         ] == "INVALID_ARGUMENT"
         assert (await error(client, "gimp_add_sample_point", image=image, x=100, y=0))["code"] == "INVALID_ARGUMENT"
-        assert (await error(client, "gimp_remove_guide", image=image, id=999))["code"] == "NOT_FOUND"
+        assert (await error(client, "gimp_remove_guide", image=image, guide=999))["code"] == "NOT_FOUND"
         await call(client, "gimp_close_image", image=image, discard_changes=True)
 
 

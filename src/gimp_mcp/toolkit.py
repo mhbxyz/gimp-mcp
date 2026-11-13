@@ -95,18 +95,6 @@ class Deprecation:
         return {"name": name, "since": self.since, "removal": self.removal, "replacement": self.replacement}
 
 
-def renamed(tool: str, new_name: str, new_value: Any, old_name: str, old_value: Any, required: bool = True) -> Any:
-    """The value of a renamed parameter given under its new or its deprecated name (ADR 0011)."""
-    if new_value is not None and old_value is not None and new_value != old_value:
-        raise GimpMcpError(
-            "INVALID_ARGUMENT", f"give {new_name}, or the deprecated {old_name}, not both with different values"
-        )
-    value = new_value if new_value is not None else old_value
-    if value is None and required:
-        raise GimpMcpError("INVALID_ARGUMENT", f"{tool} needs {new_name}", hint=f"{old_name} is its deprecated name.")
-    return value
-
-
 def _with_notices(result: CallToolResult, notices: list[dict[str, str]]) -> CallToolResult:
     if not notices:
         return result
