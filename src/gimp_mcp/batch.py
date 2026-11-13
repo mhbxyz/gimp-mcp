@@ -138,12 +138,12 @@ def list_inputs(files: Sequence[str] | None, directory: str | None, pattern: str
         if len({_identity(path) for path in found}) != len(found):
             raise invalid("the same file is listed twice")
     else:
-        found = _glob(directory or "", pattern)
+        found = _glob(directory or "", pattern, limit=max_files + 1)
     if not found:
         raise invalid("no input file", directory=directory, pattern=pattern)
     if len(found) > max_files:
         raise invalid(
-            f"{len(found)} files match, more than max_files={max_files}",
+            f"more than max_files={max_files} files match",
             hint="Narrow the pattern or raise max_files.",
         )
     return found
@@ -167,7 +167,8 @@ def _inside(path: Path, root: os.stat_result) -> bool:
     return False
 
 
-def _glob(directory: str, pattern: str) -> list[Path]:
+def _glob(directory: str, pattern: str, limit: int) -> list[Path]:
+    """At most ``limit`` matches: the walk stops there instead of covering a whole disk (#122)."""
     try:
         root = local_absolute(directory)
     except GimpMcpError as error:
@@ -183,6 +184,8 @@ def _glob(directory: str, pattern: str) -> list[Path]:
         # links are followed only when they stay inside the directory
         if path.is_file() and _inside(path, root_stat):
             matches.append(path)
+            if len(matches) >= limit:
+                break
     return sorted(matches)
 
 

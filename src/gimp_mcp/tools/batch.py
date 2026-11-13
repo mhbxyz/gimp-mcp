@@ -206,7 +206,8 @@ def register(kit: Toolkit) -> None:
             raise invalid("the recipe uses {output} but no output pattern is given")
         if output is not None and "output" not in used:
             raise invalid("an output pattern is given but no step writes to {output}")
-        inputs = list_inputs(files, directory, pattern, max_files)
+        # in a thread: a long directory walk must not freeze the server (#122)
+        inputs = await anyio.to_thread.run_sync(list_inputs, files, directory, pattern, max_files)
         outputs = plan_outputs(inputs, output, overwrite=overwrite)
         codec = await kit.codec()
         sample = {
