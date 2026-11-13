@@ -26,6 +26,14 @@ filters and exports, step by step, right in front of you.
   gimp-mcp. <a href="https://github.com/mhbxyz/gimp-mcp/releases/download/v0.6.0/gimp-mcp-demo.mp4">Full-quality video (1080p, real time)</a>.</sub>
 </p>
 
+> [!NOTE]
+> **Try 1.0.0rc1.** 1.0.0 freezes the public API until 2.0, and its release candidate is out for at least three
+> weeks of testing: `uvx gimp-mcp@1.0.0rc1 setup` installs it (the plain commands below keep installing the latest
+> stable release). Tell us which tool, parameter, result or error should be named or shaped differently, which tool
+> is missing, and how it runs on your platform, with a
+> [release-candidate report](https://github.com/mhbxyz/gimp-mcp/issues/new?template=release-candidate.yml).
+> Coming from 0.x: [upgrading](https://github.com/mhbxyz/gimp-mcp/blob/main/docs/upgrading.md).
+
 ## Quickstart
 
 gimp-mcp runs on **Linux, macOS and Windows**. You need GIMP 3.2+, [uv](https://docs.astral.sh/uv/getting-started/installation/) and an MCP client. On Ubuntu 26.04:

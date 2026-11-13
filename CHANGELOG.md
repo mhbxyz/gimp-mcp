@@ -38,6 +38,8 @@ what is covered by the compatibility promise.
   agent, plan-then-act with checkpoints, subagents and critics, visual and numeric verification, encoded
   workflows, toolset strategy and concurrency, compared against primary sources and the evaluation
   transcripts; its hypotheses are tracked as #216–#222.
+- Release-candidate testing (#138): a "Try 1.0.0rcN" note in the README and a release-candidate report
+  issue template say what feedback is wanted before the 1.0 API freeze and how to send it.
 
 ## [0.7.0] - 2026-11-12
 
