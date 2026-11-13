@@ -11,6 +11,12 @@ what is covered by the compatibility promise.
 - A `gimp_run_batch` recipe step with a key other than `tool` and `arguments` (e.g. `args`) is refused
   with `INVALID_ARGUMENT` naming the key and the expected ones (#215). It used to be dropped silently,
   so the step ran without its arguments and the error pointed elsewhere.
+- The parameter names deprecated in 0.7.0 are removed, as their deprecation notices announced (#225):
+  `channel_id` (use `channel`, now required) in `gimp_set_channel`, `gimp_combine_channels` and
+  `gimp_delete_channel`; `id` (use `guide`, now required) and `kind="sample_point"` (use
+  `"sample-point"`) in `gimp_remove_guide`; `file` (use `path`, now required) in `gimp_import_palette`,
+  `gimp_export_palette`, `gimp_create_link_layer` and `gimp_set_link_layer`. The deprecation mechanism
+  stays for 1.x (ADR 0011).
 
 ### Documentation
 

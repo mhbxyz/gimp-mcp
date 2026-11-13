@@ -119,40 +119,40 @@ async def test_palettes_are_imported_exported_and_kept_in_the_profile(
     gpl = tmp_path / "team.gpl"
     gpl.write_text("GIMP Palette\nName: Team colors\nColumns: 3\n#\n 10  20  30\tNavy\n200 100  50\tRust\n")
     async with mcp_client(gimp) as client:
-        imported = await call(client, "gimp_import_palette", file=str(gpl))
+        imported = await call(client, "gimp_import_palette", path=str(gpl))
         assert imported["name"] == "Team colors" and [e["color"] for e in imported["entries"]] == [
             "#0a141eff",
             "#c86432ff",
         ]
-        adobe = await call(client, "gimp_import_palette", file=str(act))  # converted to .gpl by gimp-mcp (#81)
+        adobe = await call(client, "gimp_import_palette", path=str(act))  # converted to .gpl by gimp-mcp (#81)
         assert adobe["name"] == "brand" and [e["color"] for e in adobe["entries"]] == ["#ff0000ff", "#00ff00ff"]
         assert (gimp.config_dir / "palettes" / "brand.gpl").exists()
-        assert (await error(client, "gimp_import_palette", file=str(act)))["code"] == "FILE_EXISTS"
-        swatches = await call(client, "gimp_import_palette", file=str(FIXTURES / "Material_Palette.aco"))
+        assert (await error(client, "gimp_import_palette", path=str(act)))["code"] == "FILE_EXISTS"
+        swatches = await call(client, "gimp_import_palette", path=str(FIXTURES / "Material_Palette.aco"))
         assert len(swatches["entries"]) == 256
         first = swatches["entries"][0]
         assert (first["name"], first["color"]) == ("Red 500 - Primary", "#f44336ff")  # Material red 500
-        arne = await call(client, "gimp_import_palette", file=str(FIXTURES / "arne-v20-16.pal"))
+        arne = await call(client, "gimp_import_palette", path=str(FIXTURES / "arne-v20-16.pal"))
         lospec = {line.split()[-1] for line in (FIXTURES / "arne16.gpl").read_text().splitlines()[4:]}
         assert {e["color"][1:7] for e in arne["entries"]} == lospec  # same 16 colors as Lospec's copy
         before = sorted(p.name for p in (gimp.config_dir / "palettes").iterdir())
-        cmyk = await error(client, "gimp_import_palette", file=str(FIXTURES / "ADG3-CMYK.ase"))
+        cmyk = await error(client, "gimp_import_palette", path=str(FIXTURES / "ADG3-CMYK.ase"))
         assert cmyk["code"] == "UNSUPPORTED_FORMAT" and "CMYK" in cmyk["message"]
         assert sorted(p.name for p in (gimp.config_dir / "palettes").iterdir()) == before
         bad = tmp_path / "junk.gpl"
         bad.write_text("not a palette")
-        assert (await error(client, "gimp_import_palette", file=str(bad)))["code"] == "UNSUPPORTED_FORMAT"
+        assert (await error(client, "gimp_import_palette", path=str(bad)))["code"] == "UNSUPPORTED_FORMAT"
 
-        exported = await call(client, "gimp_export_palette", name="Team colors", file=str(tmp_path / "out.gpl"))
+        exported = await call(client, "gimp_export_palette", name="Team colors", path=str(tmp_path / "out.gpl"))
         text = (tmp_path / "out.gpl").read_text()
         assert exported["format"] == "gpl" and "Name: Team colors" in text and " 10  20  30\tNavy" in text
         for fmt, needle in (("css", "rgb"), ("text", "#"), ("kpl", None)):
             out = tmp_path / f"out.{fmt}"
-            await call(client, "gimp_export_palette", name="Team colors", file=str(out), format=fmt)
+            await call(client, "gimp_export_palette", name="Team colors", path=str(out), format=fmt)
             assert out.exists() and out.stat().st_size > 0, fmt
             if needle:
                 assert needle in out.read_text(errors="replace").lower(), fmt
-        assert (await error(client, "gimp_export_palette", name="Team colors", file=str(tmp_path / "out.gpl")))[
+        assert (await error(client, "gimp_export_palette", name="Team colors", path=str(tmp_path / "out.gpl")))[
             "code"
         ] == "FILE_EXISTS"
 

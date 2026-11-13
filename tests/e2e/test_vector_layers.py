@@ -73,13 +73,13 @@ async def test_link_layer_follows_its_file(gimp: HeadlessGimp, tmp_path: Path):
     async with mcp_client(gimp) as client:
         image = (await call(client, "gimp_create_image", width=20, height=20, fill="#ffffff"))["id"]
         source = green_file(tmp_path / "green.png")
-        linked = await call(client, "gimp_create_link_layer", image=image, file=str(source), name="Logo")
+        linked = await call(client, "gimp_create_link_layer", image=image, path=str(source), name="Logo")
         assert linked["kind"] == "link" and linked["file"] == str(source) and linked["width"] == 8
         img = await png(client, image, tmp_path / "linked.png")
         assert px(img, 2, 2)[:3] == (0, 255, 0)
 
         other = green_file(tmp_path / "red.png", (255, 0, 0))
-        changed = await call(client, "gimp_set_link_layer", item=linked["id"], file=str(other))
+        changed = await call(client, "gimp_set_link_layer", item=linked["id"], path=str(other))
         assert changed["file"] == str(other)
         img = await png(client, image, tmp_path / "relinked.png")
         assert px(img, 2, 2)[:3] == (255, 0, 0)
@@ -112,14 +112,14 @@ async def test_destructive_tools_refuse_vector_and_link_layers(gimp: HeadlessGim
         image = (await call(client, "gimp_create_image", width=40, height=40, fill="#ffffff"))["id"]
         path = await call(client, "gimp_create_path", image=image, strokes=[SQUARE])
         vector = await call(client, "gimp_create_vector_layer", path=path["id"], fill={"color": "#ff0000"})
-        link = await call(client, "gimp_create_link_layer", image=image, file=str(green_file(tmp_path / "g.png")))
+        link = await call(client, "gimp_create_link_layer", image=image, path=str(green_file(tmp_path / "g.png")))
         for item in (vector["id"], link["id"]):
             assert (await error(client, "gimp_fill", item=item, color="#000000", area="layer"))["code"] == "WRONG_KIND"
             assert (await error(client, "gimp_gaussian_blur", item=item, radius=2))["code"] == "WRONG_KIND"
         kinds = [node["kind"] for node in (await call(client, "gimp_inspect_image", image=image))["layers"]]
         assert kinds == ["link", "vector", "layer"]  # nothing was rasterized
         assert (await error(client, "gimp_inspect_vector_layer", item=link["id"]))["code"] == "WRONG_KIND"
-        missing = await client.call_tool("gimp_create_link_layer", {"image": image, "file": str(tmp_path / "none.png")})
+        missing = await client.call_tool("gimp_create_link_layer", {"image": image, "path": str(tmp_path / "none.png")})
         assert missing.is_error
         await call(client, "gimp_close_image", image=image, discard_changes=True)
 

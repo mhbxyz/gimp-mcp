@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 from ..colors import parse_color
 from ..errors import GimpMcpError
-from ..toolkit import DESTRUCTIVE, MUTATING, Deprecation, Toolkit, renamed
+from ..toolkit import DESTRUCTIVE, MUTATING, Toolkit
 from .inspect import ImageId, ItemId
 from .selection import SelectionState
 
@@ -17,11 +17,6 @@ Criterion = Annotated[
     str, Field(description="composite, red, green, blue, alpha, hs-hue, hs-saturation, hs-value, lch-lightness…")
 ]
 ChannelId = Annotated[str, Field(description="Channel id (an item id), from gimp_inspect_image's 'channels'.")]
-OptionalChannel = Annotated[
-    str | None, Field(description="Channel id (an item id), from gimp_inspect_image's 'channels'.")
-]
-OldChannelId = Annotated[str | None, Field(description="Deprecated since 0.7.0: use channel.")]
-CHANNEL_ID = {"channel_id": Deprecation("0.7.0", "use channel")}
 
 
 class ChannelInfo(BaseModel):
@@ -171,21 +166,18 @@ def register(kit: Toolkit) -> None:
             "Rename a channel, set its overlay color, opacity (0-100), visibility or show_masked. One undo step."
         ),
         annotations=MUTATING,
-        deprecated_parameters=CHANNEL_ID,
     )
     async def gimp_set_channel(
-        channel: OptionalChannel = None,
+        channel: ChannelId,
         name: str | None = None,
         color: str | None = None,
         opacity: Annotated[float | None, Field(ge=0, le=100)] = None,
         visible: bool | None = None,
         show_masked: bool | None = None,
-        channel_id: OldChannelId = None,
     ) -> ChannelInfo:
-        target = renamed("gimp_set_channel", "channel", channel, "channel_id", channel_id)
         data = await call_channel(
             "channel.set",
-            {"channel": target, "name": name, "color": parse_color(color).to_wire() if color else None,
+            {"channel": channel, "name": name, "color": parse_color(color).to_wire() if color else None,
              "opacity": opacity, "visible": visible, "show_masked": show_masked},
         )  # fmt: skip
         return ChannelInfo(**data)
@@ -198,16 +190,9 @@ def register(kit: Toolkit) -> None:
             "Combine other into channel (add, subtract, replace, intersect), like selection operations. One undo step."
         ),
         annotations=MUTATING,
-        deprecated_parameters=CHANNEL_ID,
     )
-    async def gimp_combine_channels(
-        other: ChannelId,
-        channel: OptionalChannel = None,
-        operation: Operation = "add",
-        channel_id: OldChannelId = None,
-    ) -> ChannelInfo:
-        target = renamed("gimp_combine_channels", "channel", channel, "channel_id", channel_id)
-        data = await call_channel("channel.combine", {"channel": target, "other": other, "operation": operation})
+    async def gimp_combine_channels(channel: ChannelId, other: ChannelId, operation: Operation = "add") -> ChannelInfo:
+        data = await call_channel("channel.combine", {"channel": channel, "other": other, "operation": operation})
         return ChannelInfo(**data)
 
     @kit.tool(
@@ -216,8 +201,6 @@ def register(kit: Toolkit) -> None:
         title="Delete a channel",
         description="Remove a channel from its image. One undo step.",
         annotations=DESTRUCTIVE,
-        deprecated_parameters=CHANNEL_ID,
     )
-    async def gimp_delete_channel(channel: OptionalChannel = None, channel_id: OldChannelId = None) -> Deleted:
-        target = renamed("gimp_delete_channel", "channel", channel, "channel_id", channel_id)
-        return Deleted(**await call_channel("channel.delete", {"channel": target}))
+    async def gimp_delete_channel(channel: ChannelId) -> Deleted:
+        return Deleted(**await call_channel("channel.delete", {"channel": channel}))

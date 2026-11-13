@@ -2462,37 +2462,10 @@
         "openWorldHint": false,
         "readOnlyHint": false
       },
-      "deprecatedParameters": {
-        "channel_id": {
-          "removal": "1.0.0",
-          "replacement": "use channel",
-          "since": "0.7.0"
-        }
-      },
       "inputSchema": {
         "properties": {
           "channel": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null
-          },
-          "channel_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "deprecated": true
+            "type": "string"
           },
           "operation": {
             "default": "add",
@@ -2509,6 +2482,7 @@
           }
         },
         "required": [
+          "channel",
           "other"
         ],
         "type": "object"
@@ -3844,27 +3818,8 @@
         "openWorldHint": false,
         "readOnlyHint": false
       },
-      "deprecatedParameters": {
-        "file": {
-          "removal": "1.0.0",
-          "replacement": "use path",
-          "since": "0.7.0"
-        }
-      },
       "inputSchema": {
         "properties": {
-          "file": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "deprecated": true
-          },
           "image": {
             "type": "string"
           },
@@ -3880,15 +3835,7 @@
             "default": null
           },
           "path": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null
+            "type": "string"
           },
           "position": {
             "default": 0,
@@ -3897,7 +3844,8 @@
           }
         },
         "required": [
-          "image"
+          "image",
+          "path"
         ],
         "type": "object"
       },
@@ -5599,39 +5547,15 @@
         "openWorldHint": false,
         "readOnlyHint": false
       },
-      "deprecatedParameters": {
-        "channel_id": {
-          "removal": "1.0.0",
-          "replacement": "use channel",
-          "since": "0.7.0"
-        }
-      },
       "inputSchema": {
         "properties": {
           "channel": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null
-          },
-          "channel_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "deprecated": true
+            "type": "string"
           }
         },
+        "required": [
+          "channel"
+        ],
         "type": "object"
       },
       "outputSchema": {
@@ -9053,27 +8977,8 @@
         "openWorldHint": false,
         "readOnlyHint": false
       },
-      "deprecatedParameters": {
-        "file": {
-          "removal": "1.0.0",
-          "replacement": "use path",
-          "since": "0.7.0"
-        }
-      },
       "inputSchema": {
         "properties": {
-          "file": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "deprecated": true
-          },
           "format": {
             "default": "gpl",
             "enum": [
@@ -9097,19 +9002,12 @@
             "type": "boolean"
           },
           "path": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null
+            "type": "string"
           }
         },
         "required": [
-          "name"
+          "name",
+          "path"
         ],
         "type": "object"
       },
@@ -11570,39 +11468,15 @@
         "openWorldHint": false,
         "readOnlyHint": false
       },
-      "deprecatedParameters": {
-        "file": {
-          "removal": "1.0.0",
-          "replacement": "use path",
-          "since": "0.7.0"
-        }
-      },
       "inputSchema": {
         "properties": {
-          "file": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "deprecated": true
-          },
           "path": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null
+            "type": "string"
           }
         },
+        "required": [
+          "path"
+        ],
         "type": "object"
       },
       "outputSchema": {
@@ -17199,39 +17073,11 @@
         "openWorldHint": false,
         "readOnlyHint": false
       },
-      "deprecatedParameters": {
-        "id": {
-          "removal": "1.0.0",
-          "replacement": "use guide",
-          "since": "0.7.0"
-        }
-      },
       "inputSchema": {
         "properties": {
           "guide": {
-            "anyOf": [
-              {
-                "minimum": 1,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null
-          },
-          "id": {
-            "anyOf": [
-              {
-                "minimum": 1,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "deprecated": true
+            "minimum": 1,
+            "type": "integer"
           },
           "image": {
             "type": "string"
@@ -17240,14 +17086,14 @@
             "default": "guide",
             "enum": [
               "guide",
-              "sample-point",
-              "sample_point"
+              "sample-point"
             ],
             "type": "string"
           }
         },
         "required": [
-          "image"
+          "image",
+          "guide"
         ],
         "type": "object"
       },
@@ -19908,37 +19754,10 @@
         "openWorldHint": false,
         "readOnlyHint": false
       },
-      "deprecatedParameters": {
-        "channel_id": {
-          "removal": "1.0.0",
-          "replacement": "use channel",
-          "since": "0.7.0"
-        }
-      },
       "inputSchema": {
         "properties": {
           "channel": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null
-          },
-          "channel_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "deprecated": true
+            "type": "string"
           },
           "color": {
             "anyOf": [
@@ -19998,6 +19817,9 @@
             "default": null
           }
         },
+        "required": [
+          "channel"
+        ],
         "type": "object"
       },
       "outputSchema": {
@@ -21359,44 +21181,18 @@
         "openWorldHint": false,
         "readOnlyHint": false
       },
-      "deprecatedParameters": {
-        "file": {
-          "removal": "1.0.0",
-          "replacement": "use path",
-          "since": "0.7.0"
-        }
-      },
       "inputSchema": {
         "properties": {
-          "file": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "deprecated": true
-          },
           "item": {
             "type": "string"
           },
           "path": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null
+            "type": "string"
           }
         },
         "required": [
-          "item"
+          "item",
+          "path"
         ],
         "type": "object"
       },
