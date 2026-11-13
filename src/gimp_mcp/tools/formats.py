@@ -7,6 +7,7 @@ Exports write no metadata unless asked (``metadata``).
 from __future__ import annotations
 
 import os
+import string
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
@@ -213,7 +214,8 @@ def register(kit: Toolkit) -> None:
         if unknown:
             raise GimpMcpError("INVALID_ARGUMENT", f"template: unknown placeholder {{{unknown[0]}}}; use {{index}} "
                                "and {name}")  # fmt: skip
-        if any(c in template for c in "/\\:"):
+        literal = "".join(text for text, *_ in string.Formatter().parse(template))
+        if any(c in literal for c in "/\\:"):
             raise GimpMcpError("INVALID_ARGUMENT", "template: a file name, without / \\ or : (files stay in directory)")
         codec = await kit.codec()
         data = await kit.call(

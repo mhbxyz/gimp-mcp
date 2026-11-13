@@ -146,8 +146,8 @@ async def test_palettes_are_imported_exported_and_kept_in_the_profile(
         exported = await call(client, "gimp_export_palette", name="Team colors", path=str(tmp_path / "out.gpl"))
         text = (tmp_path / "out.gpl").read_text()
         assert exported["format"] == "gpl" and "Name: Team colors" in text and " 10  20  30\tNavy" in text
-        for fmt, needle in (("css", "rgb"), ("text", "#"), ("kpl", None)):
-            out = tmp_path / f"out.{fmt}"
+        for fmt, extension, needle in (("css", "css", "rgb"), ("text", "txt", "#"), ("kpl", "kpl", None)):
+            out = tmp_path / f"out.{extension}"
             await call(client, "gimp_export_palette", name="Team colors", path=str(out), format=fmt)
             assert out.exists() and out.stat().st_size > 0, fmt
             if needle:

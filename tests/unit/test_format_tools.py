@@ -81,3 +81,15 @@ async def test_layer_exports_follow_the_path_rules_of_the_os(tmp_path, monkeypat
             result = await client.call_tool("gimp_export_layers", {"image": iid(1), "directory": directory})
             assert error_code(result) == "INVALID_ARGUMENT", directory
         assert bridge.calls == []
+
+
+async def test_the_default_layer_template_and_widths_are_accepted(tmp_path):
+    exported = {"path": str(tmp_path / "00-a.png"), "item": 2, "procedure": "file-png-export", "bytes": 1,
+                "lossless": True, "layers": "flattened", "options": {}}  # fmt: skip
+    files = {"files": [exported]}
+    async with tool_client({"image.export_layers": lambda p: files}) as (client, _bridge):
+        for template in ("{index:02d}-{name}", "layer {index:>3}", "{name}"):
+            result = await client.call_tool(
+                "gimp_export_layers", {"image": iid(1), "directory": str(tmp_path), "template": template}
+            )
+            assert not result.is_error, (template, result.content)
