@@ -26,18 +26,33 @@ import sys
 from pathlib import Path
 
 REPOSITORY = "https://github.com/mhbxyz/gimp-mcp"
-SEMVER = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
+# X.Y.Z, or a PEP 440 pre-release of it: X.Y.ZaN, X.Y.ZbN, X.Y.ZrcN (1.0.0rc1, #124)
+VERSION = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:(a|b|rc)(\d+))?$")
+STAGES = {"a": 0, "b": 1, "rc": 2, None: 3}  # a final release comes after its pre-releases
 
 
 class ReleaseError(Exception):
     pass
 
 
+def version_key(version: str) -> tuple[int, int, int, int, int] | None:
+    match = VERSION.match(version)
+    if match is None:
+        return None
+    major, minor, patch, stage, number = match.groups()
+    return int(major), int(minor), int(patch), STAGES[stage], int(number or 0)
+
+
+def is_pre_release(version: str) -> bool:
+    key = version_key(version)
+    return key is not None and key[3] != STAGES[None]
+
+
 def check_version(current: str, new: str) -> None:
-    match_new, match_current = SEMVER.match(new), SEMVER.match(current)
-    if match_new is None:
-        raise ReleaseError(f"{new!r} is not a X.Y.Z version")
-    if match_current is not None and tuple(map(int, match_new.groups())) <= tuple(map(int, match_current.groups())):
+    new_key, current_key = version_key(new), version_key(current)
+    if new_key is None:
+        raise ReleaseError(f"{new!r} is not a X.Y.Z version (or X.Y.ZrcN, X.Y.ZbN, X.Y.ZaN)")
+    if current_key is not None and new_key <= current_key:
         raise ReleaseError(f"{new} is not greater than the current version {current}")
 
 
@@ -77,7 +92,7 @@ def roll_changelog(text: str, version: str, date: str) -> str:
         raise ReleaseError("the Unreleased section is empty: nothing to release")
     rolled = text[:start] + f"{marker}\n\n## [{version}] - {date}\n\n{body}\n\n" + text[body_end:].lstrip("\n")
     link = f"[{version}]: {REPOSITORY}/releases/tag/v{version}\n"
-    first_link = re.search(r"(?m)^\[\d+\.\d+\.\d+\]: ", rolled)
+    first_link = re.search(r"(?m)^\[\d+\.\d+\.\d+[a-z0-9]*\]: ", rolled)
     if first_link:
         rolled = rolled[: first_link.start()] + link + rolled[first_link.start() :]
     else:
