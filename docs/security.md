@@ -37,6 +37,7 @@ one OS skip elsewhere.
 | An answer meant for another request | all | Request ids are checked and a mismatch drops the connection (`outcome: "unknown"`); requests pinned to a session are refused after a GIMP restart | `test_bridge_mitigations.py::test_an_answer_to_another_request_drops_the_connection`, `test_bridge_client.py::test_request_pinned_to_another_session_is_refused_by_the_bridge` |
 | Oversized messages | all | Requests over 8 MiB are refused; answers over 64 MiB drop the connection, and the next call reconnects | `test_bridge_reliability.py::test_oversized_request_is_refused`, `test_bridge_mitigations.py::test_an_oversized_answer_drops_the_connection_and_the_server_keeps_working` |
 | A client that stops reading blocks GIMP | Linux, macOS | Answers are sent with a 10 s timeout, then abandoned | `test_bridge_mitigations.py::test_a_client_that_never_reads_cannot_block_the_bridge` |
+| An older plug-in lacks the refusals made inside GIMP (below) | all | The operations that gained one have a new revision; with an older plug-in they fail with `PLUGIN_VERSION_MISMATCH` and the `gimp-mcp install-plugin` hint instead of running unprotected | `test_plugin_security_revisions.py::test_calls_that_rely_on_a_plugin_side_refusal_need_the_new_plugin`, `e2e/test_versions.py::test_the_previous_release_plugin_serves_this_server` |
 
 ## Token
 

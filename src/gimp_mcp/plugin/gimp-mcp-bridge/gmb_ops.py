@@ -4924,7 +4924,16 @@ def image_preview_region(params):
 REVISIONS = {
     "metadata.get": 2,  # 0.7.0: untranslated values in "raw" (#161)
     "metadata.set": 2,
-    "image.export_as": 2,  # 0.7.0: layers="flatten" (#165), color_profile (#158)
+    # 0.7.0: layers="flatten" (#165), color_profile (#158); 1.0.0: refusals of the security review (#122)
+    "image.export_as": 3,
+    # 1.0.0: refusals that only the plug-in can make (#122): third-party plug-ins, file-raw-load, the
+    # colorxhtml source file, layer file names, palette names pasted into code, CR in imported names
+    "pdb.call": 2,
+    "image.open_with": 2,
+    "image.export_layers": 2,
+    "image.export_region": 2,
+    "palette.export": 2,
+    "palette.import": 2,
 }
 
 
