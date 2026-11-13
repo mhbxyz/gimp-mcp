@@ -8,12 +8,12 @@
     "source": "github"
   },
   "websiteUrl": "https://github.com/mhbxyz/gimp-mcp",
-  "version": "0.7.0",
+  "version": "1.0.0rc1",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "gimp-mcp",
-      "version": "0.7.0",
+      "version": "1.0.0rc1",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
