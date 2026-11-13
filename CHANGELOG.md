@@ -18,6 +18,11 @@ what is covered by the compatibility promise.
   `gimp_export_palette`, `gimp_create_link_layer` and `gimp_set_link_layer`. The deprecation mechanism
   stays for 1.x (ADR 0011).
 
+### Fixed
+
+- The `screenshot-annotation` evaluation accepts an arrow that reaches the E-mail field from the right:
+  the prompt names no side, and a correct agent run was counted as a regression (#232).
+
 ### Documentation
 
 - The 1.x compatibility promise (#123): `docs/compatibility.md` states what is public, what a patch, a minor
