@@ -41,16 +41,18 @@ EXPORTED = {"path": "/x.tif", "procedure": "file-tiff-export", "bytes": 1, "loss
             "options": {}}  # fmt: skip
 
 
-async def test_flatten_needs_an_up_to_date_plugin_and_says_so(tmp_path):
-    old = {"image.export_as": 1}
-    async with tool_client({"image.export_as": lambda p: EXPORTED}, revisions=old) as (client, bridge):
-        flat = await client.call_tool(
-            "gimp_export_as", {"image": iid(1), "path": str(tmp_path / "a.tif"), "layers": "flatten"}
-        )
-        kept = await client.call_tool("gimp_export_as", {"image": iid(1), "path": str(tmp_path / "b.tif")})
-    assert flat.is_error and flat.structured_content["error"]["code"] == "PLUGIN_VERSION_MISMATCH"
-    assert not kept.is_error  # the default works with any plug-in
-    assert [params.get("layers") for _name, params in bridge.calls] == ["keep"]
+async def test_exports_need_an_up_to_date_plugin_and_say_so(tmp_path):
+    # a plug-in before 0.7 would ignore `layers`; one before 1.0 lacks the security review's refusals (#122)
+    for old in ({"image.export_as": 1}, {"image.export_as": 2}):
+        async with tool_client({"image.export_as": lambda p: EXPORTED}, revisions=old) as (client, bridge):
+            flat = await client.call_tool(
+                "gimp_export_as", {"image": iid(1), "path": str(tmp_path / "a.tif"), "layers": "flatten"}
+            )
+            kept = await client.call_tool("gimp_export_as", {"image": iid(1), "path": str(tmp_path / "b.tif")})
+        for result in (flat, kept):
+            assert result.is_error and result.structured_content["error"]["code"] == "PLUGIN_VERSION_MISMATCH"
+            assert "gimp-mcp install-plugin" in result.structured_content["error"]["hint"]
+        assert bridge.calls == []
 
 
 async def test_flatten_is_sent_to_the_plugin(tmp_path):

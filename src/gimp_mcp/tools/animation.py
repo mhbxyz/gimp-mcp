@@ -202,5 +202,6 @@ def register(kit: Toolkit) -> None:
             {"image": codec.parse_image(image), "path": str(target), "options": options, "metadata": []},
             codec=codec,
             mutating=True,
+            revision=3,  # image.export_as with the security review's refusals (#122)
         )
         return Exported(**data)

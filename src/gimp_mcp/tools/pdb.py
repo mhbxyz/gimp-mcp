@@ -66,5 +66,8 @@ def register(kit: Toolkit) -> None:
         arguments: Annotated[dict[str, Any], Field(description="Arguments by name.")] | None = None,
     ) -> CallResult:
         codec = await kit.codec()
-        data = await kit.call("pdb.call", {"name": name, "arguments": arguments or {}}, codec=codec, mutating=True)
+        # revision 2: the plug-in refuses third-party plug-ins (#122)
+        data = await kit.call(
+            "pdb.call", {"name": name, "arguments": arguments or {}}, codec=codec, mutating=True, revision=2
+        )
         return CallResult(name=name, results=data["results"])

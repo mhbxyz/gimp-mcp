@@ -18,6 +18,10 @@ from ..paths import check_input_file, check_output_file, local_absolute
 from ..toolkit import DESTRUCTIVE, MUTATING, READ_ONLY, Toolkit
 from .inspect import ImageId
 
+# The plug-in revision of image.export_as with the security review's refusals (#122); it also has `layers`
+# and `color_profile` (0.7.0), which older plug-ins would ignore.
+SECURE_EXPORT = 3
+
 Value = bool | int | float | str | list[int]
 Options = Annotated[
     dict[str, Value],
@@ -159,8 +163,7 @@ def register(kit: Toolkit) -> None:
              "procedure": procedure, "layers": layers, "color_profile": color_profile},
             codec=codec,
             mutating=True,
-            # older plug-ins would ignore `layers` and `color_profile`
-            revision=2 if layers == "flatten" or color_profile is not None else 1,
+            revision=SECURE_EXPORT,
         )  # fmt: skip
         return Exported(**data)
 
@@ -182,7 +185,11 @@ def register(kit: Toolkit) -> None:
         source = str(check_input_file(path))
         codec = await kit.codec()
         data = await kit.call(
-            "image.open_with", {"path": source, "options": options, "procedure": procedure}, codec=codec, mutating=True
+            "image.open_with",
+            {"path": source, "options": options, "procedure": procedure},
+            codec=codec,
+            mutating=True,
+            revision=2,  # the plug-in refuses file-raw-load on other files (#122)
         )
         return Opened(**{**data, "id": codec.image(data["id"])})
 
@@ -225,6 +232,7 @@ def register(kit: Toolkit) -> None:
              "options": options, "overwrite": overwrite},
             codec=codec,
             mutating=True,
+            revision=2,  # the plug-in checks file names and options again (#122)
         )  # fmt: skip
         return LayerFiles(files=[Exported(**{**f, "item": codec.item(f["item"])}) for f in data["files"]])
 
@@ -256,5 +264,6 @@ def register(kit: Toolkit) -> None:
              "region": {"x": x, "y": y, "width": width, "height": height}},
             codec=codec,
             mutating=True,
+            revision=2,  # the plug-in refuses options that read another file (#122)
         )  # fmt: skip
         return Exported(**data)

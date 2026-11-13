@@ -85,7 +85,9 @@ def wire(color: str) -> list[float]:
 
 def register(kit: Toolkit) -> None:
     async def call(method: str, params: dict[str, Any], mutating: bool = True) -> dict[str, Any]:
-        return await kit.call(method, params, mutating=mutating)
+        # palette files: the plug-in refuses names pasted into code and drops CRs on import (#122)
+        revision = 2 if method in ("palette.export", "palette.import") else 1
+        return await kit.call(method, params, mutating=mutating, revision=revision)
 
     @kit.tool(
         toolset="resources",
