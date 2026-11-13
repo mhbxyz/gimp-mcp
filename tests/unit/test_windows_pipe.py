@@ -74,3 +74,65 @@ def test_the_pipe_dacl_names_only_the_current_user():
     aces = re.findall(r"\(([^)]*)\)", sddl)
     owners = {gmb_pipe.canonical_sid(ace.split(";")[-1]) for ace in aces}  # "LA" is the built-in Administrator
     assert sddl.startswith("D:P") and owners == {me}, sddl
+
+
+async def test_a_pipe_served_by_another_user_is_refused_before_anything_is_written(monkeypatch):
+    # C2 (#122): the client checks who serves the pipe before the hello, so a squatting server of another user
+    # never receives the token and cannot impersonate the client (it has read nothing yet).
+    from gimp_mcp.plugin_modules import load
+
+    client_copy = load("gmb_pipe")
+    real = client_copy.process_user_sid
+    monkeypatch.setattr(client_copy, "process_user_sid", lambda pid=None: real() if pid is None else "S-1-5-21-0-0-0-1")
+    sent: list[str] = []
+    original = BridgeClient._request
+
+    async def spy(self, method, *args, **kwargs):
+        sent.append(method)
+        return await original(self, method, *args, **kwargs)
+
+    monkeypatch.setattr(BridgeClient, "_request", spy)
+    with running_fake_bridge({"echo": lambda p: {}}) as bridge:
+        with pytest.raises(GimpMcpError) as refused:
+            await client_for(bridge, connect_timeout=2).call("echo")
+        assert refused.value.code == "BRIDGE_UNAVAILABLE" and "another user" in refused.value.message
+        assert sent == [] and bridge.calls == []
+
+
+def test_the_pipe_refuses_remote_clients(monkeypatch):
+    # C4 (#122): a client on another machine cannot even open the pipe.
+    import gmb_pipe  # type: ignore[import-not-found]
+
+    listener = gmb_pipe.PipeListener(r"\\.\pipe\gimp-mcp-test-remote", gmb_pipe.process_user_sid())
+    created: list[tuple] = []
+
+    class Kernel32:
+        def CreateNamedPipeW(self, *args):
+            created.append(args)
+            return 1234
+
+    monkeypatch.setattr(gmb_pipe, "_dlls", lambda: (Kernel32(), None))
+    assert listener.create_instance() == 1234
+    pipe_mode = created[0][2]
+    assert pipe_mode & gmb_pipe.PIPE_REJECT_REMOTE_CLIENTS == 0x8
+
+
+def test_the_token_file_is_readable_only_by_the_user_and_administrators(tmp_path):
+    # C3 (#122): the token inherits the ACL of the user's local application data folder.
+    import getpass
+    import os
+    import subprocess
+
+    import gmb_pipe  # type: ignore[import-not-found]
+
+    local = os.environ["LOCALAPPDATA"]
+    folder = tmp_path if str(tmp_path).lower().startswith(local.lower()) else None
+    if folder is None:
+        pytest.skip("the temporary folder is not under LOCALAPPDATA")
+    token = folder / "gimp-mcp" / "bridge.token"
+    gmb_pipe.write_token(str(token), "t" * 64)
+    listing = subprocess.run(["icacls", str(token)], capture_output=True, text=True, check=True).stdout
+    principals = {line.replace(str(token), "").strip().split(":(")[0] for line in listing.splitlines() if ":(" in line}
+    allowed = {"NT AUTHORITY\\SYSTEM", "BUILTIN\\Administrators"}
+    others = {p for p in principals if p not in allowed and not p.lower().endswith("\\" + getpass.getuser().lower())}
+    assert principals and others == set(), listing
